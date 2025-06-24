@@ -34,6 +34,9 @@ if [ ! -d "$PLUGIN_DIR" ]; then
     fi
 fi
 
+# Log-Datei
+LOG_FILE="setup.log"
+
 # Funktion für Fehlermeldungen
 handle_error() {
     echo -e "${RED}❌ Fehler: $1${NC}"
@@ -301,14 +304,29 @@ setup_obsidian_plugin() {
             npm run build || warning "Plugin-Build fehlgeschlagen"
             
             # Obsidian Plugin-Verzeichnis finden
-            OBSIDIAN_PLUGINS="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents"
-            if [ ! -d "$OBSIDIAN_PLUGINS" ]; then
-                warning "Obsidian iCloud-Verzeichnis nicht gefunden"
-                echo "Bitte kopieren Sie das Plugin manuell nach .obsidian/plugins/"
-            else
-                success "Obsidian Plugin vorbereitet"
+            OBSIDIAN_LOCAL="$HOME/Library/Application Support/obsidian"
+            OBSIDIAN_ICLOUD="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents"
+            
+            if [ -d "$OBSIDIAN_LOCAL" ]; then
+                success "Obsidian Plugin vorbereitet (lokale Installation)"
+                echo ""
+                echo "🔍 Verwenden Sie diese Skripte:"
+                echo -e "  ${BLUE}./setup-obsidian.sh${NC}          - All-in-One Plugin Setup (empfohlen)"
+                echo -e "  ${BLUE}./find-obsidian-paths.sh${NC}     - Zeigt Vault-Pfade an + Installation"
+                echo -e "  ${BLUE}./install-obsidian-plugin.sh${NC} - Manuelle Plugin-Installation"
+                echo ""
+                echo "Oder manuell kopieren nach:"
+                echo "$OBSIDIAN_LOCAL/IhrVault/.obsidian/plugins/"
+            elif [ -d "$OBSIDIAN_ICLOUD" ]; then
+                success "Obsidian Plugin vorbereitet (iCloud-Sync)"
                 echo "Kopieren Sie den obsidian-ki-plugin Ordner nach:"
-                echo "$OBSIDIAN_PLUGINS/IhrVault/.obsidian/plugins/"
+                echo "$OBSIDIAN_ICLOUD/IhrVault/.obsidian/plugins/"
+            else
+                warning "Obsidian-Verzeichnis nicht gefunden"
+                echo "Mögliche Pfade:"
+                echo "  - Lokal: ~/Library/Application Support/obsidian/IhrVault/.obsidian/plugins/"
+                echo "  - iCloud: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/IhrVault/.obsidian/plugins/"
+                echo "Bitte kopieren Sie das Plugin manuell nach einem dieser Pfade."
             fi
             
             cd "$WORK_DIR"
@@ -360,22 +378,23 @@ show_final_instructions() {
     echo "📋 Nächste Schritte:"
     echo
     echo "1. API-Keys in .env eintragen (falls noch nicht geschehen)"
-    echo "   ${BLUE}nano .env${NC}"
+    echo -e "   ${BLUE}nano .env${NC}"
     echo
     echo "2. Services starten:"
-    echo "   ${BLUE}./start-services.sh${NC}  # Docker Services"
-    echo "   ${BLUE}./start-api.sh${NC}       # API Server"
+    echo -e "   ${BLUE}./start-services.sh${NC}  # Docker Services"
+    echo -e "   ${BLUE}./start-api.sh${NC}       # API Server"
     echo
     echo "3. CLI verwenden:"
-    echo "   ${BLUE}./ki-cli.sh query \"Ihre Frage\"${NC}"
-    echo "   ${BLUE}./ki-cli.sh process dokument.pdf${NC}"
-    echo "   ${BLUE}./ki-cli.sh stats${NC}"
+    echo -e "   ${BLUE}./ki-cli.sh query \"Ihre Frage\"${NC}"
+    echo -e "   ${BLUE}./ki-cli.sh process dokument.pdf${NC}"
+    echo -e "   ${BLUE}./ki-cli.sh stats${NC}"
     echo
     echo "4. Web-Interface:"
-    echo "   API Docs: ${BLUE}http://localhost:8080/docs${NC}"
-    echo "   Neo4j:    ${BLUE}http://localhost:7474${NC} (neo4j/password)"
+    echo -e "   API Docs: ${BLUE}http://localhost:8080/docs${NC}"
+    echo -e "   Neo4j:    ${BLUE}http://localhost:7474${NC} (neo4j/password)"
     echo
     echo "5. Obsidian Plugin:"
+    echo -e "   ${BLUE}./setup-obsidian.sh${NC}          # All-in-One Setup (empfohlen)"
     echo "   - Plugin in Obsidian aktivieren"
     echo "   - API URL: http://localhost:8080"
     echo
