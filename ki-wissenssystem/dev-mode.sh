@@ -30,10 +30,11 @@ echo -e "${BLUE}📋 Entwicklungs-Optionen:${NC}"
 echo "1. API Server starten (Hot Reload)"
 echo "2. Plugin Watch-Modus starten"
 echo "3. Beide starten (empfohlen)"
-echo "4. Nur Services prüfen"
+echo "4. Plugin-Features testen"
+echo "5. Nur Services prüfen"
 echo
 
-read -p "Auswahl (1-4): " choice
+read -p "Auswahl (1-5): " choice
 
 case $choice in
     1)
@@ -68,6 +69,23 @@ case $choice in
         echo "Oder verwende tmux/screen für beide gleichzeitig."
         ;;
     4)
+        echo -e "${BLUE}📄 Plugin-Features testen:${NC}"
+        echo
+        echo -e "${GREEN}🚀 Neue Features im Plugin:${NC}"
+        echo "• 📤 Dokumentenupload (Ribbon-Icon oder Cmd+P)"
+        echo "• 🔍 Echtzeit-Analyse vor Upload"
+        echo "• ⚙️ Transparente Verarbeitung mit Fortschritt"
+        echo "• 💬 Chat mit automatischer Graph-Visualisierung"
+        echo "• 🕸️ Interaktiver Wissensgraph mit D3.js"
+        echo
+        echo -e "${BLUE}🧪 API-Endpoints testen:${NC}"
+        echo "curl -X POST \"http://localhost:8080/documents/analyze-preview\" -F \"file=@test.pdf\""
+        echo "curl \"http://localhost:8080/knowledge-graph/stats\""
+        echo "curl \"http://localhost:8080/knowledge-graph/orphans\""
+        echo
+        echo -e "${YELLOW}💡 Plugin muss in Obsidian installiert und aktiviert sein${NC}"
+        ;;
+    5)
         echo -e "${BLUE}🔍 Service-Status:${NC}"
         docker-compose ps
         echo

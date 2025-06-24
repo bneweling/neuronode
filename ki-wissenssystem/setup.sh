@@ -397,6 +397,11 @@ show_final_instructions() {
     echo -e "   ${BLUE}./setup-obsidian.sh${NC}          # All-in-One Setup (empfohlen)"
     echo "   - Plugin in Obsidian aktivieren"
     echo "   - API URL: http://localhost:8080"
+    echo ""
+    echo "6. Plugin-Features nutzen:"
+    echo "   📤 Dokumentenupload (Ribbon-Icon oder Cmd+P)"
+    echo "   💬 Knowledge Chat (Ribbon-Icon oder Cmd+P)"  
+    echo "   🕸️ Knowledge Graph (Ribbon-Icon oder Cmd+P)"
     echo
     echo "📚 Dokumentation: siehe README.md"
     echo "❓ Bei Problemen: siehe $LOG_FILE"

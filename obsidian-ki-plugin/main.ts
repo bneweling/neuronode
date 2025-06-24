@@ -8,6 +8,7 @@ import {
 } from 'obsidian';
 import { KnowledgeChatView, VIEW_TYPE_KNOWLEDGE_CHAT } from './src/views/KnowledgeChatView';
 import { KnowledgeGraphView, VIEW_TYPE_KNOWLEDGE_GRAPH } from './src/views/KnowledgeGraphView';
+import { DocumentUploadView, DOCUMENT_UPLOAD_VIEW_TYPE } from './src/views/DocumentUploadView';
 import { ApiClient } from './src/api/ApiClient';
 import { WebSocketClient } from './src/api/WebSocketClient';
 
@@ -52,6 +53,11 @@ export default class KIWissenssystemPlugin extends Plugin {
       (leaf) => new KnowledgeGraphView(leaf, this)
     );
 
+    this.registerView(
+      DOCUMENT_UPLOAD_VIEW_TYPE,
+      (leaf) => new DocumentUploadView(leaf, this)
+    );
+
     // Add ribbon icons
     this.addRibbonIcon('message-circle', 'KI-Wissenssystem Chat', () => {
       this.activateChatView();
@@ -59,6 +65,10 @@ export default class KIWissenssystemPlugin extends Plugin {
 
     this.addRibbonIcon('git-branch', 'Knowledge Graph', () => {
       this.activateGraphView();
+    });
+
+    this.addRibbonIcon('upload', 'Dokument Upload', () => {
+      this.activateUploadView();
     });
 
     // Add commands
@@ -75,6 +85,14 @@ export default class KIWissenssystemPlugin extends Plugin {
       name: 'Open Knowledge Graph',
       callback: () => {
         this.activateGraphView();
+      }
+    });
+
+    this.addCommand({
+      id: 'open-document-upload',
+      name: 'Open Document Upload',
+      callback: () => {
+        this.activateUploadView();
       }
     });
 
@@ -150,6 +168,25 @@ export default class KIWissenssystemPlugin extends Plugin {
     if (leaf) {
       workspace.revealLeaf(leaf);
     }
+  }
+
+  async activateUploadView() {
+    const { workspace } = this.app;
+    
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(DOCUMENT_UPLOAD_VIEW_TYPE);
+    
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getRightLeaf(false);
+      await leaf.setViewState({
+        type: DOCUMENT_UPLOAD_VIEW_TYPE,
+        active: true,
+      });
+    }
+    
+    workspace.revealLeaf(leaf);
   }
 
   async showSearchModal() {

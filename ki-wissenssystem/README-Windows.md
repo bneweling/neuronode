@@ -166,22 +166,51 @@ Nach erfolgreichem Setup sind folgende Services verfügbar:
 
 #### 🚀 Automatische Installation (empfohlen):
 ```powershell
-.\setup-obsidian.ps1    # All-in-One Setup
+.\setup-obsidian.ps1    # All-in-One Setup mit allen Features
 ```
 
+**Features der automatischen Installation:**
+- ✅ Erkennt automatisch alle Obsidian-Vaults (lokal und Cloud)
+- ✅ Installiert Plugin in alle oder ausgewählte Vaults
+- ✅ Baut Plugin automatisch (npm install + build)
+- ✅ Prüft ob Plugin bereits installiert ist
+- ✅ Überschreib-Schutz mit Benutzerbestätigung
+
 #### 📋 Manuelle Installation:
-Das Plugin wird automatisch gebaut und kann manuell installiert werden:
+```powershell
+# 1. Plugin bauen
+cd ..\obsidian-ki-plugin
+npm install
+npm run build
 
-1. **Plugin-Ordner kopieren** nach:
-   ```
-   %APPDATA%\Obsidian\IhrVault\.obsidian\plugins\ki-wissenssystem\
-   ```
+# 2. Plugin-Ordner kopieren nach:
+# %APPDATA%\Obsidian\IhrVault\.obsidian\plugins\ki-wissenssystem\
 
-2. **In Obsidian aktivieren**:
-   - Settings → Community Plugins
-   - "KI-Wissenssystem" aktivieren
+# 3. In Obsidian aktivieren:
+# Settings → Community Plugins → "KI-Wissenssystem" aktivieren
 
-3. **API-URL konfigurieren**: `http://localhost:8080`
+# 4. API-URL konfigurieren: http://localhost:8080
+```
+
+#### 📄 Plugin-Features nutzen:
+Nach der Installation stehen Ihnen diese Features zur Verfügung:
+
+**Dokumentenupload:**
+- **Ribbon-Icon** 📤 klicken oder **Strg+P** → "Open Document Upload"
+- **Drag & Drop** Unterstützung für alle Dateiformate
+- **Echtzeit-Analyse** vor dem Upload mit Transparenz
+- **Fortschrittsanzeige** während der Verarbeitung
+
+**Chat-Interface:**
+- **Ribbon-Icon** 💬 klicken oder **Strg+P** → "Open Knowledge Chat"
+- Intelligente Antworten mit Quellenangaben
+- Automatische Graph-Visualisierung bei Antworten
+
+**Wissensgraph:**
+- **Ribbon-Icon** 🕸️ klicken oder **Strg+P** → "Open Knowledge Graph"
+- Interaktive D3.js-Visualisierung
+- Filter nach Dokumenttyp, Quelle, Beziehungstyp
+- Zoom und Pan-Funktionen
 
 ### ❓ Support
 

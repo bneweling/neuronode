@@ -355,6 +355,331 @@ async def search_graph(
         logger.error(f"Error searching graph: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/knowledge-graph/node/{node_id}")
+async def get_node_context(
+    node_id: str,
+    depth: int = 2,
+    include_metadata: bool = True
+):
+    """Get detailed node information with context"""
+    try:
+        with neo4j_client.driver.session() as session:
+            # Get the main node
+            node_result = session.run("""
+                MATCH (n {id: $node_id})
+                RETURN n, labels(n) as labels
+            """, node_id=node_id)
+            
+            main_record = node_result.single()
+            if not main_record:
+                raise HTTPException(status_code=404, detail="Node not found")
+            
+            main_node = dict(main_record["n"])
+            main_node["_labels"] = main_record["labels"]
+            
+            # Get related nodes with relationships
+            related_result = session.run(f"""
+                MATCH path = (start {{id: $node_id}})-[r*1..{depth}]-(end)
+                RETURN DISTINCT 
+                    end as node, 
+                    labels(end) as labels,
+                    [rel in relationships(path) | {{
+                        type: type(rel),
+                        properties: properties(rel),
+                        start_id: startNode(rel).id,
+                        end_id: endNode(rel).id
+                    }}] as path_relationships,
+                    length(path) as distance
+                ORDER BY distance
+                LIMIT 50
+            """, node_id=node_id)
+            
+            related_nodes = []
+            edges = []
+            processed_edges = set()
+            
+            for record in related_result:
+                # Add related node
+                node_data = dict(record["node"])
+                node_data["_labels"] = record["labels"]
+                node_data["_distance"] = record["distance"]
+                related_nodes.append(node_data)
+                
+                # Add relationships
+                for rel in record["path_relationships"]:
+                    edge_key = f"{rel['start_id']}-{rel['type']}-{rel['end_id']}"
+                    if edge_key not in processed_edges:
+                        processed_edges.add(edge_key)
+                        edges.append({
+                            "source": rel["start_id"],
+                            "target": rel["end_id"],
+                            "type": rel["type"],
+                            "properties": rel["properties"]
+                        })
+        
+        return {
+            "main_node": main_node,
+            "nodes": [main_node] + related_nodes,
+            "edges": edges,
+            "metadata": {
+                "depth": depth,
+                "total_nodes": len(related_nodes) + 1,
+                "total_edges": len(edges)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting node context for {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/processing-status/{task_id}")
+async def get_processing_status(task_id: str):
+    """Get status of document processing task"""
+    # In einer vollständigen Implementierung würde hier ein Task-Store abgefragt
+    # Für jetzt simulieren wir den Status
+    return {
+        "task_id": task_id,
+        "status": "processing",
+        "progress": 0.75,
+        "steps_completed": [
+            "file_upload",
+            "type_detection", 
+            "classification",
+            "extraction"
+        ],
+        "current_step": "quality_validation",
+        "estimated_completion": "2024-01-15T10:30:00Z"
+    }
+
+@app.post("/documents/analyze-preview")
+async def analyze_document_preview(
+    file: UploadFile = File(...),
+    preview_length: int = 2000
+):
+    """Analyze document without full processing - for preview/transparency"""
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Quick file type detection
+        import tempfile
+        import os
+        from pathlib import Path
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as tmp_file:
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
+        
+        file_path = Path(tmp_path)
+        file_type = document_processor._detect_file_type(file_path)
+        
+        # Load first part of document
+        if file_type == FileType.PDF:
+            from src.document_processing.loaders.pdf_loader import PDFLoader
+            loader = PDFLoader()
+            raw_content = loader.load(tmp_path)
+        elif file_type == FileType.TXT:
+            raw_content = {"full_text": content.decode('utf-8', errors='ignore')}
+        else:
+            raw_content = {"full_text": "Binary file - full processing required"}
+        
+        # Clean up
+        os.unlink(tmp_path)
+        
+        # Preview text
+        preview_text = raw_content.get("full_text", "")[:preview_length]
+        
+        # Quick classification
+        from src.document_processing.classifier import DocumentClassifier
+        classifier = DocumentClassifier()
+        predicted_type = classifier.classify(preview_text)
+        
+        # Estimate processing complexity
+        word_count = len(preview_text.split())
+        estimated_chunks = max(1, word_count // 200)  # Rough estimate
+        
+        processing_estimate = {
+            "estimated_duration_seconds": min(300, max(10, word_count // 100)),
+            "estimated_chunks": estimated_chunks,
+            "will_extract_controls": predicted_type.value in [
+                "bsi_grundschutz", "bsi_c5", "iso_27001", "nist_csf"
+            ],
+            "processing_steps": [
+                "File loading",
+                "Content extraction", 
+                "Document classification",
+                "Control extraction" if predicted_type.value in ["bsi_grundschutz", "bsi_c5", "iso_27001", "nist_csf"] else "Chunk creation",
+                "Quality validation",
+                "Graph storage",
+                "Vector indexing",
+                "Relationship analysis"
+            ]
+        }
+        
+        return {
+            "filename": file.filename,
+            "file_type": file_type.value,
+            "predicted_document_type": predicted_type.value,
+            "preview_text": preview_text,
+            "file_size_bytes": len(content),
+            "word_count": word_count,
+            "processing_estimate": processing_estimate,
+            "confidence_indicators": {
+                "type_detection": "high" if file_type != FileType.TXT else "medium",
+                "classification": "high" if any(keyword in preview_text.lower() for keyword in ["grundschutz", "iso", "nist", "bsi"]) else "medium"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing document preview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/knowledge-graph/relationships/types")
+async def get_relationship_types():
+    """Get all relationship types in the graph with counts"""
+    try:
+        with neo4j_client.driver.session() as session:
+            result = session.run("""
+                MATCH ()-[r]->()
+                RETURN type(r) as relationship_type, 
+                       count(r) as count,
+                       collect(DISTINCT [labels(startNode(r))[0], labels(endNode(r))[0]]) as node_type_pairs
+                ORDER BY count DESC
+            """)
+            
+            relationships = []
+            for record in result:
+                relationships.append({
+                    "type": record["relationship_type"],
+                    "count": record["count"],
+                    "connects": record["node_type_pairs"],
+                    "description": _get_relationship_description(record["relationship_type"])
+                })
+        
+        return {
+            "relationship_types": relationships,
+            "total_types": len(relationships)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting relationship types: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+def _get_relationship_description(rel_type: str) -> str:
+    """Get human-readable description of relationship type"""
+    descriptions = {
+        "IMPLEMENTS": "Technologie implementiert Control oder Anforderung",
+        "SUPPORTS": "Dokument unterstützt oder ergänzt Control",
+        "REFERENCES": "Verweis oder Referenz zwischen Dokumenten",
+        "MAPS_TO": "Mapping zwischen verschiedenen Standards",
+        "MENTIONS": "Erwähnung von Entität in Dokument",
+        "RELATES_TO": "Allgemeine thematische Beziehung",
+        "CONFLICTS": "Widerspruch oder Konflikt zwischen Inhalten",
+        "DEPENDS_ON": "Abhängigkeit zwischen Controls oder Komponenten"
+    }
+    return descriptions.get(rel_type, f"Beziehung vom Typ {rel_type}")
+
+@app.get("/knowledge-graph/orphans")
+async def get_orphan_nodes(min_connections: int = 1):
+    """Get nodes with few or no connections"""
+    try:
+        orphans = neo4j_client.get_orphan_nodes(min_connections)
+        
+        # Add suggestions for each orphan
+        for orphan in orphans:
+            node_data = orphan["node"]
+            if "text" in node_data:
+                # Find potential connections via similarity search
+                similar = chroma_client.search_similar(
+                    node_data["text"][:200],
+                    n_results=3,
+                    filter_dict={"id": {"$ne": node_data.get("id")}}
+                )
+                
+                orphan["potential_connections"] = [
+                    {
+                        "target_id": chunk["id"],
+                        "similarity": 1 - chunk["distance"],
+                        "reason": "Semantic similarity"
+                    }
+                    for chunk in similar
+                    if chunk["distance"] < 0.4  # High similarity threshold
+                ]
+            else:
+                orphan["potential_connections"] = []
+        
+        return {
+            "orphan_nodes": orphans,
+            "count": len(orphans),
+            "suggestions_available": sum(1 for o in orphans if o.get("potential_connections"))
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting orphan nodes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/knowledge-graph/validate-relationship")
+async def validate_potential_relationship(
+    source_id: str,
+    target_id: str,
+    relationship_type: Optional[str] = None
+):
+    """Validate if a relationship should exist between two nodes"""
+    try:
+        # Get both nodes
+        with neo4j_client.driver.session() as session:
+            result = session.run("""
+                MATCH (s {id: $source_id}), (t {id: $target_id})
+                RETURN s, t, labels(s) as source_labels, labels(t) as target_labels
+            """, source_id=source_id, target_id=target_id)
+            
+            record = result.single()
+            if not record:
+                raise HTTPException(status_code=404, detail="One or both nodes not found")
+            
+            source_node = dict(record["s"])
+            target_node = dict(record["t"])
+            source_labels = record["source_labels"]
+            target_labels = record["target_labels"]
+        
+        # Use graph gardener to validate relationship
+        if relationship_type:
+            validation = await graph_gardener._validate_relationship(
+                source_node.get("text", source_node.get("title", "")),
+                source_node.get("title", ""),
+                target_node.get("text", target_node.get("title", "")),
+                target_node.get("title", ""),
+                target_id
+            )
+        else:
+            # Auto-determine relationship type
+            validation = await graph_gardener._validate_relationship(
+                source_node.get("text", source_node.get("title", "")),
+                source_node.get("title", ""),
+                target_node.get("text", target_node.get("title", "")),
+                target_node.get("title", ""),
+                target_id
+            )
+        
+        return {
+            "source": {
+                "id": source_id,
+                "labels": source_labels,
+                "title": source_node.get("title", "")
+            },
+            "target": {
+                "id": target_id, 
+                "labels": target_labels,
+                "title": target_node.get("title", "")
+            },
+            "validation": validation,
+            "recommendation": "create" if validation["confidence"] > 0.7 else "skip"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error validating relationship {source_id} -> {target_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Admin endpoints
 @app.post("/admin/reindex")
 async def trigger_reindex(background_tasks: BackgroundTasks):

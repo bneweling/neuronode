@@ -4,12 +4,19 @@ Ein intelligentes Wissensmanagementsystem für Compliance und IT-Sicherheit mit 
 
 ## ✨ Features
 
+### Backend (Python/FastAPI)
 - 🔍 **Intelligente Dokumentenverarbeitung** - BSI, ISO 27001, NIST CSF
 - 🧠 **KI-gestützte Abfragen** - OpenAI, Anthropic, Google Gemini
 - 🕸️ **Knowledge Graph** - Neo4j mit automatischer Verknüpfung
 - 📊 **Vector Search** - ChromaDB für semantische Suche
-- 🔗 **Obsidian Plugin** - Nahtlose Integration in Ihren Workflow
 - 🐳 **Docker-basiert** - Einfache Installation und Skalierung
+
+### Obsidian Plugin (TypeScript)
+- 📄 **Transparenter Dokumentenupload** - Drag & Drop mit Echtzeit-Analyse
+- 💬 **Intelligenter Chat** - Kontextuelle Antworten mit Quellenangaben
+- 🕸️ **Interaktiver Wissensgraph** - D3.js-basierte Visualisierung
+- ⚡ **Hot Reload** - Entwicklerfreundliche Umgebung
+- 🔍 **Erweiterte Suche** - Semantische und strukturierte Suche
 
 ## 🚀 Schnellstart
 
@@ -105,20 +112,37 @@ cd ki-wissenssystem
 
 #### 🚀 Automatische Installation (empfohlen):
 ```bash
+# macOS/Linux
 cd ki-wissenssystem
 ./setup-obsidian.sh    # All-in-One Setup
+
+# Windows
+cd ki-wissenssystem
+.\setup-obsidian.ps1   # Windows All-in-One Setup
 ```
 
 #### 📋 Manuelle Installation:
-1. **Plugin installieren**:
+1. **Plugin bauen**:
+   ```bash
+   cd obsidian-ki-plugin
+   npm install
+   npm run build
+   ```
+
+2. **Plugin installieren**:
    - **macOS lokal**: `~/Library/Application Support/obsidian/IhrVault/.obsidian/plugins/`
    - **macOS iCloud**: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/IhrVault/.obsidian/plugins/`
    - **Windows**: `%APPDATA%\Obsidian\IhrVault\.obsidian\plugins\`
 
-2. **In Obsidian aktivieren**:
+3. **In Obsidian aktivieren**:
    - Settings → Community Plugins → "KI-Wissenssystem" aktivieren
 
-3. **API-URL konfigurieren**: `http://localhost:8080`
+4. **API-URL konfigurieren**: `http://localhost:8080`
+
+#### 📄 Plugin-Features nutzen:
+- **📤 Dokumentenupload**: Ribbon-Icon oder Cmd+P → "Open Document Upload"
+- **💬 Chat**: Ribbon-Icon oder Cmd+P → "Open Knowledge Chat"  
+- **🕸️ Graph**: Ribbon-Icon oder Cmd+P → "Open Knowledge Graph"
 
 ## 🔧 Konfiguration
 
@@ -153,11 +177,47 @@ SYNTHESIZER_MODEL=claude-3-opus-20240229
 
 ## 📚 Unterstützte Dokumenttypen
 
-- **BSI Grundschutz** - Baustein-Extraktion
-- **BSI C5** - Control-Mapping
-- **ISO 27001** - Annex A Controls
-- **NIST Cybersecurity Framework** - Functions & Categories
-- **Allgemeine Dokumente** - Unstrukturierte Verarbeitung
+### Automatische Erkennung und Verarbeitung
+
+| Dokumenttyp | Automatische Erkennung | Control-Extraktion | Chunk-Verarbeitung |
+|-------------|------------------------|--------------------|--------------------|
+| **BSI IT-Grundschutz** | ✅ | ✅ | ✅ |
+| **BSI C5 Cloud** | ✅ | ✅ | ✅ |
+| **ISO 27001** | ✅ | ✅ | ✅ |
+| **NIST CSF** | ✅ | ✅ | ✅ |
+| **Technische Whitepapers** | ✅ | ❌ | ✅ |
+| **FAQ-Dokumente** | ✅ | ❌ | ✅ |
+| **Allgemeine PDFs** | ✅ | ❌ | ✅ |
+
+### Dateiformate
+- **PDF** - Vollständige Text-Extraktion
+- **Word (.docx)** - Struktur und Formatierung
+- **Excel (.xlsx)** - Tabellen und Daten
+- **PowerPoint (.pptx)** - Folien und Inhalte
+- **Text (.txt)** - Einfache Textverarbeitung
+- **XML** - Strukturierte Datenextraktion
+
+## 📄 Transparenter Upload-Workflow
+
+Das Plugin bietet vollständige Transparenz über den Verarbeitungsprozess:
+
+### 1. **Upload-Analyse** (vor Verarbeitung)
+- Dateityp-Erkennung mit Konfidenz
+- Dokumentklassifizierung-Vorhersage
+- Geschätzte Verarbeitungsdauer
+- Erwartete Anzahl Controls/Chunks
+
+### 2. **Echtzeit-Verarbeitung**
+- Schritt-für-Schritt Fortschritt
+- Aktuelle Verarbeitungsphase
+- Geschätzte Restzeit
+- Fehlerbehandlung mit Details
+
+### 3. **Ergebnis-Transparenz**
+- Extraktions-Qualitätsbewertung
+- Beziehungs-Konfidenzwerte
+- Quellenangaben mit Seitenzahlen
+- Graph-Kontext mit Begründungen
 
 ## 🧪 Entwicklung
 

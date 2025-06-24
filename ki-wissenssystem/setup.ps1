@@ -485,6 +485,11 @@ function Show-FinalInstructions {
     Write-Info "   - Plugin in Obsidian aktivieren"
     Write-Info "   - API URL: http://localhost:8080"
     Write-Info ""
+    Write-Info "6. Plugin-Features nutzen:"
+    Write-Info "   📤 Dokumentenupload (Ribbon-Icon oder Strg+P)"
+    Write-Info "   💬 Knowledge Chat (Ribbon-Icon oder Strg+P)"  
+    Write-Info "   🕸️ Knowledge Graph (Ribbon-Icon oder Strg+P)"
+    Write-Info ""
     Write-Info "📚 Dokumentation: siehe README.md"
     Write-Info "❓ Bei Problemen: siehe $LogFile"
 }
