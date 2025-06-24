@@ -1,0 +1,62 @@
+/* Graph tooltip styles */
+.ki-graph-tooltip {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.ki-tooltip-header {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ki-tooltip-content {
+  font-size: 0.85rem;
+}
+
+.ki-tooltip-content > div {
+  margin: 0.25rem 0;
+}
+
+.ki-tooltip-text {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--background-modifier-border);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ki-chat-container {
+    flex-direction: column;
+  }
+  
+  .ki-graph-panel {
+    min-height: 300px;
+    border-left: none;
+    border-top: 1px solid var(--background-modifier-border);
+  }
+}
+
+/* Dark mode adjustments */
+.theme-dark .ki-graph-tooltip {
+  background: var(--background-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Print styles */
+@media print {
+  .ki-chat-input-container,
+  .ki-chat-suggestions,
+  .ki-chat-header-actions {
+    display: none;
+  }
+}

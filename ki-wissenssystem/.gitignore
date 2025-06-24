@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & Logs
+data/documents/*
+!data/documents/.gitkeep
+data/temp/*
+!data/temp/.gitkeep
+logs/*
+!logs/.gitkeep
+*.log
+
+# Docker
+.docker/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SSL
+ssl/*
+!ssl/.gitkeep

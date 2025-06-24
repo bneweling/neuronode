@@ -1,0 +1,10 @@
+{
+  "id": "ki-wissenssystem",
+  "name": "KI-Wissenssystem",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "AI-powered knowledge system with chat interface and graph visualization",
+  "author": "Your Team",
+  "authorUrl": "https://your-url.com",
+  "isDesktopOnly": false
+}
