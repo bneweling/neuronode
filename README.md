@@ -161,28 +161,35 @@ SYNTHESIZER_MODEL=claude-3-opus-20240229
 
 ## 🧪 Entwicklung
 
-### Repository klonen
+### 🚀 Schneller Einstieg
 
 ```bash
+# 1. Repository klonen
 git clone https://github.com/username/ki-wissenssystem.git
 cd ki-wissenssystem
-```
 
-### Development Setup
+# 2. Setup ausführen (einmalig)
+./setup.sh                 # macOS/Linux
+# oder: .\setup.ps1         # Windows
 
-```bash
-# Backend
+# 3. Entwicklungs-Modus starten
 cd ki-wissenssystem
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# oder: .\venv\Scripts\Activate.ps1  # Windows
-pip install -r requirements-dev.txt
-
-# Plugin
-cd ../obsidian-ki-plugin
-npm install
-npm run dev
+./dev-mode.sh              # Interaktives Menü
 ```
+
+### 🔥 Hot Reload verfügbar!
+
+- **Backend**: Code-Änderungen werden automatisch übernommen
+- **Plugin**: Watch-Modus mit `npm run dev`
+- **Keine Neuinstallation** für die meisten Änderungen nötig
+
+### 📚 Detaillierte Anleitung
+
+Siehe [ENTWICKLUNG.md](ENTWICKLUNG.md) für:
+- Hot Reload Setup
+- Entwicklungs-Workflow
+- Debugging-Tools
+- Häufige Probleme
 
 ### Tests ausführen
 
