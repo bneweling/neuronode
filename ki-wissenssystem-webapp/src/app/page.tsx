@@ -103,7 +103,7 @@ export default function HomePage() {
         </Typography>
         
         <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} sm={6} lg={3}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <FeatureCard
               title="KI-Chat"
               description="Stellen Sie intelligente Fragen und erhalten Sie präzise Antworten"
@@ -112,7 +112,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid item xs={12} sm={6} lg={3}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <FeatureCard
               title="Wissensgraph"
               description="Visualisieren Sie Verbindungen in Ihren Daten"
@@ -121,7 +121,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid item xs={12} sm={6} lg={3}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <FeatureCard
               title="Dokumente"
               description="Laden Sie Dateien hoch und verwalten Sie Ihr Wissen"
@@ -130,7 +130,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid item xs={12} sm={6} lg={3}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <FeatureCard
               title="System"
               description="Überwachen Sie Performance und Systemgesundheit"
