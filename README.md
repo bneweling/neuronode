@@ -1,34 +1,57 @@
-# 🧠 KI-Wissenssystem
+# 🧠 KI-Wissenssystem - Web-App Version
 
 Ein intelligentes Wissensmanagementsystem für Compliance und IT-Sicherheit mit KI-gestützter Dokumentenverarbeitung und Knowledge Graph.
 
+> **🌐 Diese Version**: Standalone Web-Anwendung mit moderner React-UI  
+> **📔 Für Obsidian Plugin Version**: Wechseln Sie zu Branch `main`
+
 ## ✨ Features
 
-### Backend (Python/FastAPI)
+### 🌐 Web-App Frontend (Next.js + TypeScript)
+- 📱 **Responsive Design** - Material Design 3 für alle Geräte
+- 📄 **Drag & Drop Upload** - Einfacher Dokumentenupload mit Echtzeit-Analyse  
+- 💬 **Real-time Chat** - Kontextuelle Antworten mit Quellenangaben
+- 🕸️ **Interaktive Graph-Visualisierung** - D3.js-basierte Knowledge Graph
+- ⚡ **Moderne Performance** - Next.js 15 mit Turbopack
+- 🔍 **Erweiterte Suche** - Semantische und strukturierte Suche
+
+### 🚀 Backend (Python/FastAPI)
 - 🔍 **Intelligente Dokumentenverarbeitung** - BSI, ISO 27001, NIST CSF
 - 🧠 **KI-gestützte Abfragen** - OpenAI, Anthropic, Google Gemini
 - 🕸️ **Knowledge Graph** - Neo4j mit automatischer Verknüpfung
 - 📊 **Vector Search** - ChromaDB für semantische Suche
 - 🐳 **Docker-basiert** - Einfache Installation und Skalierung
 
-### Obsidian Plugin (TypeScript)
-- 📄 **Transparenter Dokumentenupload** - Drag & Drop mit Echtzeit-Analyse
-- 💬 **Intelligenter Chat** - Kontextuelle Antworten mit Quellenangaben
-- 🕸️ **Interaktiver Wissensgraph** - D3.js-basierte Visualisierung
-- ⚡ **Hot Reload** - Entwicklerfreundliche Umgebung
-- 🔍 **Erweiterte Suche** - Semantische und strukturierte Suche
+> **📔 Obsidian Plugin**: Verfügbar in Branch `main` für Obsidian-basierte Workflows
 
 ## 🚀 Schnellstart
 
-### 🍎 macOS/Linux Setup
+### 🌐 Web-App Schnellstart
 
+1. **Backend Services starten**:
+   ```bash
+   cd ki-wissenssystem
+   ./setup.sh && ./start-all.sh
+   ```
+
+2. **Web-App starten**:
+   ```bash
+   cd ki-wissenssystem-webapp
+   npm install
+   npm run dev
+   ```
+
+3. **🎉 Fertig!** Öffnen Sie http://localhost:3000
+
+### 🛠️ Traditionelles Setup (nur Backend)
+
+#### 🍎 macOS/Linux
 ```bash
 cd ki-wissenssystem
 ./setup.sh
 ```
 
-### 🪟 Windows Setup
-
+#### 🪟 Windows
 ```powershell
 cd ki-wissenssystem
 .\setup.ps1
