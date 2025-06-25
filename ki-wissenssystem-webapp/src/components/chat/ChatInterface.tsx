@@ -89,16 +89,50 @@ export default function ChatInterface() {
     scrollToBottom()
   }, [messages])
 
-  // Listen for pending messages from Quick Chat
+  // Listen for pending messages from Quick Chat and auto-send them
   useEffect(() => {
     const handlePendingMessage = (event: CustomEvent) => {
       const pendingMessage = event.detail.message
       if (pendingMessage && !isLoading) {
+        // Set the message in input field
         setInputValue(pendingMessage)
-        // Auto-send the message after a short delay
-        setTimeout(() => {
-          handleSendMessage()
-        }, 500)
+        
+        // Create a user message immediately and send it
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          content: pendingMessage,
+          role: 'user',
+          timestamp: new Date()
+        }
+
+        setMessages(prev => [...prev, userMessage])
+        setIsLoading(true)
+        setError(null)
+
+        // Send to API
+        const sendPendingMessage = async () => {
+          try {
+            const apiClient = getAPIClient()
+            const response = await apiClient.sendMessage(pendingMessage)
+            
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
+              role: 'assistant',
+              timestamp: new Date()
+            }
+
+            setMessages(prev => [...prev, assistantMessage])
+          } catch (error) {
+            console.error('Chat-Fehler:', error)
+            setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
+          } finally {
+            setIsLoading(false)
+            setInputValue('') // Clear input after sending
+          }
+        }
+
+        sendPendingMessage()
       }
     }
 
@@ -107,7 +141,7 @@ export default function ChatInterface() {
     return () => {
       window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
     }
-  }, [isLoading, handleSendMessage])
+  }, [isLoading])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {

@@ -4,6 +4,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { theme } from '@/lib/theme'
+import AppLayout from '@/components/layout/AppLayout'
 
 export const metadata: Metadata = {
   title: "KI-Wissenssystem",
@@ -23,7 +24,9 @@ export default function RootLayout({
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            {children}
+            <AppLayout>
+              {children}
+            </AppLayout>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>
