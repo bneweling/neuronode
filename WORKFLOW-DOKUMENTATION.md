@@ -8,19 +8,19 @@ Dieser Guide zeigt den kompletten Workflow von der Dokumentenerkennung bis zur i
 
 ```mermaid
 graph TD
-    A[Dokument Upload] → B[Dateityp-Erkennung]
-    B → C[Dokumentklassifizierung]
-    C → D{Strukturiertes Dokument?}
-    D →|Ja| E[Control-Extraktion]
-    D →|Nein| F[Chunk-Verarbeitung]
-    E → G[Qualitätsprüfung]
-    G → H[Neo4j Speicherung]
-    F → H
-    H → I[ChromaDB Vektorisierung]
-    I → J[Beziehungsanalyse]
-    J → K[Graph-Gardening]
-    K → L[Plugin-Visualisierung]
-    L → M[Benutzer-Feedback]
+    A[Dokument Upload] --> B[Dateityp-Erkennung]
+    B --> C[Dokumentklassifizierung]
+    C --> D{Strukturiertes Dokument?}
+    D -->|Ja| E[Control-Extraktion]
+    D -->|Nein| F[Chunk-Verarbeitung]
+    E --> G[Qualitätsprüfung]
+    G --> H[Neo4j Speicherung]
+    F --> H
+    H --> I[ChromaDB Vektorisierung]
+    I --> J[Beziehungsanalyse]
+    J --> K[Graph-Gardening]
+    K --> L[Plugin-Visualisierung]
+    L --> M[Benutzer-Feedback]
 ```
 
 ## 📋 Phase 1: Dokumentenupload und Erkennung
