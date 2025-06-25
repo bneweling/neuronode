@@ -8,6 +8,8 @@ class ModelProfile(Enum):
     PREMIUM = "premium"
     BALANCED = "balanced"
     COST_EFFECTIVE = "cost_effective"
+    GEMINI_ONLY = "gemini_only"
+    OPENAI_ONLY = "openai_only"
 
 class Settings(BaseSettings):
     # LLM API Keys
@@ -24,7 +26,7 @@ class Settings(BaseSettings):
     chroma_port: int = 8000
     
     # Model Profile Selection
-    model_profile: str = "premium"  # premium, balanced, cost_effective
+    model_profile: str = "premium"  # premium, balanced, cost_effective, gemini_only, openai_only
     
     # Legacy Model Selection (deprecated - use model_profile instead)
     classifier_model: Optional[str] = None
@@ -41,43 +43,49 @@ class Settings(BaseSettings):
     # Pydantic v2 configuration
     model_config = ConfigDict(env_file=".env", protected_namespaces=('settings_',))
     
-    def get_model_config(self) -> Dict[str, str]:
-        """Get model configuration based on selected profile"""
-        profiles = {
-            ModelProfile.PREMIUM.value: {
+    def get_model_config(self) -> Dict[str, Any]:
+        """Get model configuration based on current profile"""
+        profile_configs = {
+            "premium": {
                 "classifier_model": "gemini-2.5-flash",
-                "extractor_model": "gpt-4.1",
+                "extractor_model": "gpt-4.1", 
                 "synthesizer_model": "claude-opus-4-20250514",
                 "validator_model_1": "gpt-4o",
                 "validator_model_2": "claude-sonnet-4-20250514"
             },
-            ModelProfile.BALANCED.value: {
+            "balanced": {
                 "classifier_model": "gemini-2.5-flash",
                 "extractor_model": "gpt-4.1",
                 "synthesizer_model": "gemini-2.5-pro",
-                "validator_model_1": "gpt-4o",
+                "validator_model_1": "o4-mini",
                 "validator_model_2": "claude-3-7-sonnet-20250219"
             },
-            ModelProfile.COST_EFFECTIVE.value: {
+            "cost_effective": {
+                "classifier_model": "gemini-2.5-flash-lite-preview-06-17",
+                "extractor_model": "gpt-4o-mini",
+                "synthesizer_model": "gemini-2.0-flash",
+                "validator_model_1": "gpt-4o-mini",
+                "validator_model_2": "claude-3-5-haiku-20241022"
+            },
+            "gemini_only": {
                 "classifier_model": "gemini-2.5-flash",
-                "extractor_model": "gpt-4o",
-                "synthesizer_model": "gemini-2.5-flash",
-                "validator_model_1": "gpt-4o",
-                "validator_model_2": "claude-3-7-sonnet-20250219"
+                "extractor_model": "gemini-2.5-pro",
+                "synthesizer_model": "gemini-2.5-pro",
+                "validator_model_1": "gemini-2.0-flash",
+                "validator_model_2": "gemini-2.5-flash"
+            },
+            "openai_only": {
+                "classifier_model": "gpt-4o-mini",
+                "extractor_model": "gpt-4.1",
+                "synthesizer_model": "gpt-4o",
+                "validator_model_1": "o4-mini",
+                "validator_model_2": "o3-mini"
             }
         }
         
-        # Use legacy individual settings if they exist, otherwise use profile
-        if all([self.classifier_model, self.extractor_model, self.synthesizer_model, 
-                self.validator_model_1, self.validator_model_2]):
-            return {
-                "classifier_model": self.classifier_model,
-                "extractor_model": self.extractor_model,
-                "synthesizer_model": self.synthesizer_model,
-                "validator_model_1": self.validator_model_1,
-                "validator_model_2": self.validator_model_2
-            }
+        current_profile = self.model_profile.lower()
         
-        return profiles.get(self.model_profile, profiles[ModelProfile.PREMIUM.value])
+        # Return configuration for current profile, fallback to premium
+        return profile_configs.get(current_profile, profile_configs["premium"])
 
 settings = Settings()

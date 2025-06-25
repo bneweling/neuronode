@@ -190,12 +190,14 @@ CHROMA_PORT=8000
 | **premium** | Neueste Top-Modelle | Hoch | Maximal | Produktion, beste Qualität |
 | **balanced** | Optimal ausgewogen | Mittel | Hoch | Entwicklung, gute Balance |
 | **cost_effective** | Kostenbewusst | Niedrig | Gut | Testing, Experimente |
+| **🧪 gemini_only** | Nur Google Gemini | Niedrig | Gut | Tests mit nur Google API |
+| **🧪 openai_only** | Nur OpenAI GPT | Mittel | Hoch | Tests mit nur OpenAI API |
 
 #### Environment-Konfiguration
 
 ```env
 # Profil-Auswahl (empfohlen)
-MODEL_PROFILE=premium  # premium, balanced, cost_effective
+MODEL_PROFILE=premium  # premium, balanced, cost_effective, gemini_only, openai_only
 
 # Manuelle Modell-Auswahl (optional - überschreibt Profil)
 # CLASSIFIER_MODEL=gemini-2.5-flash
