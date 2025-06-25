@@ -9,6 +9,28 @@ class QueryRequest(BaseModel):
     context: Optional[Dict[str, Any]] = Field(default=None, description="Additional context")
     use_cache: bool = Field(default=True, description="Whether to use cached responses")
 
+class GraphNode(BaseModel):
+    """Graph node model"""
+    id: str
+    type: str
+    label: str
+    relevance: Optional[float] = None
+
+class GraphEdge(BaseModel):
+    """Graph edge model"""
+    source: str
+    target: str
+    type: str = "RELATES_TO"
+    weight: float = 0.5
+
+class GraphMetadata(BaseModel):
+    """Graph visualization metadata"""
+    graph_relevant: bool = False
+    graph_confidence: float = 0.0
+    graph_nodes: List[GraphNode] = Field(default_factory=list)
+    graph_edges: List[GraphEdge] = Field(default_factory=list)
+    suggested_visualization: str = "none"
+
 class QueryResponse(BaseModel):
     """Response model for query endpoint"""
     query: str
