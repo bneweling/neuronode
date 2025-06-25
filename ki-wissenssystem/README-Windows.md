@@ -68,25 +68,37 @@ Nach der Installation stehen mehrere Optionen zur Verfügung:
 
 #### PowerShell-Skripte:
 ```powershell
-# Services starten
-.\start-services.ps1
+# Vollständiger Start/Stop
+.\start-all.ps1          # Alles starten
+.\stop-all.ps1           # Alles stoppen
 
-# API Server starten
-.\start-api.ps1
+# Einzelne Services
+.\start-services.ps1     # Nur Docker Services
+.\start-api.ps1          # Nur API Server
 
 # CLI verwenden
 .\ki-cli.ps1 query "Ihre Frage"
+.\ki-cli.ps1 process dokument.pdf
 .\ki-cli.ps1 stats
+
+# Entwicklung
+.\dev-mode.ps1           # Entwicklungs-Modus
+.\install-dev-tools.ps1  # Entwicklungstools installieren
 ```
 
-#### Batch-Dateien (einfacher):
+#### Batch-Dateien (einfacher - Doppelklick im Explorer):
 ```cmd
-# CLI verwenden (aus cmd oder Explorer)
+# System-Management
+start-all.bat           # Vollständiger Start
+stop-all.bat            # Vollständiger Stop
+
+# CLI verwenden
 ki-cli.bat query "Ihre Frage"
 ki-cli.bat process dokument.pdf
+ki-cli.bat stats
 
-# API starten
-start-api.bat
+# API einzeln
+start-api.bat           # Nur API starten
 ```
 
 ### 🔧 Manuelle Installation (falls Setup fehlschlägt)
@@ -112,19 +124,45 @@ pip install -r requirements.txt
 
 ### 📂 Dateistruktur unter Windows
 
+#### Neue organisierte Struktur:
 ```
 ki-wissenssystem\
-├── setup.ps1              # Windows Setup-Skript
-├── start-api.ps1          # API Server starten (PowerShell)
-├── start-api.bat          # API Server starten (Batch)
-├── start-services.ps1     # Docker Services starten
-├── ki-cli.ps1            # CLI Tool (PowerShell)
-├── ki-cli.bat            # CLI Tool (Batch)
-├── venv\                 # Python Virtual Environment
-├── data\                 # Daten-Verzeichnis
-├── logs\                 # Log-Dateien
-└── src\                  # Quellcode
+├── scripts\                    # Organisierte Skripte
+│   ├── setup\                 # Setup und Installation
+│   │   ├── setup.ps1               # Hauptinstallation
+│   │   ├── install-dev-tools.ps1   # Entwicklungstools
+│   │   └── requirements-dev.txt    # Dev-Dependencies
+│   ├── system\                # System-Management
+│   │   ├── start-all.ps1/.bat      # Vollständiger Start
+│   │   ├── stop-all.ps1/.bat       # Vollständiger Stop
+│   │   └── start-services.ps1      # Nur Docker Services
+│   ├── obsidian\              # Plugin-Management
+│   │   └── setup-obsidian.ps1      # Plugin-Installation
+│   ├── api\                   # API-Server
+│   │   ├── start-api.ps1           # API starten
+│   │   └── start-api.bat           # API starten (Batch)
+│   ├── cli\                   # CLI-Tools
+│   │   ├── ki-cli.ps1              # CLI Wrapper
+│   │   └── ki-cli.bat              # CLI Wrapper (Batch)
+│   └── dev\                   # Entwicklung
+│       └── dev-mode.ps1            # Hot Reload Modus
+├── setup.ps1              # Wrapper (Einfache Nutzung)
+├── start-all.ps1/.bat     # Wrapper (Einfache Nutzung)
+├── stop-all.ps1/.bat      # Wrapper (Einfache Nutzung)
+├── ki-cli.ps1/.bat        # Wrapper (CLI-Zugang)
+├── dev-mode.ps1           # Wrapper (Entwicklung)
+├── venv\                  # Python Virtual Environment
+├── data\                  # Daten-Verzeichnis
+├── logs\                  # Log-Dateien
+└── src\                   # Quellcode
 ```
+
+#### Vorteile der neuen Struktur:
+- **📂 Bessere Organisation** - Skripte nach Funktion gruppiert
+- **🔍 Einfache Navigation** - Intuitive Ordnerstruktur
+- **🔄 Rückwärtskompatibilität** - Wrapper im Hauptverzeichnis
+- **🛠️ Wartbarkeit** - Verwandte Skripte zusammen
+- **📱 Cross-Platform** - Identische Struktur wie macOS/Linux
 
 ### 🔍 Fehlerbehebung
 

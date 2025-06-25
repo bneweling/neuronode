@@ -1,4 +1,4 @@
 #!/bin/bash
-source venv/bin/activate
-export PYTHONPATH="${PYTHONPATH}:${PWD}"
-python -m src.cli "$@"
+# ki-cli.sh - Wrapper für das neue Skript in scripts/cli/
+
+exec "$(dirname "$0")/scripts/cli/ki-cli.sh" "$@"

@@ -35,6 +35,7 @@ cd ki-wissenssystem
 ```
 
 > **Windows-Nutzer**: Führen Sie PowerShell als Administrator aus!  
+> **Einfacher**: Doppelklick auf `start-all.bat` im Explorer  
 > Detaillierte Anleitung: [README-Windows.md](ki-wissenssystem/README-Windows.md)
 
 ## 📋 Voraussetzungen
@@ -87,20 +88,24 @@ cd ki-wissenssystem
 ### CLI Tools
 
 ```bash
-# System starten
-./start-all.sh
+# macOS/Linux
+./start-all.sh                    # System starten
+./ki-cli.sh process dokument.pdf  # Dokument verarbeiten
+./ki-cli.sh query "Ihre Frage"    # Abfrage stellen
+./ki-cli.sh stats                 # Statistiken anzeigen
+./stop-all.sh                     # System stoppen
 
-# Dokument verarbeiten
-./ki-cli.sh process dokument.pdf
+# Windows (PowerShell)
+.\start-all.ps1                   # System starten
+.\ki-cli.ps1 process dokument.pdf # Dokument verarbeiten
+.\ki-cli.ps1 query "Ihre Frage"   # Abfrage stellen
+.\ki-cli.ps1 stats                # Statistiken anzeigen
+.\stop-all.ps1                    # System stoppen
 
-# Abfrage stellen
-./ki-cli.sh query "Wie implementiere ich MFA nach BSI C5?"
-
-# Statistiken anzeigen
-./ki-cli.sh stats
-
-# System stoppen
-./stop-all.sh
+# Windows (Explorer - Doppelklick)
+start-all.bat                     # System starten
+ki-cli.bat process dokument.pdf   # CLI verwenden
+stop-all.bat                      # System stoppen
 ```
 
 ### Web Interface
@@ -219,6 +224,42 @@ Das Plugin bietet vollständige Transparenz über den Verarbeitungsprozess:
 - Quellenangaben mit Seitenzahlen
 - Graph-Kontext mit Begründungen
 
+## 📁 Ordnerstruktur
+
+Das Projekt verwendet eine organisierte Skript-Struktur für bessere Wartbarkeit:
+
+```
+ki-wissenssystem/
+├── scripts/                    # Organisierte Skripte
+│   ├── setup/                 # Setup und Installation
+│   │   ├── setup.sh/.ps1           # Hauptinstallation
+│   │   ├── install-dev-tools.sh/.ps1  # Entwicklungstools
+│   │   └── requirements-dev.txt    # Dev-Dependencies
+│   ├── system/                # System-Management
+│   │   ├── start-all.sh/.ps1/.bat  # Vollständiger Start
+│   │   ├── stop-all.sh/.ps1/.bat   # Vollständiger Stop
+│   │   └── start-services.sh/.ps1  # Nur Docker Services
+│   ├── obsidian/              # Plugin-Management
+│   │   ├── setup-obsidian.sh/.ps1  # Plugin-Installation
+│   │   └── find-obsidian-paths.sh  # Vault-Erkennung
+│   ├── api/                   # API-Server
+│   │   ├── start-api.sh/.ps1/.bat  # API starten
+│   ├── cli/                   # CLI-Tools
+│   │   └── ki-cli.sh/.ps1/.bat     # CLI Wrapper
+│   └── dev/                   # Entwicklung
+│       └── dev-mode.sh/.ps1        # Hot Reload Modus
+├── setup.sh/.ps1              # Wrapper (Rückwärtskompatibilität)
+├── start-all.sh/.ps1/.bat     # Wrapper (Einfache Nutzung)
+├── stop-all.sh/.ps1/.bat      # Wrapper (Einfache Nutzung)
+└── ki-cli.sh/.ps1/.bat        # Wrapper (CLI-Zugang)
+```
+
+**Vorteile der neuen Struktur:**
+- 📂 **Bessere Organisation** - Skripte nach Funktion gruppiert
+- 🔍 **Einfache Navigation** - Intuitive Ordnerstruktur  
+- 🔄 **Rückwärtskompatibilität** - Wrapper im Hauptverzeichnis
+- 🛠️ **Wartbarkeit** - Verwandte Skripte zusammen
+
 ## 🧪 Entwicklung
 
 ### 🚀 Schneller Einstieg
@@ -232,9 +273,42 @@ cd ki-wissenssystem
 ./setup.sh                 # macOS/Linux
 # oder: .\setup.ps1         # Windows
 
-# 3. Entwicklungs-Modus starten
-cd ki-wissenssystem
-./dev-mode.sh              # Interaktives Menü
+# 3. Entwicklungstools installieren (optional)
+./scripts/setup/install-dev-tools.sh     # macOS/Linux
+# oder: .\scripts\setup\install-dev-tools.ps1  # Windows
+
+# 4. Entwicklungs-Modus starten
+./dev-mode.sh              # macOS/Linux - Wrapper
+.\dev-mode.ps1             # Windows - Wrapper
+# oder direkt:
+./scripts/dev/dev-mode.sh  # macOS/Linux - Original
+.\scripts\dev\dev-mode.ps1 # Windows - Original
+```
+
+### 🛠️ Entwicklungstools
+
+Nach Installation der Entwicklungstools stehen zur Verfügung:
+
+```bash
+# Testing
+pytest                     # Tests ausführen
+pytest --cov              # Mit Coverage
+pytest tests/test_api.py   # Spezifische Tests
+
+# Code Quality
+black .                    # Code formatieren
+isort .                    # Imports sortieren
+flake8                     # Linting
+mypy src/                  # Type checking
+
+# Debugging
+ipython                    # Bessere REPL
+jupyter notebook           # Notebooks für Experimente
+memory_profiler            # Memory profiling
+
+# API Testing
+http localhost:8080/docs   # API testen
+httpie                     # HTTP client
 ```
 
 ### 🔥 Hot Reload verfügbar!
