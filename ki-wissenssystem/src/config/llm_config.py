@@ -95,7 +95,7 @@ class LLMRouter:
         }
         
         # Get current model configuration from settings
-        model_config = settings.model_config
+        model_config = settings.get_model_config()
         
         self.purpose_models = {
             ModelPurpose.CLASSIFICATION: model_config["classifier_model"],

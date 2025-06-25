@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional, Dict, Any
 import os
 from enum import Enum
@@ -37,11 +38,10 @@ class Settings(BaseSettings):
     chunk_overlap: int = 200
     max_retries: int = 3
     
-    class Config:
-        env_file = ".env"
+    # Pydantic v2 configuration
+    model_config = ConfigDict(env_file=".env", protected_namespaces=('settings_',))
     
-    @property
-    def model_config(self) -> Dict[str, str]:
+    def get_model_config(self) -> Dict[str, str]:
         """Get model configuration based on selected profile"""
         profiles = {
             ModelProfile.PREMIUM.value: {
