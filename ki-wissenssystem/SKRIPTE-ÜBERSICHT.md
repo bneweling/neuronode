@@ -46,7 +46,8 @@ Vollständige Übersicht aller verfügbaren Skripte für das KI-Wissenssystem.
 | `setup-obsidian.sh` | macOS/Linux | All-in-One Plugin Setup |
 | `setup-obsidian.ps1` | Windows | All-in-One Plugin Setup |
 | `find-obsidian-paths.sh` | macOS/Linux | Vault-Pfade finden + Installation |
-| `install-obsidian-plugin.sh` | macOS/Linux | Manuelle Plugin-Installation |
+| `install-obsidian-plugin.sh` | macOS/Linux | Erweiterte Plugin-Installation mit neuen Features |
+| `update-obsidian-plugin.sh` | macOS/Linux | **NEU**: Plugin-Updates mit Backup-Funktionalität |
 
 ## 🛠️ CLI Tools
 
