@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """
 KI-Wissenssystem Model Profile Switcher
-Ermöglicht einfaches Wechseln zwischen verschiedenen Modell-Profilen
+Ermöglicht einfaches Wechseln zwischen verschiedenen Modell-Profilen mit automatischem Restart
 """
 
 import os
 import sys
 import argparse
+import subprocess
+import signal
+import time
+import psutil
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 # Profil-Definitionen
 PROFILES = {
@@ -175,7 +179,165 @@ def list_profiles():
         print(f"   🔑 APIs: {', '.join(profile['required_apis'])}")
         print()
 
-def switch_profile(profile_id: str):
+def find_running_processes() -> List[Dict[str, Any]]:
+    """Findet laufende KI-Wissenssystem Prozesse"""
+    processes = []
+    
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'cwd']):
+        try:
+            cmdline = proc.info['cmdline']
+            if not cmdline:
+                continue
+                
+            cmdline_str = ' '.join(cmdline)
+            
+            # Suche nach KI-Wissenssystem relevanten Prozessen
+            if any(pattern in cmdline_str.lower() for pattern in [
+                'ki-wissenssystem',
+                'uvicorn.*main:app',
+                'python.*main.py',
+                'fastapi',
+                'neo4j',
+                'chroma'
+            ]):
+                # Prüfe ob es im richtigen Verzeichnis läuft
+                cwd = proc.info.get('cwd', '')
+                if 'ki-wissenssystem' in cwd.lower():
+                    processes.append({
+                        'pid': proc.info['pid'],
+                        'name': proc.info['name'],
+                        'cmdline': cmdline_str,
+                        'cwd': cwd,
+                        'process': proc
+                    })
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+    
+    return processes
+
+def stop_ki_system():
+    """Stoppt laufende KI-Wissenssystem Prozesse"""
+    processes = find_running_processes()
+    
+    if not processes:
+        print("ℹ️  Keine laufenden KI-Wissenssystem Prozesse gefunden")
+        return True
+    
+    print(f"🛑 Stoppe {len(processes)} laufende Prozesse...")
+    
+    stopped_processes = []
+    for proc_info in processes:
+        try:
+            proc = psutil.Process(proc_info['pid'])
+            print(f"  • Stoppe {proc_info['name']} (PID: {proc_info['pid']})")
+            
+            # Versuche graceful shutdown
+            proc.terminate()
+            stopped_processes.append(proc)
+            
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            print(f"  ⚠️  Prozess {proc_info['pid']} bereits beendet oder kein Zugriff")
+    
+    # Warte auf graceful shutdown
+    if stopped_processes:
+        print("⏳ Warte auf graceful shutdown...")
+        gone, alive = psutil.wait_procs(stopped_processes, timeout=10)
+        
+        # Force kill wenn nötig
+        if alive:
+            print("🔨 Force kill für verbleibende Prozesse...")
+            for proc in alive:
+                try:
+                    proc.kill()
+                    print(f"  • Force killed PID: {proc.pid}")
+                except psutil.NoSuchProcess:
+                    pass
+    
+    print("✅ Alle Prozesse gestoppt")
+    return True
+
+def start_ki_system(background: bool = True) -> Optional[subprocess.Popen]:
+    """Startet das KI-Wissenssystem"""
+    ki_dir = Path(__file__).parent.parent.parent
+    
+    # Prüfe ob start-services Skript existiert
+    start_script = ki_dir / "start-services.sh"
+    if not start_script.exists():
+        # Fallback: Direkt uvicorn starten
+        start_cmd = [
+            sys.executable, "-m", "uvicorn", 
+            "src.main:app", 
+            "--host", "0.0.0.0", 
+            "--port", "8080",
+            "--reload"
+        ]
+        cwd = ki_dir
+    else:
+        start_cmd = ["./start-services.sh"]
+        cwd = ki_dir
+    
+    print(f"🚀 Starte KI-Wissenssystem...")
+    print(f"   Verzeichnis: {cwd}")
+    print(f"   Kommando: {' '.join(start_cmd)}")
+    
+    try:
+        if background:
+            # Starte im Hintergrund
+            process = subprocess.Popen(
+                start_cmd,
+                cwd=cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                preexec_fn=os.setsid if os.name != 'nt' else None
+            )
+            
+            # Kurz warten und prüfen ob Prozess läuft
+            time.sleep(2)
+            if process.poll() is None:
+                print(f"✅ KI-Wissenssystem gestartet (PID: {process.pid})")
+                print("🌐 API verfügbar unter: http://localhost:8080")
+                print("📚 Dokumentation: http://localhost:8080/docs")
+                return process
+            else:
+                stdout, stderr = process.communicate()
+                print(f"❌ Start fehlgeschlagen:")
+                print(f"   stdout: {stdout.decode()}")
+                print(f"   stderr: {stderr.decode()}")
+                return None
+        else:
+            # Starte im Vordergrund
+            print("🔄 Starte im Vordergrund... (Strg+C zum Beenden)")
+            result = subprocess.run(start_cmd, cwd=cwd)
+            return None
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Starten: {e}")
+        return None
+
+def restart_ki_system(background: bool = True) -> bool:
+    """Führt einen kompletten Restart des KI-Wissenssystems durch"""
+    print("🔄 Starte Neustart des KI-Wissenssystems...")
+    
+    # 1. System stoppen
+    if not stop_ki_system():
+        print("❌ Fehler beim Stoppen des Systems")
+        return False
+    
+    # 2. Kurz warten
+    print("⏳ Warte 3 Sekunden...")
+    time.sleep(3)
+    
+    # 3. System starten
+    process = start_ki_system(background)
+    
+    if process or not background:
+        print("✅ Neustart erfolgreich abgeschlossen!")
+        return True
+    else:
+        print("❌ Fehler beim Neustart")
+        return False
+
+def switch_profile(profile_id: str, auto_restart: bool = False, restart_background: bool = True):
     """Wechselt zu einem anderen Profil"""
     if profile_id not in PROFILES:
         print(f"❌ Unbekanntes Profil: {profile_id}")
@@ -206,7 +368,18 @@ def switch_profile(profile_id: str):
         print(f"\n⚠️  Fehlende API Keys für: {', '.join(missing_apis)}")
         print("   Bitte konfigurieren Sie die entsprechenden API Keys in der .env Datei")
     
-    print("\n🔄 Starten Sie die Anwendung neu, um die Änderungen zu übernehmen")
+    # Automatischer Restart
+    if auto_restart:
+        print("\n🔄 Führe automatischen Restart durch...")
+        if restart_ki_system(restart_background):
+            print("🎉 Profil-Wechsel mit Restart erfolgreich abgeschlossen!")
+        else:
+            print("⚠️  Profil wurde gewechselt, aber Restart fehlgeschlagen")
+            print("   Bitte starten Sie das System manuell neu")
+    else:
+        print("\n🔄 Starten Sie die Anwendung neu, um die Änderungen zu übernehmen")
+        print("   Oder verwenden Sie --restart für automatischen Neustart")
+    
     return True
 
 def interactive_mode():
@@ -224,7 +397,17 @@ def interactive_mode():
                 break
                 
             if choice in PROFILES:
-                if switch_profile(choice):
+                # Frage nach automatischem Restart
+                restart_choice = input("Automatischen Restart durchführen? (j/N): ").strip().lower()
+                auto_restart = restart_choice in ['j', 'ja', 'y', 'yes']
+                
+                if auto_restart:
+                    bg_choice = input("Im Hintergrund starten? (J/n): ").strip().lower()
+                    restart_background = bg_choice not in ['n', 'no', 'nein']
+                else:
+                    restart_background = True
+                
+                if switch_profile(choice, auto_restart, restart_background):
                     break
             else:
                 print(f"❌ Unbekanntes Profil: {choice}")
@@ -236,16 +419,19 @@ def interactive_mode():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="KI-Wissenssystem Model Profile Switcher",
+        description="KI-Wissenssystem Model Profile Switcher mit automatischem Restart",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Beispiele:
-  %(prog)s --show              # Aktuelles Profil anzeigen
-  %(prog)s --list              # Alle Profile auflisten  
-  %(prog)s gemini_only         # Zu Gemini-Only Profil wechseln
-  %(prog)s openai_only         # Zu OpenAI-Only Profil wechseln
-  %(prog)s premium             # Zu Premium Profil wechseln
-  %(prog)s --interactive       # Interaktiver Modus
+  %(prog)s --show                    # Aktuelles Profil anzeigen
+  %(prog)s --list                    # Alle Profile auflisten  
+  %(prog)s gemini_only               # Zu Gemini-Only Profil wechseln
+  %(prog)s premium --restart         # Zu Premium wechseln mit Restart
+  %(prog)s balanced --restart --fg   # Zu Balanced wechseln, Restart im Vordergrund
+  %(prog)s --interactive             # Interaktiver Modus
+  %(prog)s --stop                    # Nur System stoppen
+  %(prog)s --start                   # Nur System starten
+  %(prog)s --restart                 # Nur System neustarten
         """
     )
     
@@ -253,9 +439,25 @@ Beispiele:
     parser.add_argument('--show', '-s', action='store_true', help='Aktuelles Profil anzeigen')
     parser.add_argument('--list', '-l', action='store_true', help='Alle Profile auflisten')
     parser.add_argument('--interactive', '-i', action='store_true', help='Interaktiver Modus')
+    parser.add_argument('--restart', '-r', action='store_true', help='Automatischen Restart durchführen')
+    parser.add_argument('--foreground', '--fg', action='store_true', help='Im Vordergrund starten (nicht im Hintergrund)')
+    parser.add_argument('--stop', action='store_true', help='Nur System stoppen')
+    parser.add_argument('--start', action='store_true', help='Nur System starten')
     
     args = parser.parse_args()
     
+    # Nur System-Management
+    if args.stop:
+        stop_ki_system()
+        return
+    elif args.start:
+        start_ki_system(not args.foreground)
+        return
+    elif args.restart and not args.profile:
+        restart_ki_system(not args.foreground)
+        return
+    
+    # Profil-Management
     if args.show:
         show_current_profile()
     elif args.list:
@@ -263,7 +465,7 @@ Beispiele:
     elif args.interactive:
         interactive_mode()
     elif args.profile:
-        switch_profile(args.profile)
+        switch_profile(args.profile, args.restart, not args.foreground)
     else:
         # Kein Argument: Zeige aktuelles Profil und Liste
         show_current_profile()
