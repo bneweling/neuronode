@@ -19,7 +19,7 @@ class GraphGardener:
         self.llm = llm_router.get_model(ModelPurpose.EXTRACTION)
         
         self.link_validation_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für Compliance und IT-Sicherheit.
+            ("human", """Du bist ein Experte für Compliance und IT-Sicherheit.
             
             Bewerte, ob der gegebene Text-Chunk eine Beziehung zum Control hat.
             
@@ -44,7 +44,7 @@ class GraphGardener:
         ])
         
         self.entity_extraction_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Extrahiere Technologien und Produkte aus dem Text.
+            ("human", """Extrahiere Technologien und Produkte aus dem Text.
             
             Fokussiere auf:
             - Konkrete Technologien (z.B. Azure AD, AWS KMS)
@@ -349,7 +349,7 @@ class GraphGardener:
         """Validate if two controls should be mapped"""
         
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """Bewerte, ob diese zwei Controls äquivalent sind oder sich aufeinander beziehen.
+            ("human", """Bewerte, ob diese zwei Controls äquivalent sind oder sich aufeinander beziehen.
             
             Antworte mit JA wenn:
             - Sie die gleiche Anforderung beschreiben

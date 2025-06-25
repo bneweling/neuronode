@@ -88,7 +88,7 @@ class ResponseSynthesizer:
     
     def _create_compliance_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Compliance-Experte, der Beratern hilft, Anforderungen zu verstehen.
+            ("human", """Du bist ein Compliance-Experte, der Beratern hilft, Anforderungen zu verstehen.
             
             Basierend auf den gefundenen Informationen:
             1. Erkläre die relevanten Compliance-Anforderungen klar und präzise
@@ -114,7 +114,7 @@ class ResponseSynthesizer:
     
     def _create_technical_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein technischer Experte, der bei der Implementierung von Sicherheitsmaßnahmen hilft.
+            ("human", """Du bist ein technischer Experte, der bei der Implementierung von Sicherheitsmaßnahmen hilft.
             
             Basierend auf den gefundenen Informationen:
             1. Beschreibe konkrete Implementierungsschritte
@@ -140,7 +140,7 @@ class ResponseSynthesizer:
     
     def _create_mapping_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für Compliance-Mappings zwischen verschiedenen Standards.
+            ("human", """Du bist ein Experte für Compliance-Mappings zwischen verschiedenen Standards.
             
             Basierend auf den gefundenen Mappings:
             1. Zeige die Entsprechungen zwischen den Standards
@@ -165,7 +165,7 @@ class ResponseSynthesizer:
     
     def _create_best_practice_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Sicherheitsexperte, der Best Practices empfiehlt.
+            ("human", """Du bist ein Sicherheitsexperte, der Best Practices empfiehlt.
             
             Basierend auf den gefundenen Informationen:
             1. Stelle bewährte Verfahren vor
@@ -189,7 +189,7 @@ class ResponseSynthesizer:
     
     def _create_control_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Compliance-Experte, der spezifische Controls erklärt.
+            ("human", """Du bist ein Compliance-Experte, der spezifische Controls erklärt.
             
             Für das/die angefragte(n) Control(s):
             1. Gib die vollständige Control-Beschreibung
@@ -214,7 +214,7 @@ class ResponseSynthesizer:
     
     def _create_general_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein hilfreicher IT-Sicherheitsexperte.
+            ("human", """Du bist ein hilfreicher IT-Sicherheitsexperte.
             
             Beantworte die Frage basierend auf den gefundenen Informationen:
             1. Gib eine klare und verständliche Antwort
@@ -231,7 +231,7 @@ class ResponseSynthesizer:
     
     def _create_fallback_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein IT-Sicherheitsexperte. 
+            ("human", """Du bist ein IT-Sicherheitsexperte. 
             Beantworte die Frage basierend auf den verfügbaren Informationen.
             Sei hilfreich und strukturiert."""),
             ("human", """Frage: {query}
@@ -368,7 +368,7 @@ class ResponseSynthesizer:
         """Generate relevant follow-up questions"""
         
         follow_up_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Basierend auf der Frage und Antwort, 
+            ("human", """Basierend auf der Frage und Antwort, 
             generiere 3 relevante Folgefragen, die der Nutzer stellen könnte.
             
             Die Fragen sollten:

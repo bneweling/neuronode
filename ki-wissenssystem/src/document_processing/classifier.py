@@ -8,7 +8,7 @@ class DocumentClassifier:
     def __init__(self):
         self.llm = llm_router.get_model(ModelPurpose.CLASSIFICATION)
         self.classification_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für die Klassifizierung von Compliance- und Sicherheitsdokumenten.
+            ("human", """Du bist ein Experte für die Klassifizierung von Compliance- und Sicherheitsdokumenten.
             Analysiere den gegebenen Text und klassifiziere ihn in eine der folgenden Kategorien:
             
             - BSI_GRUNDSCHUTZ: BSI IT-Grundschutz Dokumente
@@ -20,8 +20,9 @@ class DocumentClassifier:
             - FAQ: Häufig gestellte Fragen
             - UNKNOWN: Nicht klassifizierbar
             
-            Antworte NUR mit dem Kategorienamen."""),
-            ("human", "Dokument-Auszug (erste 2000 Zeichen):\n\n{text}")
+            Antworte NUR mit dem Kategorienamen.
+            
+            Dokument-Auszug (erste 2000 Zeichen):\n\n{text}""")
         ])
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))

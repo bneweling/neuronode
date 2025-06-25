@@ -29,7 +29,7 @@ class UnstructuredProcessor:
         self.output_parser = PydanticOutputParser(pydantic_object=ChunkAnalysis)
         
         self.analysis_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für IT-Sicherheit und Compliance.
+            ("human", """Du bist ein Experte für IT-Sicherheit und Compliance.
             Analysiere den gegebenen Textabschnitt und extrahiere:
             
             1. Eine prägnante Zusammenfassung (2-3 Sätze)
@@ -43,12 +43,15 @@ class UnstructuredProcessor:
             - target: Die vermutete Control-ID oder der Technologie-Name
             - confidence: Wie sicher bist du (0.0-1.0)
             
-            {format_instructions}"""),
-            ("human", "Text zum Analysieren:\n\n{text}")
+            {format_instructions}
+            
+            Text zum Analysieren:
+
+{text}""")
         ])
         
         self.entity_linking_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Gegeben ist ein Text-Chunk und eine Liste von bekannten Compliance-Controls.
+            ("human", """Gegeben ist ein Text-Chunk und eine Liste von bekannten Compliance-Controls.
             Identifiziere, welche Controls dieser Text möglicherweise implementiert oder referenziert.
             
             Bekannte Controls:
@@ -58,8 +61,10 @@ class UnstructuredProcessor:
             - control_id: Die ID des relevanten Controls
             - relationship: Art der Beziehung (IMPLEMENTS, SUPPORTS, REFERENCES)
             - confidence: Konfidenz-Score (0.0-1.0)
-            - reason: Kurze Begründung"""),
-            ("human", "Text-Chunk:\n{chunk_text}")
+            - reason: Kurze Begründung
+            
+            Text-Chunk:
+{chunk_text}""")
         ])
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))

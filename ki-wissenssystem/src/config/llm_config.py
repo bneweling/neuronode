@@ -174,9 +174,9 @@ class LLMRouter:
             # Legacy fallback
             "gemini-pro": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
-                model="gemini-pro",
+                model="gemini-2.5-flash",  # Fallback mapping zu modernem Modell
                 temperature=0.3,  # Balanced für verschiedene Anwendungen
-                max_output_tokens=2048,
+                max_output_tokens=8192,
                 top_p=0.95
             )
         }
@@ -235,7 +235,8 @@ class LLMRouter:
             "gemini-2.5-flash-lite-preview-06-17": "gemini-2.5-flash",
             "gemini-2.5-flash": "gemini-1.5-flash",
             "gemini-2.5-pro": "gemini-1.5-pro",
-            "gemini-2.0-flash": "gemini-1.5-flash"
+            "gemini-2.0-flash": "gemini-1.5-flash",
+            "gemini-pro": "gemini-1.5-flash"  # Fallback für altes Modell
         }
         return fallback_mapping.get(model_name, "gpt-4o")
     

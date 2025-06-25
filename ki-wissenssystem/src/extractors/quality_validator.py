@@ -20,7 +20,7 @@ class QualityValidator:
             self.validators = [primary, primary]
         
         self.validation_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für die Validierung von extrahierten Compliance-Controls.
+            ("human", """Du bist ein Experte für die Validierung von extrahierten Compliance-Controls.
             
             Gegeben ist ein extrahiertes Control. Überprüfe:
             1. Ist die ID korrekt formatiert für den Standard {standard}?
@@ -46,7 +46,7 @@ class QualityValidator:
         ])
         
         self.comparison_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Vergleiche zwei Versionen eines extrahierten Controls.
+            ("human", """Vergleiche zwei Versionen eines extrahierten Controls.
             
             Bewerte:
             1. Stimmen die wichtigsten Felder (ID, Title) überein?

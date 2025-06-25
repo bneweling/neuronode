@@ -45,7 +45,7 @@ class IntentAnalyzer:
         }
         
         self.analysis_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für die Analyse von Compliance- und Sicherheitsfragen.
+            ("human", """Du bist ein Experte für die Analyse von Compliance- und Sicherheitsfragen.
             
             Analysiere die Nutzeranfrage und identifiziere:
             

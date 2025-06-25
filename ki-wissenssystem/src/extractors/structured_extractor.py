@@ -51,7 +51,7 @@ class StructuredExtractor:
     
     def _create_bsi_gs_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für BSI IT-Grundschutz. 
+            ("human", """Du bist ein Experte für BSI IT-Grundschutz. 
             Extrahiere alle Sicherheitsanforderungen aus dem gegebenen Text.
             
             Jede Anforderung hat:
@@ -63,13 +63,14 @@ class StructuredExtractor:
             
             {format_instructions}
             
-            Achte darauf, den vollständigen Text der Anforderung zu erfassen."""),
-            ("human", "{text}")
+            Achte darauf, den vollständigen Text der Anforderung zu erfassen.
+            
+            Text: {text}""")
         ])
     
     def _create_bsi_c5_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für BSI C5 (Cloud Computing Compliance Controls).
+            ("human", """Du bist ein Experte für BSI C5 (Cloud Computing Compliance Controls).
             Extrahiere alle Kontrollen aus dem gegebenen Text.
             
             Jede Kontrolle hat:
@@ -80,13 +81,14 @@ class StructuredExtractor:
             
             {format_instructions}
             
-            Erfasse auch Hinweise auf verwandte Kontrollen oder Standards."""),
-            ("human", "{text}")
+            Erfasse auch Hinweise auf verwandte Kontrollen oder Standards.
+            
+            Text: {text}""")
         ])
     
     def _create_iso_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für ISO 27001/27002.
+            ("human", """Du bist ein Experte für ISO 27001/27002.
             Extrahiere alle Controls aus dem gegebenen Text.
             
             Jedes Control hat:
@@ -95,13 +97,14 @@ class StructuredExtractor:
             - Die Control-Beschreibung
             - Die Kategorie/Domäne
             
-            {format_instructions}"""),
-            ("human", "{text}")
+            {format_instructions}
+            
+            Text: {text}""")
         ])
     
     def _create_nist_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für das NIST Cybersecurity Framework.
+            ("human", """Du bist ein Experte für das NIST Cybersecurity Framework.
             Extrahiere alle Controls/Subcategories aus dem Text.
             
             Jedes Element hat:
@@ -111,8 +114,9 @@ class StructuredExtractor:
             - Die Function (Identify, Protect, Detect, Respond, Recover)
             - Die Category
             
-            {format_instructions}"""),
-            ("human", "{text}")
+            {format_instructions}
+            
+            Text: {text}""")
         ])
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
