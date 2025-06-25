@@ -1,332 +1,480 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useAPI, GraphNode, GraphStats } from '@/lib/api'
-import { useMaterialTheme } from '@/lib/theme'
-import * as d3 from 'd3'
+import { useState, useEffect, useRef } from 'react'
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  Chip,
+  Container,
+  Grid,
+  IconButton,
+  Divider,
+  Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '@mui/material'
+import {
+  Share as ShareIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  CenterFocusStrong as CenterIcon,
+  ExpandMore as ExpandMoreIcon,
+  AccountTree as GraphIcon,
+  Article as DocumentIcon,
+  Tag as TagIcon,
+} from '@mui/icons-material'
+import { getAPIClient } from '@/lib/api'
+
+interface GraphNode {
+  id: string
+  label: string
+  type: 'document' | 'concept' | 'entity'
+  properties: Record<string, any>
+}
+
+interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  label: string
+  weight: number
+}
 
 interface GraphData {
   nodes: GraphNode[]
-  links: Array<{
-    source: string
-    target: string
-    type: string
-  }>
+  edges: GraphEdge[]
 }
 
 export default function GraphVisualization() {
-  const api = useAPI()
-  const { breakpoint } = useMaterialTheme()
-  const svgRef = useRef<SVGSVGElement>(null)
-  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] })
-  const [stats, setStats] = useState<GraphStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const graphRef = useRef<HTMLDivElement>(null)
 
-  // Load graph stats on mount
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const graphStats = await api.getGraphStats()
-        setStats(graphStats)
-      } catch (error) {
-        console.error('Fehler beim Laden der Graph-Statistiken:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+    loadGraphData()
+  }, [])
 
-    loadStats()
-  }, [api])
-
-  // Search functionality
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return
-
+  const loadGraphData = async () => {
+    setIsLoading(true)
+    setError(null)
+    
     try {
-      const searchResult = await api.searchGraph(searchQuery)
-      
-      // Convert search results to graph format
-      const nodes = searchResult.results
-      const links: Array<{ source: string; target: string; type: string }> = []
-      
-      // For demo purposes, create some sample connections
-      for (let i = 0; i < nodes.length - 1; i++) {
-        if (Math.random() > 0.7) { // 30% chance of connection
-          links.push({
-            source: nodes[i].id,
-            target: nodes[i + 1].id,
-            type: 'related'
-          })
-        }
-      }
-
-      setGraphData({ nodes, links })
-      renderGraph({ nodes, links })
+      const apiClient = getAPIClient()
+      const response = await apiClient.getKnowledgeGraph()
+      setGraphData(response)
     } catch (error) {
-      console.error('Fehler bei der Graph-Suche:', error)
-    }
-  }
-
-  // D3.js Graph Rendering
-  const renderGraph = (data: GraphData) => {
-    if (!svgRef.current || data.nodes.length === 0) return
-
-    const svg = d3.select(svgRef.current)
-    svg.selectAll('*').remove() // Clear previous render
-
-    const width = svgRef.current.clientWidth
-    const height = svgRef.current.clientHeight
-
-    // Create simulation
-    const simulation = d3.forceSimulation(data.nodes as any)
-      .force('link', d3.forceLink(data.links).id(d => (d as any).id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-
-    // Create links
-    const link = svg.append('g')
-      .selectAll('line')
-      .data(data.links)
-      .enter()
-      .append('line')
-      .attr('class', 'graph-edge')
-      .attr('stroke-width', 2)
-
-    // Create nodes
-    const node = svg.append('g')
-      .selectAll('circle')
-      .data(data.nodes)
-      .enter()
-      .append('circle')
-      .attr('class', 'graph-node')
-      .attr('r', 8)
-      .on('click', (event, d) => {
-        setSelectedNode(d as GraphNode)
+      console.error('Fehler beim Laden des Graphen:', error)
+      setError('Fehler beim Laden des Wissensgraphen. Bitte versuchen Sie es erneut.')
+      
+      // Fallback mock data
+      setGraphData({
+        nodes: [
+          { id: '1', label: 'Künstliche Intelligenz', type: 'concept', properties: { description: 'Hauptkonzept der KI' } },
+          { id: '2', label: 'Machine Learning', type: 'concept', properties: { description: 'Teilbereich der KI' } },
+          { id: '3', label: 'Deep Learning', type: 'concept', properties: { description: 'Teilbereich des ML' } },
+          { id: '4', label: 'Dokument_1.pdf', type: 'document', properties: { path: '/docs/doc1.pdf' } },
+          { id: '5', label: 'Dokument_2.pdf', type: 'document', properties: { path: '/docs/doc2.pdf' } },
+        ],
+        edges: [
+          { id: 'e1', source: '1', target: '2', label: 'enthält', weight: 0.8 },
+          { id: 'e2', source: '2', target: '3', label: 'enthält', weight: 0.9 },
+          { id: 'e3', source: '4', target: '1', label: 'erwähnt', weight: 0.7 },
+          { id: 'e4', source: '5', target: '2', label: 'erwähnt', weight: 0.6 },
+        ]
       })
-      .call(d3.drag<SVGCircleElement, GraphNode>()
-        .on('start', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart()
-          ;(d as any).fx = (d as any).x
-          ;(d as any).fy = (d as any).y
-        })
-        .on('drag', (event, d) => {
-          ;(d as any).fx = event.x
-          ;(d as any).fy = event.y
-        })
-        .on('end', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0)
-          ;(d as any).fx = null
-          ;(d as any).fy = null
-        })
-      )
-
-    // Add labels
-    const label = svg.append('g')
-      .selectAll('text')
-      .data(data.nodes)
-      .enter()
-      .append('text')
-      .text(d => d.title.length > 20 ? d.title.substring(0, 20) + '...' : d.title)
-      .attr('font-size', '12px')
-      .attr('fill', 'var(--md-sys-color-on-surface)')
-      .attr('text-anchor', 'middle')
-
-    // Update positions on simulation tick
-    simulation.on('tick', () => {
-      link
-        .attr('x1', d => (d.source as any).x)
-        .attr('y1', d => (d.source as any).y)
-        .attr('x2', d => (d.target as any).x)
-        .attr('y2', d => (d.target as any).y)
-
-      node
-        .attr('cx', d => (d as any).x)
-        .attr('cy', d => (d as any).y)
-
-      label
-        .attr('x', d => (d as any).x)
-        .attr('y', d => (d as any).y + 20)
-    })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (graphData.nodes.length > 0) {
-        renderGraph(graphData)
-      }
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return
+    
+    const matchingNodes = graphData.nodes.filter(node =>
+      node.label.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    
+    if (matchingNodes.length > 0) {
+      setSelectedNode(matchingNodes[0])
+    } else {
+      setError('Keine Knoten gefunden, die der Suche entsprechen.')
     }
+  }
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [graphData])
+  const handleNodeClick = (node: GraphNode) => {
+    setSelectedNode(node)
+  }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="md-surface md-elevation-2 p-6 rounded-xl">
-          <div className="flex items-center space-x-4">
-            <div className="md-circular-progress w-6 h-6 border-4 border-t-transparent border-blue-500 rounded-full animate-spin"></div>
-            <span>Knowledge Graph wird geladen...</span>
-          </div>
-        </div>
-      </div>
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 3))
+  }
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 0.5))
+  }
+
+  const handleCenter = () => {
+    setZoomLevel(1)
+    setSelectedNode(null)
+  }
+
+  const getNodeIcon = (type: string) => {
+    switch (type) {
+      case 'document':
+        return <DocumentIcon />
+      case 'concept':
+        return <GraphIcon />
+      case 'entity':
+        return <TagIcon />
+      default:
+        return <GraphIcon />
+    }
+  }
+
+  const getNodeColor = (type: string) => {
+    switch (type) {
+      case 'document':
+        return 'primary'
+      case 'concept':
+        return 'secondary'
+      case 'entity':
+        return 'success'
+      default:
+        return 'default'
+    }
+  }
+
+  const getConnectedNodes = (nodeId: string) => {
+    const connectedIds = new Set<string>()
+    graphData.edges.forEach(edge => {
+      if (edge.source === nodeId) connectedIds.add(edge.target)
+      if (edge.target === nodeId) connectedIds.add(edge.source)
+    })
+    return graphData.nodes.filter(node => connectedIds.has(node.id))
+  }
+
+  const getNodeConnections = (nodeId: string) => {
+    return graphData.edges.filter(edge => 
+      edge.source === nodeId || edge.target === nodeId
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Graph Header */}
-      <div className="app-header md-elevation-1 p-4 border-b">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <div>
-              <h2 className="md-headline-large text-lg font-semibold">
-                Knowledge Graph
-              </h2>
-              <div className="text-sm opacity-60">
-                Erkunden Sie Ihr Wissen visuell
-              </div>
-            </div>
-          </div>
-          
-          {stats && (
-            <div className="flex space-x-4 text-sm">
-              <span className="md-surface-variant md-shape-small px-3 py-1 flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                </svg>
-                <span>{Object.values(stats.neo4j.nodes).reduce((a, b) => a + b, 0)} Knoten</span>
-              </span>
-              <span className="md-surface-variant md-shape-small px-3 py-1 flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
-                </svg>
-                <span>{Object.values(stats.neo4j.relationships).reduce((a, b) => a + b, 0)} Verbindungen</span>
-              </span>
-            </div>
-          )}
-        </div>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box mb={4}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Wissensgraph
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Visualisierung der Beziehungen in Ihrem Wissenssystem
+        </Typography>
+      </Box>
 
-        {/* Search Bar */}
-        <div className="flex space-x-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Nach Knoten und Verbindungen suchen..."
-              className="w-full px-4 py-2 md-surface md-shape-large border-2 border-transparent focus:border-primary focus:md-elevation-1 md-motion-short"
-            />
-            <div className="absolute right-3 top-2.5">
-              <svg className="w-4 h-4 opacity-50" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-              </svg>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleSearch}
-            disabled={!searchQuery.trim()}
-            className="md-primary md-shape-full px-6 py-2 hover:md-elevation-2 md-motion-short disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <span>Suchen</span>
-          </button>
-        </div>
-      </div>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Graph Content */}
-      <div className="flex-1 flex">
-        {/* Main Graph Area */}
-        <div className="flex-1 relative">
-          {graphData.nodes.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="md-surface md-elevation-2 md-shape-large p-8 text-center max-w-md">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                </div>
-                <h3 className="md-headline-large text-lg font-semibold mb-2">
-                  Knowledge Graph Explorer
-                </h3>
-                <p className="md-body-large text-gray-600 mb-4">
-                  Verwenden Sie die Suchfunktion, um Knoten und Verbindungen in Ihrem Wissensgraph zu erkunden.
-                </p>
-                <div className="text-sm opacity-60 bg-surface-variant rounded-lg p-3">
-                  <strong>Suchen Sie nach Begriffen wie:</strong><br />
-                  "BSI C5", "Compliance", "Framework"
-                </div>
-              </div>
-            </div>
-          ) : (
-            <svg
-              ref={svgRef}
-              className="w-full h-full"
-              style={{ background: 'var(--md-sys-color-surface)' }}
-            />
-          )}
-        </div>
-
-        {/* Node Details Sidebar */}
-        {selectedNode && (
-          <div className="w-80 md-surface-variant border-l p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="md-headline-medium font-semibold">Knotendetails</h3>
-              <button
-                onClick={() => setSelectedNode(null)}
-                className="p-1 hover:bg-gray-200 rounded"
+      <Grid container spacing={3}>
+        {/* Graph Controls */}
+        <Grid item xs={12}>
+          <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TextField
+                size="small"
+                placeholder="Knoten suchen..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                sx={{ minWidth: 200 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleSearch}
+                startIcon={<SearchIcon />}
+                disabled={!searchQuery.trim()}
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                </svg>
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium opacity-70">Titel</label>
-                <div className="md-body-large">{selectedNode.title}</div>
-              </div>
-              
-                             <div>
-                 <label className="text-sm font-medium opacity-70">Labels</label>
-                 <div className="md-body-medium">
-                   {selectedNode.labels && selectedNode.labels.length > 0 
-                     ? selectedNode.labels.join(', ') 
-                     : 'Keine Labels'
-                   }
-                 </div>
-               </div>
-              
-              {selectedNode.properties && Object.keys(selectedNode.properties).length > 0 && (
-                <div>
-                  <label className="text-sm font-medium opacity-70">Eigenschaften</label>
-                  <div className="mt-2 space-y-2">
-                    {Object.entries(selectedNode.properties).map(([key, value]) => (
-                      <div key={key} className="md-surface md-shape-small p-2">
-                        <div className="text-xs font-medium opacity-70">{key}</div>
-                        <div className="text-sm">{String(value)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                Suchen
+              </Button>
+              <Divider orientation="vertical" flexItem />
+              <IconButton onClick={handleZoomIn} title="Vergrößern">
+                <ZoomInIcon />
+              </IconButton>
+              <IconButton onClick={handleZoomOut} title="Verkleinern">
+                <ZoomOutIcon />
+              </IconButton>
+              <IconButton onClick={handleCenter} title="Zentrieren">
+                <CenterIcon />
+              </IconButton>
+              <Typography variant="body2" color="text.secondary">
+                Zoom: {Math.round(zoomLevel * 100)}%
+              </Typography>
+              <Divider orientation="vertical" flexItem />
+              <Button
+                variant="outlined"
+                onClick={loadGraphData}
+                startIcon={<RefreshIcon />}
+                disabled={isLoading}
+              >
+                Aktualisieren
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ShareIcon />}
+              >
+                Teilen
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Graph Visualization */}
+        <Grid item xs={12} md={8}>
+          <Paper 
+            elevation={1} 
+            sx={{ 
+              height: 600, 
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Box
+              ref={graphRef}
+              sx={{
+                width: '100%',
+                height: '100%',
+                transform: `scale(${zoomLevel})`,
+                transition: 'transform 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: 2
+              }}
+            >
+              {isLoading ? (
+                <Typography variant="h6" color="text.secondary">
+                  Graph wird geladen...
+                </Typography>
+              ) : graphData.nodes.length === 0 ? (
+                <Box sx={{ textAlign: 'center' }}>
+                  <GraphIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Keine Daten verfügbar
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Laden Sie Dokumente hoch, um den Wissensgraphen zu erstellen
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: 2 }}>
+                  {graphData.nodes.map((node) => (
+                    <Card
+                      key={node.id}
+                      sx={{
+                        minWidth: 120,
+                        cursor: 'pointer',
+                        border: selectedNode?.id === node.id ? 2 : 1,
+                        borderColor: selectedNode?.id === node.id ? 'primary.main' : 'divider',
+                        '&:hover': {
+                          elevation: 4,
+                          transform: 'translateY(-2px)'
+                        },
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => handleNodeClick(node)}
+                    >
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          {getNodeIcon(node.type)}
+                          <Chip
+                            label={node.type}
+                            size="small"
+                            color={getNodeColor(node.type) as any}
+                            variant="outlined"
+                          />
+                        </Box>
+                        <Typography variant="body2" fontWeight="bold" noWrap>
+                          {node.label}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
               )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Node Details Panel */}
+        <Grid item xs={12} md={4}>
+          <Paper elevation={1} sx={{ height: 600, overflow: 'auto' }}>
+            {selectedNode ? (
+              <Box sx={{ p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  {getNodeIcon(selectedNode.type)}
+                  <Typography variant="h6" noWrap>
+                    {selectedNode.label}
+                  </Typography>
+                </Box>
+                
+                <Chip
+                  label={selectedNode.type}
+                  color={getNodeColor(selectedNode.type) as any}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+
+                <Accordion defaultExpanded>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle2">Eigenschaften</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <List dense>
+                      {Object.entries(selectedNode.properties).map(([key, value]) => (
+                        <ListItem key={key}>
+                          <ListItemText
+                            primary={key}
+                            secondary={String(value)}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle2">
+                      Verbindungen ({getNodeConnections(selectedNode.id).length})
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <List dense>
+                      {getNodeConnections(selectedNode.id).map((edge) => {
+                        const connectedNodeId = edge.source === selectedNode.id ? edge.target : edge.source
+                        const connectedNode = graphData.nodes.find(n => n.id === connectedNodeId)
+                        return (
+                          <ListItem key={edge.id}>
+                            <ListItemText
+                              primary={connectedNode?.label || 'Unbekannt'}
+                              secondary={`${edge.label} (${Math.round(edge.weight * 100)}%)`}
+                            />
+                          </ListItem>
+                        )
+                      })}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle2">
+                      Verbundene Knoten ({getConnectedNodes(selectedNode.id).length})
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <List dense>
+                      {getConnectedNodes(selectedNode.id).map((node) => (
+                        <ListItem 
+                          key={node.id}
+                          button
+                          onClick={() => setSelectedNode(node)}
+                        >
+                          <ListItemText
+                            primary={node.label}
+                            secondary={node.type}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+              </Box>
+            ) : (
+              <Box sx={{ p: 4, textAlign: 'center' }}>
+                <GraphIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  Kein Knoten ausgewählt
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Klicken Sie auf einen Knoten, um Details anzuzeigen
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Graph Statistics */}
+        <Grid item xs={12}>
+          <Paper elevation={1} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Graph-Statistiken
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6} sm={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="primary.main">
+                    {graphData.nodes.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Knoten
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="secondary.main">
+                    {graphData.edges.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Verbindungen
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="success.main">
+                    {graphData.nodes.filter(n => n.type === 'document').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Dokumente
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="warning.main">
+                    {graphData.nodes.filter(n => n.type === 'concept').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Konzepte
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   )
 } 

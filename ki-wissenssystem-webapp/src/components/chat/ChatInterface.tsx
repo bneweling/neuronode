@@ -1,283 +1,282 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useWebSocketChat, ChatMessage } from '@/lib/websocket'
-import { useAPI, QueryRequest } from '@/lib/api'
-import { useMaterialTheme } from '@/lib/theme'
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  List,
+  ListItem,
+  Avatar,
+  Chip,
+  CircularProgress,
+  Alert,
+  Container,
+  IconButton,
+} from '@mui/material'
+import {
+  Send as SendIcon,
+  Stop as StopIcon,
+  Person as PersonIcon,
+  SmartToy as BotIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material'
+import { getAPIClient } from '@/lib/api'
+
+interface Message {
+  id: string
+  content: string
+  role: 'user' | 'assistant' | 'system'
+  timestamp: Date
+}
 
 export default function ChatInterface() {
-  const { connected, messages, isTyping, sendMessage, clearMessages } = useWebSocketChat()
-  const api = useAPI()
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      content: 'Hallo! Ich bin Ihr KI-Assistent. Wie kann ich Ihnen heute helfen?',
+      role: 'assistant',
+      timestamp: new Date()
+    }
+  ])
   const [inputValue, setInputValue] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [streamingMessage, setStreamingMessage] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [useStreaming, setUseStreaming] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { breakpoint } = useMaterialTheme()
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping, streamingMessage])
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputValue.trim() || !connected || isSubmitting) return
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
-    setIsSubmitting(true)
-    const userMessage = inputValue.trim()
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: inputValue.trim(),
+      role: 'user',
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
     setInputValue('')
+    setIsLoading(true)
+    setError(null)
 
     try {
-      if (useStreaming && api) {
-        // Streaming-Ansatz
-        setIsStreaming(true)
-        setStreamingMessage('')
-
-        const request: QueryRequest = {
-          query: userMessage,
-          use_cache: true
-        }
-
-        await api.sendMessageStreaming(
-          request,
-          (chunk: string) => {
-            setStreamingMessage(prev => prev + chunk)
-          },
-          (response) => {
-            setIsStreaming(false)
-            setStreamingMessage('')
-            // Die finale Antwort wird über WebSocket abgehandelt
-          },
-          (error) => {
-            console.error('Streaming-Fehler:', error)
-            setIsStreaming(false)
-            setStreamingMessage('')
-            // Fallback zu normalem WebSocket
-            sendMessage(userMessage)
-          }
-        )
-      } else {
-        // Normaler WebSocket-Ansatz
-        await sendMessage(userMessage)
+      const apiClient = getAPIClient()
+      const response = await apiClient.sendMessage(inputValue.trim())
+      
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
+        role: 'assistant',
+        timestamp: new Date()
       }
+
+      setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error)
+      console.error('Chat-Fehler:', error)
+      setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false)
     }
   }
 
-  const formatTimestamp = (timestamp: Date) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(timestamp)
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      handleSendMessage()
+    }
   }
 
-  const renderMessage = (message: ChatMessage) => {
-    const isUser = message.type === 'user'
-    const isSystem = message.type === 'system'
+  const getMessageAvatar = (role: string) => {
+    switch (role) {
+      case 'user':
+        return (
+          <Avatar sx={{ bgcolor: 'primary.main' }}>
+            <PersonIcon />
+          </Avatar>
+        )
+      case 'assistant':
+        return (
+          <Avatar sx={{ bgcolor: 'secondary.main' }}>
+            <BotIcon />
+          </Avatar>
+        )
+      case 'system':
+        return (
+          <Avatar sx={{ bgcolor: 'warning.main' }}>
+            <SettingsIcon />
+          </Avatar>
+        )
+      default:
+        return <Avatar>{role.charAt(0).toUpperCase()}</Avatar>
+    }
+  }
 
-    return (
-      <div
-        key={message.id}
-        className={`flex ${isUser ? 'justify-end' : 'justify-start'} ${
-          isSystem ? 'justify-center' : ''
-        } mb-4`}
-      >
-        <div
-          className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-lg ${
-            isUser
-              ? 'chat-message-user'
-              : isSystem
-              ? 'md-surface-variant md-shape-medium text-center'
-              : 'chat-message-assistant'
-          }`}
-        >
-          <div className="md-body-large whitespace-pre-wrap">{message.content}</div>
-          
-          {/* Sources Display */}
-          {message.sources && message.sources.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <div className="text-xs font-semibold opacity-70 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">source</span>
-                Quellen:
-              </div>
-              {message.sources.map((source, index) => (
-                <div key={index} className="text-xs opacity-80 md-surface-variant md-shape-small p-2">
-                  <div className="font-medium">{source.title}</div>
-                  <div className="truncate">{source.content}</div>
-                  <div className="text-right opacity-60 flex items-center justify-end gap-1">
-                    <span className="material-symbols-outlined text-xs">psychology</span>
-                    Relevanz: {(source.score * 100).toFixed(1)}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div className={`text-xs mt-2 opacity-60 ${isUser ? 'text-right' : 'text-left'}`}>
-            {formatTimestamp(message.timestamp)}
-          </div>
-        </div>
-      </div>
-    )
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   return (
-    <div className="flex flex-col h-full max-h-screen bg-background">
-      {/* Chat Header */}
-      <div className="app-header md-elevation-1 p-4 flex items-center justify-between border-b">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <span className="material-symbols-outlined text-white">smart_toy</span>
-          </div>
-          <div>
-            <h2 className="md-headline-large text-lg font-semibold">
-              KI-Wissenssystem Chat
-            </h2>
-            <div className="flex items-center space-x-2 text-sm">
-              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}/>
-              <span className="opacity-60">
-                {connected ? 'Verbunden' : 'Nicht verbunden'}
-              </span>
-              {useStreaming && (
-                <>
-                  <span className="opacity-60">•</span>
-                  <span className="opacity-60 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">stream</span>
-                    Streaming
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* Streaming Toggle */}
-          <button
-            onClick={() => setUseStreaming(!useStreaming)}
-            className={`p-2 rounded-full transition-colors ${
-              useStreaming ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
-            }`}
-            title="Streaming ein/ausschalten"
-          >
-            <span className="material-symbols-outlined text-sm">stream</span>
-          </button>
-          
-          <button
-            onClick={clearMessages}
-            className="md-surface hover:md-elevation-2 md-shape-medium px-4 py-2 text-sm md-motion-short flex items-center space-x-2"
-            disabled={messages.length === 0}
-          >
-            <span className="material-symbols-outlined text-sm">delete_sweep</span>
-            <span>Verlauf löschen</span>
-          </button>
-        </div>
-      </div>
+    <Container maxWidth="lg" sx={{ py: 4, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box mb={3}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          KI-Chat
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Stellen Sie Fragen zu Ihrem Wissenssystem
+        </Typography>
+      </Box>
 
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full">
-            <div className="md-surface md-elevation-2 md-shape-large p-8 text-center max-w-md">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-2xl">psychology</span>
-              </div>
-              <h3 className="md-headline-large text-lg font-semibold mb-2">
-                Willkommen beim KI-Assistenten
-              </h3>
-              <p className="md-body-large text-gray-600 mb-4">
-                Stellen Sie Fragen zu Ihrem Wissenssystem. Der Assistent hilft Ihnen dabei, 
-                Informationen zu finden und Zusammenhänge zu erklären.
-              </p>
-              <div className="text-sm opacity-60 bg-surface-variant rounded-lg p-3">
-                <strong>Beispiele:</strong> "Was ist BSI C5?" oder "Zeige mir Compliance-Frameworks"
-              </div>
-            </div>
-          </div>
-        )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-        {messages.map(renderMessage)}
-
-        {/* Streaming Message */}
-        {isStreaming && streamingMessage && (
-          <div className="flex justify-start mb-4">
-            <div className="chat-message-assistant max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3">
-              <div className="md-body-large whitespace-pre-wrap">{streamingMessage}</div>
-              <div className="flex items-center space-x-2 mt-2 opacity-60">
-                <div className="flex space-x-1">
-                  <div className="w-1 h-1 bg-current rounded-full animate-bounce"></div>
-                  <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-                <span className="text-xs">Streaming...</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Typing Indicator */}
-        {isTyping && !isStreaming && (
-          <div className="flex justify-start mb-4">
-            <div className="chat-message-assistant flex items-center space-x-3 px-4 py-3">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-              <span className="text-sm opacity-70">Assistent antwortet...</span>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Form */}
-      <div className="p-4 app-header border-t">
-        <form onSubmit={handleSubmit} className="flex space-x-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={connected ? "Ihre Frage eingeben..." : "Keine Verbindung"}
-              disabled={!connected || isSubmitting}
-              className="w-full px-4 py-3 md-surface md-shape-large border-2 border-transparent focus:border-primary focus:md-elevation-1 md-motion-short"
-              maxLength={1000}
-            />
-            <div className="absolute right-3 top-3 text-xs opacity-50">
-              {inputValue.length}/1000
-            </div>
-          </div>
-          
-          <button
-            type="submit"
-            disabled={!connected || !inputValue.trim() || isSubmitting}
-            className="md-primary md-shape-full px-6 py-3 hover:md-elevation-2 md-motion-short disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {isSubmitting ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <span className="material-symbols-outlined text-white">send</span>
+      {/* Chat Messages */}
+      <Paper 
+        elevation={1} 
+        sx={{ 
+          flexGrow: 1, 
+          mb: 2, 
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          <List>
+            {messages.map((message) => (
+              <ListItem 
+                key={message.id}
+                sx={{
+                  flexDirection: 'column',
+                  alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  mb: 2
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
+                    alignItems: 'flex-start',
+                    gap: 2,
+                    maxWidth: '70%'
+                  }}
+                >
+                  {getMessageAvatar(message.role)}
+                  <Box>
+                    <Paper
+                      elevation={1}
+                      sx={{
+                        p: 2,
+                        bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
+                        color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                        borderRadius: 2,
+                        '&:hover': {
+                          elevation: 2
+                        }
+                      }}
+                    >
+                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {message.content}
+                      </Typography>
+                    </Paper>
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary" 
+                      sx={{ 
+                        display: 'block', 
+                        mt: 0.5,
+                        textAlign: message.role === 'user' ? 'right' : 'left'
+                      }}
+                    >
+                      {formatTime(message.timestamp)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </ListItem>
+            ))}
+            
+            {isLoading && (
+              <ListItem sx={{ justifyContent: 'flex-start' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {getMessageAvatar('assistant')}
+                  <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={16} />
+                      <Typography variant="body2" color="text.secondary">
+                        KI denkt nach...
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </Box>
+              </ListItem>
             )}
-          </button>
-        </form>
+          </List>
+          <div ref={messagesEndRef} />
+        </Box>
+      </Paper>
+
+      {/* Input Area */}
+      <Paper elevation={2} sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+          <TextField
+            ref={inputRef}
+            fullWidth
+            multiline
+            maxRows={4}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Schreiben Sie Ihre Nachricht..."
+            disabled={isLoading}
+            variant="outlined"
+            size="small"
+          />
+          <IconButton
+            onClick={handleSendMessage}
+            disabled={!inputValue.trim() || isLoading}
+            color="primary"
+            size="large"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                bgcolor: 'primary.dark'
+              },
+              '&:disabled': {
+                bgcolor: 'action.disabled'
+              }
+            }}
+          >
+            {isLoading ? <StopIcon /> : <SendIcon />}
+          </IconButton>
+        </Box>
         
-        {/* Connection Status */}
-        {!connected && (
-          <div className="mt-3 text-center">
-            <span className="text-sm text-red-600 md-surface-variant md-shape-medium px-3 py-2 inline-flex items-center space-x-2">
-              <span className="material-symbols-outlined text-sm">wifi_off</span>
-              <span>Verbindung zum Server unterbrochen</span>
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            Drücken Sie Enter zum Senden, Shift+Enter für neue Zeile
+          </Typography>
+          <Chip 
+            label={`${messages.length} Nachrichten`} 
+            size="small" 
+            variant="outlined" 
+          />
+        </Box>
+      </Paper>
+    </Container>
   )
 } 

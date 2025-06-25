@@ -1,6 +1,44 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Box,
+  LinearProgress,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  Paper,
+  Divider,
+} from '@mui/material'
+import {
+  Home as HomeIcon,
+  Chat as ChatIcon,
+  AccountTree as GraphIcon,
+  CloudUpload as UploadIcon,
+  Menu as MenuIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+
+  Speed as SpeedIcon,
+  Memory as MemoryIcon,
+  Storage as StorageIcon,
+  Computer as ComputerIcon,
+} from '@mui/icons-material'
 import ChatInterface from '@/components/chat/ChatInterface'
 import GraphVisualization from '@/components/graph/GraphVisualization'
 import FileUploadZone from '@/components/upload/FileUploadZone'
@@ -37,8 +75,8 @@ interface SystemDiagnostics {
 interface NavigationItem {
   id: ViewType
   label: string
-  icon: string
-  selectedIcon: string
+  icon: React.ElementType
+  description: string
 }
 
 export default function HomePage() {
@@ -51,17 +89,18 @@ export default function HomePage() {
   })
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // System Status Check mit erweiterten Diagnostics
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
+  // System Status Check
   useEffect(() => {
     const checkSystemStatus = async () => {
       setIsLoading(true)
       try {
         const apiClient = getAPIClient()
         
-        // Basis Health Check
         const health = await apiClient.healthCheck()
         setSystemStatus({
           api: health.status === 'healthy',
@@ -70,7 +109,6 @@ export default function HomePage() {
           lastCheck: new Date().toLocaleTimeString('de-DE')
         })
 
-        // Erweiterte Diagnostics (wenn API verfügbar)
         if (health.status === 'healthy') {
           try {
             const diag = await apiClient.getDiagnostics()
@@ -93,330 +131,390 @@ export default function HomePage() {
     }
 
     checkSystemStatus()
-    const interval = setInterval(checkSystemStatus, 30000) // Alle 30 Sekunden
+    const interval = setInterval(checkSystemStatus, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // Mobile Detection & Escape Key Handler
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 840)
-    }
-    
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsDrawerOpen(false)
-      }
-    }
-    
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    window.addEventListener('keydown', handleEscape)
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile)
-      window.removeEventListener('keydown', handleEscape)
-    }
-  }, [])
-
   const navigationItems: NavigationItem[] = [
-    { id: 'overview', label: 'Übersicht', icon: 'dashboard', selectedIcon: 'dashboard' },
-    { id: 'chat', label: 'KI-Chat', icon: 'chat_bubble_outline', selectedIcon: 'chat_bubble' },
-    { id: 'graph', label: 'Wissensgraph', icon: 'account_tree', selectedIcon: 'account_tree' },
-    { id: 'upload', label: 'Dokumente', icon: 'upload_file', selectedIcon: 'upload_file' },
+    { 
+      id: 'overview', 
+      label: 'Übersicht', 
+      icon: HomeIcon,
+      description: 'Systemstatus und Metriken'
+    },
+    { 
+      id: 'chat', 
+      label: 'KI-Chat', 
+      icon: ChatIcon,
+      description: 'Intelligente Unterhaltung'
+    },
+    { 
+      id: 'graph', 
+      label: 'Wissensgraph', 
+      icon: GraphIcon,
+      description: 'Datenvisualisierung'
+    },
+    { 
+      id: 'upload', 
+      label: 'Dokumente', 
+      icon: UploadIcon,
+      description: 'Datei-Management'
+    },
   ]
 
   const handleNavigation = (viewId: ViewType) => {
     setCurrentView(viewId)
-    setIsDrawerOpen(false)
+    setDrawerOpen(false)
   }
+
+  const StatusIndicator = ({ status, label }: { status: boolean, label: string }) => (
+    <Box display="flex" alignItems="center" justifyContent="space-between" p={2}>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Box display="flex" alignItems="center" gap={1}>
+        {status ? (
+          <CheckCircleIcon color="success" fontSize="small" />
+        ) : (
+          <ErrorIcon color="error" fontSize="small" />
+        )}
+        <Typography variant="body2" fontWeight="medium" color={status ? 'success.main' : 'error.main'}>
+          {status ? 'Online' : 'Offline'}
+        </Typography>
+      </Box>
+    </Box>
+  )
+
+  const MetricCard = ({ title, value, unit, icon: Icon }: {
+    title: string
+    value: number
+    unit: string
+    icon: React.ElementType
+  }) => (
+    <Card elevation={2}>
+      <CardContent>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h4" fontWeight="bold">
+              {value}{unit}
+            </Typography>
+          </Box>
+          <Box 
+            sx={{ 
+              p: 1.5, 
+              bgcolor: 'primary.light', 
+              borderRadius: 2,
+              color: 'primary.contrastText'
+            }}
+          >
+            <Icon />
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  )
+
+  const renderOverview = () => (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box textAlign="center" mb={6}>
+        <Typography variant="h2" component="h1" gutterBottom fontWeight="light">
+          KI-Wissenssystem
+        </Typography>
+        <Typography variant="h5" color="text.secondary" maxWidth="600px" mx="auto">
+          Intelligentes Wissensmanagement mit modernster Technologie
+        </Typography>
+      </Box>
+
+      {/* System Status */}
+      <Card elevation={2} sx={{ mb: 4 }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <Box 
+              sx={{ 
+                p: 1, 
+                bgcolor: 'success.light', 
+                borderRadius: 2,
+                color: 'success.contrastText'
+              }}
+            >
+              <ComputerIcon />
+            </Box>
+            <Typography variant="h5" fontWeight="medium">
+              Systemstatus
+            </Typography>
+          </Box>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <StatusIndicator status={systemStatus.api} label="API-Server" />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <StatusIndicator status={systemStatus.vectorStore} label="Vektordatenbank" />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <StatusIndicator status={systemStatus.graphDb} label="Graph-Datenbank" />
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ my: 2 }} />
+          
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="body2" color="text.secondary">
+              Letzte Prüfung
+            </Typography>
+            <Typography variant="body2" fontWeight="medium">
+              {systemStatus.lastCheck}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Performance Metrics */}
+      {diagnostics?.performance && (
+        <Box mb={4}>
+          <Typography variant="h5" fontWeight="medium" mb={3}>
+            Performance-Metriken
+          </Typography>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} lg={3}>
+              <MetricCard
+                title="Antwortzeit"
+                value={diagnostics.performance.response_time}
+                unit="ms"
+                icon={SpeedIcon}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3}>
+              <MetricCard
+                title="Datenbanklatenz"
+                value={diagnostics.performance.database_latency}
+                unit="ms"
+                icon={StorageIcon}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3}>
+              <MetricCard
+                title="Speichernutzung"
+                value={diagnostics.performance.memory_usage}
+                unit="%"
+                icon={MemoryIcon}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3}>
+              <MetricCard
+                title="CPU-Auslastung"
+                value={diagnostics.performance.cpu_usage}
+                unit="%"
+                icon={ComputerIcon}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Features Grid */}
+      <Box>
+        <Typography variant="h5" fontWeight="medium" mb={3}>
+          Funktionen entdecken
+        </Typography>
+        
+        <Grid container spacing={3}>
+          {navigationItems.slice(1).map((item) => (
+            <Grid item xs={12} sm={6} lg={4} key={item.id}>
+              <Card 
+                elevation={2}
+                sx={{ 
+                  height: '100%',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    elevation: 8,
+                    transform: 'translateY(-4px)'
+                  }
+                }}
+                onClick={() => handleNavigation(item.id)}
+              >
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <Box 
+                      sx={{ 
+                        p: 1.5, 
+                        bgcolor: 'primary.light', 
+                        borderRadius: 2,
+                        color: 'primary.contrastText'
+                      }}
+                    >
+                      <item.icon />
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" fontWeight="medium">
+                        {item.label}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.description}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box mt={2} pt={2} borderTop={1} borderColor="divider">
+                    {item.id === 'chat' && (
+                      <Chip 
+                        icon={<CheckCircleIcon />} 
+                        label="KI-Assistent bereit" 
+                        color="success" 
+                        size="small" 
+                      />
+                    )}
+                    {item.id === 'graph' && (
+                      <Chip 
+                        label="Interaktive Visualisierung" 
+                        color="primary" 
+                        size="small" 
+                      />
+                    )}
+                    {item.id === 'upload' && (
+                      <Chip 
+                        label="Drag & Drop Support" 
+                        color="secondary" 
+                        size="small" 
+                      />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    </Container>
+  )
 
   const renderCurrentView = () => {
     switch (currentView) {
       case 'overview':
-        return (
-          <div className="p-4">
-            {/* Header */}
-            <div className="surface-card">
-              <h1 className="headline-large">KI-Wissenssystem</h1>
-              <p className="body-large mt-4">
-                Willkommen im intelligenten Wissensmanagementsystem mit Material Design 3
-              </p>
-            </div>
-
-            {/* System Status */}
-            <div className="surface-card">
-              <h2 className="title-large flex items-center gap-2">
-                <span className="material-symbols-outlined">monitor_health</span>
-                Systemstatus
-              </h2>
-              <div className="flex flex-col gap-3 mt-4">
-                <div className="flex items-center justify-between">
-                  <span className="body-medium">API-Server</span>
-                  <div className={`status-indicator ${systemStatus.api ? 'status-online' : 'status-offline'}`}>
-                    <span className="material-symbols-outlined">
-                      {systemStatus.api ? 'check_circle' : 'error'}
-                    </span>
-                    <span>{systemStatus.api ? 'Online' : 'Offline'}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="body-medium">Vektordatenbank</span>
-                  <div className={`status-indicator ${systemStatus.vectorStore ? 'status-online' : 'status-offline'}`}>
-                    <span className="material-symbols-outlined">
-                      {systemStatus.vectorStore ? 'check_circle' : 'error'}
-                    </span>
-                    <span>{systemStatus.vectorStore ? 'Verbunden' : 'Getrennt'}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="body-medium">Graph-Datenbank</span>
-                  <div className={`status-indicator ${systemStatus.graphDb ? 'status-online' : 'status-offline'}`}>
-                    <span className="material-symbols-outlined">
-                      {systemStatus.graphDb ? 'check_circle' : 'error'}
-                    </span>
-                    <span>{systemStatus.graphDb ? 'Verbunden' : 'Getrennt'}</span>
-                  </div>
-                </div>
-                
-                <hr className="my-4" style={{ borderColor: 'var(--md-sys-color-outline-variant)' }} />
-                <div className="flex items-center justify-between">
-                  <span className="body-medium">Letzte Prüfung</span>
-                  <span className="body-medium">{systemStatus.lastCheck}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Performance Metrics (wenn verfügbar) */}
-            {diagnostics?.performance && (
-              <div className="surface-card">
-                <h2 className="title-large flex items-center gap-2">
-                  <span className="material-symbols-outlined">speed</span>
-                  Performance
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  <div className="text-center p-3 md-surface-variant md-shape-medium">
-                    <div className="text-2xl font-bold text-primary">
-                      {diagnostics.performance.response_time}ms
-                    </div>
-                    <div className="text-sm opacity-60">Antwortzeit</div>
-                  </div>
-                  <div className="text-center p-3 md-surface-variant md-shape-medium">
-                    <div className="text-2xl font-bold text-primary">
-                      {diagnostics.performance.database_latency}ms
-                    </div>
-                    <div className="text-sm opacity-60">DB-Latenz</div>
-                  </div>
-                  <div className="text-center p-3 md-surface-variant md-shape-medium">
-                    <div className="text-2xl font-bold text-primary">
-                      {Math.round(diagnostics.performance.memory_usage)}%
-                    </div>
-                    <div className="text-sm opacity-60">RAM-Nutzung</div>
-                  </div>
-                  <div className="text-center p-3 md-surface-variant md-shape-medium">
-                    <div className="text-2xl font-bold text-primary">
-                      {Math.round(diagnostics.performance.cpu_usage)}%
-                    </div>
-                    <div className="text-sm opacity-60">CPU-Nutzung</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* System Capabilities */}
-            {diagnostics?.capabilities && (
-              <div className="surface-card">
-                <h2 className="title-large flex items-center gap-2">
-                  <span className="material-symbols-outlined">settings</span>
-                  Systemfähigkeiten
-                </h2>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <h3 className="body-medium font-semibold mb-2">Verfügbare KI-Modelle:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {diagnostics.capabilities.models_available.map((model, index) => (
-                        <span key={index} className="badge-primary">
-                          {model}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="body-medium font-semibold mb-2">Features:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {diagnostics.capabilities.features_enabled.map((feature, index) => (
-                        <span key={index} className="badge-secondary">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="body-medium font-semibold mb-2">Max. Upload-Größe:</h3>
-                    <span className="text-lg text-primary font-medium">
-                      {Math.round(diagnostics.capabilities.max_upload_size / 1024 / 1024)} MB
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="surface-card">
-              <h2 className="title-large">Schnellzugriff</h2>
-              <div className="flex flex-wrap gap-3 mt-4">
-                <button 
-                  className="md-filled-button"
-                  onClick={() => handleNavigation('chat')}
-                  disabled={!systemStatus.api}
-                >
-                  <span className="material-symbols-outlined">chat</span>
-                  KI-Chat starten
-                </button>
-                
-                <button 
-                  className="md-outlined-button"
-                  onClick={() => handleNavigation('upload')}
-                  disabled={!systemStatus.api}
-                >
-                  <span className="material-symbols-outlined">upload_file</span>
-                  Dokumente hochladen
-                </button>
-                
-                <button 
-                  className="md-outlined-button"
-                  onClick={() => handleNavigation('graph')}
-                  disabled={!systemStatus.graphDb}
-                >
-                  <span className="material-symbols-outlined">account_tree</span>
-                  Wissensgraph erkunden
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      
+        return renderOverview()
       case 'chat':
         return <ChatInterface />
-      
       case 'graph':
         return <GraphVisualization />
-      
       case 'upload':
         return <FileUploadZone />
-      
       default:
-        return <div>Unbekannte Ansicht</div>
+        return renderOverview()
     }
   }
 
-  return (
-    <div className="app-container">
-      {/* App Bar mit Hamburger Menu */}
-      <header className="app-header">
-        <div className="flex items-center gap-3">
-          <button
-            className="hamburger-button"
-            onClick={() => setIsDrawerOpen(true)}
-            aria-label="Navigation öffnen"
+  const drawer = (
+    <List>
+      {navigationItems.map((item) => (
+        <ListItem key={item.id} disablePadding>
+          <ListItemButton
+            selected={currentView === item.id}
+            onClick={() => handleNavigation(item.id)}
           >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
-          <h1 className="title-large">KI-Wissenssystem</h1>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className={`status-indicator ${systemStatus.api ? 'status-online' : 'status-offline'}`}>
-            <span className="material-symbols-outlined">
-              {systemStatus.api ? 'wifi' : 'wifi_off'}
-            </span>
-          </span>
-        </div>
-      </header>
+            <ListItemIcon>
+              <item.icon color={currentView === item.id ? 'primary' : 'inherit'} />
+            </ListItemIcon>
+            <ListItemText 
+              primary={item.label}
+              secondary={item.description}
+            />
+          </ListItemButton>
+        </ListItem>
+      ))}
+    </List>
+  )
 
-      {/* Navigation Drawer Overlay */}
-      {isDrawerOpen && (
-        <div 
-          className="drawer-overlay"
-          onClick={() => setIsDrawerOpen(false)}
-        />
-      )}
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Navigation */}
+      <AppBar position="sticky" elevation={1}>
+        <Toolbar>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={() => setDrawerOpen(true)}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            KI-Wissenssystem
+          </Typography>
+          
+          {!isMobile && (
+            <Box display="flex" gap={1}>
+              {navigationItems.map((item) => (
+                <Button
+                  key={item.id}
+                  color="inherit"
+                  startIcon={<item.icon />}
+                  onClick={() => handleNavigation(item.id)}
+                  sx={{
+                    bgcolor: currentView === item.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.1)'
+                    }
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+          )}
+        </Toolbar>
+      </AppBar>
 
-      {/* Navigation Drawer */}
-      <nav className={`navigation-drawer ${isDrawerOpen ? 'open' : ''}`}>
-        <div className="drawer-header">
-          <div className="flex items-center justify-between">
-            <h2 className="title-large">Navigation</h2>
-            <button
-              className="close-button"
-              onClick={() => setIsDrawerOpen(false)}
-              aria-label="Navigation schließen"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="drawer-content">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              className={`nav-drawer-item ${currentView === item.id ? 'active' : ''}`}
-              onClick={() => handleNavigation(item.id)}
-            >
-              <span className="material-symbols-outlined">
-                {currentView === item.id ? item.selectedIcon : item.icon}
-              </span>
-              <span className="body-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        ModalProps={{
+          keepMounted: true,
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280 },
+        }}
+      >
+        <Toolbar />
+        {drawer}
+      </Drawer>
 
       {/* Main Content */}
-      <main className="app-main-content">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-4">
-              <div className="loading-spinner"></div>
-              <span className="body-medium">System wird geladen...</span>
-            </div>
-          </div>
-        ) : (
-          renderCurrentView()
-        )}
-      </main>
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+        {renderCurrentView()}
+      </Box>
 
-      {/* Mobile Bottom Navigation (nur bei geschlossenem Drawer) */}
-      {isMobile && !isDrawerOpen && (
-        <nav className="mobile-nav">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              className={`mobile-nav-item ${currentView === item.id ? 'active' : ''}`}
-              onClick={() => handleNavigation(item.id)}
-            >
-              <span className="material-symbols-outlined">
-                {currentView === item.id ? item.selectedIcon : item.icon}
-              </span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      )}
-
-      {/* Floating Action Button für Chat */}
-      {currentView !== 'chat' && !isDrawerOpen && (
-        <button
-          className="fab"
-          onClick={() => handleNavigation('chat')}
-          aria-label="Chat öffnen"
+      {/* Loading Overlay */}
+      {isLoading && (
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bgcolor="rgba(0,0,0,0.5)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={9999}
         >
-          <span className="material-symbols-outlined">chat</span>
-        </button>
+          <Paper elevation={8} sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              System wird überprüft...
+            </Typography>
+            <LinearProgress sx={{ mt: 2, width: 200 }} />
+          </Paper>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }
