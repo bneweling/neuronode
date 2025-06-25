@@ -20,6 +20,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  useTheme,
 } from '@mui/material'
 import {
   Search as SearchIcon,
@@ -67,6 +68,7 @@ interface GraphData {
 type NodeColor = 'primary' | 'secondary' | 'success' | 'default'
 
 export default function GraphVisualization() {
+  const theme = useTheme()
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -109,77 +111,139 @@ export default function GraphVisualization() {
       }))
     ]
 
+    // Dark/Light mode colors with enhanced visibility
+    const isDarkMode = theme.palette.mode === 'dark'
+    const edgeColor = isDarkMode ? '#b0b0b0' : '#666'
+    const edgeLabelColor = isDarkMode ? '#ffffff' : '#333'
+    const nodeTextColor = isDarkMode ? '#ffffff' : '#333333'
+    const nodeOutlineColor = isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)'
+    const nodeOutlineWidth = isDarkMode ? 3 : 2
+    const nodeFontWeight = isDarkMode ? 'bold' : 'normal'
+    
+    // Enhanced color palette for better dark mode contrast
+    const nodeColors = {
+      document: isDarkMode ? '#4fc3f7' : '#1976d2',    // Lighter blue for dark mode
+      concept: isDarkMode ? '#ba68c8' : '#9c27b0',     // Lighter purple for dark mode
+      entity: isDarkMode ? '#81c784' : '#388e3c',      // Lighter green for dark mode
+      relationship: isDarkMode ? '#ffb74d' : '#f57c00', // Lighter orange for dark mode
+      default: isDarkMode ? '#90a4ae' : '#616161'      // Lighter grey for dark mode
+    }
+
     // Initialize Cytoscape
     cyRef.current = cytoscape({
       container: graphRef.current,
       elements,
       style: [
-        // Node styles
+        // Enhanced Node styles with dark mode optimizations
         {
           selector: 'node',
           style: {
-            'width': '60px',
-            'height': '60px',
+            'width': '65px',
+            'height': '65px',
             'label': 'data(label)',
             'text-valign': 'center',
             'text-halign': 'center',
-            'color': '#fff',
-            'text-outline-width': 2,
-            'text-outline-color': '#000',
-            'font-size': '12px',
-            'font-weight': 'bold'
+            'color': nodeTextColor,
+            'text-outline-width': nodeOutlineWidth,
+            'text-outline-color': nodeOutlineColor,
+            'font-size': isDarkMode ? '13px' : '12px',
+            'font-weight': nodeFontWeight,
+            'text-wrap': 'wrap',
+            'text-max-width': '80px',
+            'min-zoomed-font-size': '8px',
+            'text-opacity': isDarkMode ? 1 : 0.9,
+            'border-width': isDarkMode ? 2 : 1,
+            'border-style': 'solid',
+            'border-opacity': 0.7
           }
         },
         {
           selector: '.node-document',
           style: {
-            'background-color': '#1976d2',
-            'shape': 'rectangle'
+            'background-color': nodeColors.document,
+            'shape': 'rectangle',
+            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
           }
         },
         {
           selector: '.node-concept',
           style: {
-            'background-color': '#9c27b0',
-            'shape': 'ellipse'
+            'background-color': nodeColors.concept,
+            'shape': 'ellipse',
+            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
           }
         },
         {
           selector: '.node-entity',
           style: {
-            'background-color': '#2e7d32',
-            'shape': 'diamond'
+            'background-color': nodeColors.entity,
+            'shape': 'diamond',
+            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
           }
         },
-        // Edge styles
+        // Enhanced Edge styles with improved dark mode visibility
         {
           selector: 'edge',
           style: {
-            'width': 3,
-            'line-color': '#666',
-            'target-arrow-color': '#666',
+            'width': isDarkMode ? 3 : 2,
+            'line-color': edgeColor,
+            'target-arrow-color': edgeColor,
             'target-arrow-shape': 'triangle',
+            'target-arrow-size': isDarkMode ? 12 : 10,
             'curve-style': 'bezier',
             'label': 'data(label)',
-            'font-size': '10px',
+            'font-size': isDarkMode ? '11px' : '10px',
+            'font-weight': isDarkMode ? '600' : 'normal',
+            'color': edgeLabelColor,
             'text-rotation': 'autorotate',
-            'text-margin-y': -10
+            'text-margin-y': -12,
+            'text-outline-width': isDarkMode ? 2 : 1,
+            'text-outline-color': isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
+            'text-opacity': 1,
+            'line-opacity': isDarkMode ? 0.8 : 0.7,
+            'arrow-opacity': isDarkMode ? 0.8 : 0.7
           }
         },
-        // Hover effects
+        // Enhanced Hover and Selection effects
+        {
+          selector: 'node:hover',
+          style: {
+            'border-width': isDarkMode ? 3 : 2,
+            'border-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+            'border-opacity': 1,
+            'font-size': isDarkMode ? '14px' : '13px'
+          }
+        },
         {
           selector: 'node:selected',
           style: {
-            'border-width': 3,
-            'border-color': '#ff6b35'
+            'border-width': isDarkMode ? 4 : 3,
+            'border-color': isDarkMode ? '#ff6b35' : '#ff5722',
+            'border-opacity': 1,
+            'text-outline-width': isDarkMode ? 4 : 3,
+            'box-shadow': isDarkMode ? '0 0 20px rgba(255, 107, 53, 0.6)' : '0 0 15px rgba(255, 87, 34, 0.4)'
+          }
+        },
+        {
+          selector: 'edge:hover',
+          style: {
+            'line-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+            'target-arrow-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+            'width': isDarkMode ? 4 : 3,
+            'font-size': isDarkMode ? '12px' : '11px',
+            'text-outline-width': isDarkMode ? 3 : 2
           }
         },
         {
           selector: 'edge:selected',
           style: {
-            'line-color': '#ff6b35',
-            'target-arrow-color': '#ff6b35',
-            'width': 5
+            'line-color': isDarkMode ? '#ff6b35' : '#ff5722',
+            'target-arrow-color': isDarkMode ? '#ff6b35' : '#ff5722',
+            'width': isDarkMode ? 5 : 4,
+            'color': isDarkMode ? '#ff6b35' : '#ff5722',
+            'font-size': isDarkMode ? '13px' : '12px',
+            'text-outline-width': isDarkMode ? 3 : 2,
+            'font-weight': 'bold'
           }
         }
       ],
@@ -221,7 +285,7 @@ export default function GraphVisualization() {
         }
       })
     }
-  }, [graphData])
+  }, [graphData, theme.palette.mode])
 
   useEffect(() => {
     loadGraphData()
@@ -441,7 +505,21 @@ export default function GraphVisualization() {
 
         {/* Main Graph Visualization */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper elevation={2} sx={{ height: 600, position: 'relative' }}>
+          <Paper 
+            elevation={2} 
+            sx={{ 
+              height: 600, 
+              position: 'relative',
+              bgcolor: (theme) => 
+                theme.palette.mode === 'dark' 
+                  ? 'rgba(18, 18, 18, 0.95)' 
+                  : 'rgba(250, 250, 250, 0.95)',
+              border: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '1px solid rgba(255, 255, 255, 0.1)'
+                  : '1px solid rgba(0, 0, 0, 0.1)'
+            }}
+          >
             {isLoading && (
               <Box 
                 sx={{ 
@@ -453,7 +531,10 @@ export default function GraphVisualization() {
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  bgcolor: 'rgba(255,255,255,0.8)',
+                  bgcolor: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? 'rgba(18, 18, 18, 0.8)' 
+                      : 'rgba(255,255,255,0.8)',
                   zIndex: 1
                 }}
               >
@@ -465,7 +546,8 @@ export default function GraphVisualization() {
               style={{
                 width: '100%',
                 height: '100%',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                backgroundColor: theme.palette.mode === 'dark' ? '#121212' : '#fafafa'
               }}
             />
             {!cytoscape && (
@@ -479,7 +561,10 @@ export default function GraphVisualization() {
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  bgcolor: 'rgba(255,255,255,0.9)',
+                  bgcolor: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? 'rgba(18, 18, 18, 0.9)' 
+                      : 'rgba(255,255,255,0.9)',
                   zIndex: 1
                 }}
               >

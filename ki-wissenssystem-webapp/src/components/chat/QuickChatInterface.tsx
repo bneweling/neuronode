@@ -68,7 +68,10 @@ export default function QuickChatInterface({ onSendMessage }: QuickChatInterface
         elevation={isFocused ? 8 : 3}
         sx={{ 
           p: 3,
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          background: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? 'linear-gradient(135deg, rgba(42, 42, 42, 0.9) 0%, rgba(66, 66, 66, 0.9) 100%)'
+              : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
           transition: 'all 0.3s ease-in-out',
           transform: isFocused ? 'translateY(-2px)' : 'translateY(0)',
           '&:hover': {
@@ -83,7 +86,14 @@ export default function QuickChatInterface({ onSendMessage }: QuickChatInterface
             <Typography variant="h5" fontWeight="600" color="primary.main">
               KI-Assistent
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" 
+              sx={{ 
+                color: (theme) => 
+                  theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.8)' 
+                    : 'text.secondary'
+              }}
+            >
               Stellen Sie Ihre Frage zum Wissenssystem
             </Typography>
           </Box>
@@ -116,7 +126,10 @@ export default function QuickChatInterface({ onSendMessage }: QuickChatInterface
                 borderRadius: 2,
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.1)'
+                      : 'rgba(255, 255, 255, 0.9)',
                 },
                 '&.Mui-focused': {
                   backgroundColor: 'background.paper',
@@ -154,12 +167,15 @@ export default function QuickChatInterface({ onSendMessage }: QuickChatInterface
 
         <Fade in={message.length > 0} timeout={300}>
           <Typography 
-            variant="caption" 
-            color="text.secondary" 
+            variant="caption"
             sx={{ 
               mt: 1, 
               display: 'block',
-              fontStyle: 'italic' 
+              fontStyle: 'italic',
+              color: (theme) => 
+                theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.6)' 
+                  : 'text.secondary'
             }}
           >
             Drücken Sie Enter oder klicken Sie senden, um zur Chat-Seite zu wechseln

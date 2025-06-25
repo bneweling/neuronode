@@ -48,6 +48,7 @@ export default function ChatInterface() {
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [graphViewOpen, setGraphViewOpen] = useState(false)
+  const [hasGraphBeenShown, setHasGraphBeenShown] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,6 +121,7 @@ export default function ChatInterface() {
       // Show graph view if response has graph-relevant content
       if (hasGraphData) {
         setGraphViewOpen(true)
+        setHasGraphBeenShown(true)
       }
 
     } catch (error) {
@@ -217,6 +219,7 @@ export default function ChatInterface() {
 
             if (hasGraphData) {
               setGraphViewOpen(true)
+              setHasGraphBeenShown(true)
             }
 
           } catch (error) {
@@ -405,10 +408,17 @@ export default function ChatInterface() {
             </Typography>
           </Box>
 
-          {graphViewOpen && (
+          {hasGraphBeenShown && (
             <IconButton
-              onClick={() => setGraphViewOpen(false)}
-              color="primary"
+              onClick={() => setGraphViewOpen(!graphViewOpen)}
+              color={graphViewOpen ? "primary" : "default"}
+              sx={{
+                bgcolor: graphViewOpen ? 'primary.main' : 'transparent',
+                color: graphViewOpen ? 'primary.contrastText' : 'inherit',
+                '&:hover': {
+                  bgcolor: graphViewOpen ? 'primary.dark' : 'action.hover',
+                }
+              }}
             >
               <GraphIcon />
             </IconButton>
@@ -427,7 +437,10 @@ export default function ChatInterface() {
           sx={{
             flex: 1,
             overflow: 'auto',
-            bgcolor: 'grey.50',
+            bgcolor: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? 'rgba(18, 18, 18, 0.95)' 
+                : 'rgba(250, 250, 250, 0.95)',
             display: 'flex',
             flexDirection: 'column'
           }}
@@ -448,11 +461,60 @@ export default function ChatInterface() {
                 <Box
                   sx={{
                     maxWidth: '70%',
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
-                    color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                    boxShadow: 1
+                    p: 2.5,
+                    borderRadius: message.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    bgcolor: (theme) => {
+                      if (message.role === 'user') {
+                        return theme.palette.mode === 'dark' 
+                          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                          : 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                      } else {
+                        return theme.palette.mode === 'dark'
+                          ? 'rgba(42, 42, 42, 0.95)'
+                          : 'rgba(255, 255, 255, 0.95)'
+                      }
+                    },
+                    color: (theme) => {
+                      if (message.role === 'user') {
+                        return '#ffffff'
+                      } else {
+                        return theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                      }
+                    },
+                    boxShadow: (theme) => 
+                      theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                        : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    border: (theme) => 
+                      message.role === 'user' 
+                        ? 'none' 
+                        : theme.palette.mode === 'dark'
+                          ? '1px solid rgba(255, 255, 255, 0.1)'
+                          : '1px solid rgba(0, 0, 0, 0.08)',
+                    position: 'relative',
+                    '&::before': message.role === 'user' ? {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 0,
+                      right: -8,
+                      width: 0,
+                      height: 0,
+                      borderLeft: '8px solid transparent',
+                      borderTop: '8px solid',
+                      borderTopColor: (theme) => 
+                        theme.palette.mode === 'dark' ? '#764ba2' : '#42a5f5'
+                    } : {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: -8,
+                      width: 0,
+                      height: 0,
+                      borderRight: '8px solid transparent',
+                      borderTop: '8px solid',
+                      borderTopColor: (theme) => 
+                        theme.palette.mode === 'dark' ? 'rgba(42, 42, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'
+                    }
                   }}
                 >
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -546,29 +608,15 @@ export default function ChatInterface() {
             flex: '1 1 50%',
             borderLeft: 1,
             borderColor: 'divider',
-            bgcolor: 'background.paper',
+            bgcolor: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? 'rgba(18, 18, 18, 0.95)' 
+                : 'rgba(250, 250, 250, 0.95)',
             display: 'flex',
             flexDirection: 'column',
             minWidth: '400px'
           }}
         >
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Box display="flex" alignItems="center" justifyContent="between">
-              <Typography variant="h6" fontWeight="600">
-                Wissensgraph
-              </Typography>
-              <IconButton
-                onClick={() => setGraphViewOpen(false)}
-                size="small"
-              >
-                <GraphIcon />
-              </IconButton>
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              Visualisierung der gefundenen Zusammenhänge
-            </Typography>
-          </Box>
-          
           <Box sx={{ flex: 1, overflow: 'hidden' }}>
             <GraphVisualization />
           </Box>

@@ -1,37 +1,57 @@
-# 🧠 KI-Wissenssystem - Web-App Version
+# �� KI-Wissenssystem - Enterprise Knowledge Management Platform
 
-Ein intelligentes Wissensmanagementsystem für Compliance und IT-Sicherheit mit KI-gestützter Dokumentenverarbeitung und Knowledge Graph.
+Ein intelligentes Wissensmanagementsystem für Compliance und IT-Sicherheit mit KI-gestützter Dokumentenverarbeitung und Knowledge Graph-Technologie.
 
-> **🌐 Diese Version**: Standalone Web-Anwendung mit moderner React-UI  
-> **📔 Für Obsidian Plugin Version**: Wechseln Sie zu Branch `main`
+> **🌐 Produktionsbereit**: Vollständige Web-Anwendung mit moderner React-UI und Enterprise-Features  
+> **📔 Obsidian Plugin**: Verfügbar in separatem Branch für Obsidian-Integration
+
+## 📋 Inhaltsverzeichnis
+
+- [✨ Features](#-features)
+- [🚀 Schnellstart](#-schnellstart)
+- [🏭 Produktionsumgebung](#-produktionsumgebung)
+- [🏗️ Architektur](#️-architektur)
+- [📋 Voraussetzungen](#-voraussetzungen)
+- [🛠️ Entwicklung](#️-entwicklung)
+- [📖 Weitere Dokumentation](#-weitere-dokumentation)
+- [🔧 Konfiguration](#-konfiguration)
+- [🔄 Wartung & Support](#-wartung--support)
 
 ## ✨ Features
 
 ### 🌐 Web-App Frontend (Next.js + TypeScript)
 - 📱 **Responsive Design** - Material Design 3 für alle Geräte
+- 💬 **Multi-Chat System** - Mehrere Chat-Sessions mit Verlauf und Management
+- 🕸️ **KI-gesteuerte Graph-Visualisierung** - Automatische Anzeige bei graph-relevanten Antworten
 - 📄 **Drag & Drop Upload** - Einfacher Dokumentenupload mit Echtzeit-Analyse  
-- 💬 **Real-time Chat** - Kontextuelle Antworten mit Quellenangaben
-- 🕸️ **Interaktive Graph-Visualisierung** - D3.js-basierte Knowledge Graph
-- ⚡ **Moderne Performance** - Next.js 15 mit Turbopack
+- ⚡ **Performance-optimiert** - Next.js 15 mit Turbopack
+- 🌙 **Dark/Light Mode** - Moderne Benutzeroberfläche mit Theme-Unterstützung
 - 🔍 **Erweiterte Suche** - Semantische und strukturierte Suche
 
 ### 🚀 Backend (Python/FastAPI)
 - 🔍 **Intelligente Dokumentenverarbeitung** - BSI, ISO 27001, NIST CSF
-- 🧠 **KI-gestützte Abfragen** - OpenAI, Anthropic, Google Gemini
+- 🧠 **Multi-LLM Support** - OpenAI, Anthropic, Google Gemini, Ollama
 - 🕸️ **Knowledge Graph** - Neo4j mit automatischer Verknüpfung
 - 📊 **Vector Search** - ChromaDB für semantische Suche
-- 🐳 **Docker-basiert** - Einfache Installation und Skalierung
+- 🔒 **Enterprise Security** - JWT, Rate Limiting, CORS Protection
+- 📈 **Monitoring** - Prometheus, Grafana, Loki für Production
 
-> **📔 Obsidian Plugin**: Verfügbar in Branch `main` für Obsidian-basierte Workflows
+### 🐳 Production Features
+- 🔄 **Zero-Downtime Deployment** - Rolling Updates mit Rollback
+- 📊 **Comprehensive Monitoring** - Gesundheitschecks und Performance-Metriken
+- 🛡️ **Security Hardening** - Multi-Layered Authentication und Network Isolation
+- 📦 **Automated Backups** - Tägliche Backups mit Disaster Recovery
+- ⚖️ **Load Balancing** - Nginx mit SSL/TLS Termination
+- 🔄 **Auto-Scaling** - Horizontale Skalierung für High-Availability
 
 ## 🚀 Schnellstart
 
-### 🌐 Web-App Schnellstart
+### 🌐 Entwicklungsumgebung
 
 1. **Backend Services starten**:
    ```bash
    cd ki-wissenssystem
-   ./setup.sh && ./start-all.sh
+   ./start-all.sh
    ```
 
 2. **Web-App starten**:
@@ -41,430 +61,267 @@ Ein intelligentes Wissensmanagementsystem für Compliance und IT-Sicherheit mit 
    npm run dev
    ```
 
-3. **🎉 Fertig!** Öffnen Sie http://localhost:3000
+3. **🎉 Fertig!** Öffnen Sie http://localhost:3001
 
-### 🛠️ Traditionelles Setup (nur Backend)
+### 🏭 Produktionsumgebung
 
-#### 🍎 macOS/Linux
+Für die vollständige Produktionsumgebung siehe [Produktions-Deployment Guide](PRODUCTION-DEPLOYMENT.md).
+
+**Schnellstart Production:**
 ```bash
-cd ki-wissenssystem
-./setup.sh
+# 1. Setup ausführen
+./production-setup.sh
+
+# 2. Environment konfigurieren
+cp production-env.template production.env
+# Bearbeiten Sie production.env mit Ihren Werten
+
+# 3. Deployment starten
+./deploy.sh fresh
 ```
-
-#### 🪟 Windows
-```powershell
-cd ki-wissenssystem
-.\setup.ps1
-```
-
-> **Windows-Nutzer**: Führen Sie PowerShell als Administrator aus!  
-> **Einfacher**: Doppelklick auf `start-all.bat` im Explorer  
-> Detaillierte Anleitung: [README-Windows.md](ki-wissenssystem/README-Windows.md)
-
-## 📋 Voraussetzungen
-
-### Allgemein
-- **Docker** & Docker Compose
-- **Python 3.11+**
-- **Node.js 18+** (für Obsidian Plugin)
-
-### Betriebssystem-spezifisch
-
-#### macOS
-- Homebrew (wird automatisch installiert)
-- Xcode Command Line Tools
-
-#### Windows
-- PowerShell 5.1+ (bereits enthalten)
-- Administrator-Rechte
-- Chocolatey (wird automatisch installiert)
-
-#### Linux
-- apt/yum/pacman (je nach Distribution)
-- curl, git
 
 ## 🏗️ Architektur
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Obsidian      │    │   Web Interface │    │   CLI Tools     │
-│   Plugin        │    │   (FastAPI)     │    │                 │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │     KI-Wissenssystem      │
-                    │      (Python API)         │
-                    └─────────────┬─────────────┘
-                                  │
-          ┌───────────────────────┼───────────────────────┐
-          │                       │                       │
-    ┌─────┴─────┐         ┌───────┴───────┐       ┌───────┴───────┐
-    │   Neo4j   │         │   ChromaDB    │       │   Redis       │
-    │ (Graph DB)│         │ (Vector DB)   │       │  (Cache)      │
-    └───────────┘         └───────────────┘       └───────────────┘
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        WA[Web App<br/>Next.js + TypeScript]
+        OP[Obsidian Plugin<br/>TypeScript]
+    end
+    
+    subgraph "API Gateway"
+        NG[Nginx<br/>Load Balancer + SSL]
+        API[FastAPI<br/>Backend Services]
+    end
+    
+    subgraph "AI & Processing"
+        LLM[Multi-LLM Support<br/>OpenAI, Anthropic, Gemini]
+        DOC[Document Processing<br/>PDF, Office, OCR]
+        RAG[RAG Pipeline<br/>Retrieval & Synthesis]
+    end
+    
+    subgraph "Data Layer"
+        NEO[(Neo4j<br/>Knowledge Graph)]
+        CHR[(ChromaDB<br/>Vector Database)]
+        RED[(Redis<br/>Cache & Sessions)]
+    end
+    
+    subgraph "Monitoring & Ops"
+        PRO[Prometheus<br/>Metrics]
+        GRA[Grafana<br/>Dashboards]
+        LOK[Loki<br/>Centralized Logs]
+    end
+    
+    WA --> NG
+    OP --> API
+    NG --> API
+    API --> LLM
+    API --> DOC
+    API --> RAG
+    RAG --> NEO
+    RAG --> CHR
+    API --> RED
+    API --> PRO
+    PRO --> GRA
+    API --> LOK
 ```
 
-## 🛠️ Verwendung
+## 📋 Voraussetzungen
 
-### CLI Tools
+### Minimale Systemanforderungen
+- **CPU**: 4 Cores
+- **RAM**: 8GB (16GB empfohlen)
+- **Storage**: 50GB SSD
+- **Network**: Breitband-Internet für KI-APIs
+
+### Software-Abhängigkeiten
+- **Docker** & Docker Compose
+- **Python 3.11+**
+- **Node.js 18+**
+- **Git**
+
+### Betriebssystem-Support
+- ✅ **Linux** (Ubuntu/Debian, CentOS/RHEL)
+- ✅ **macOS** (Intel/Apple Silicon)
+- ✅ **Windows** (Windows 10/11 mit WSL2)
+
+## 🛠️ Entwicklung
+
+### Entwicklungsumgebung einrichten
 
 ```bash
-# macOS/Linux
-./start-all.sh                    # System starten
-./ki-cli.sh process dokument.pdf  # Dokument verarbeiten
-./ki-cli.sh query "Ihre Frage"    # Abfrage stellen
-./ki-cli.sh stats                 # Statistiken anzeigen
-./stop-all.sh                     # System stoppen
+# Backend Development
+cd ki-wissenssystem
+./dev-mode.sh
 
-# Windows (PowerShell)
-.\start-all.ps1                   # System starten
-.\ki-cli.ps1 process dokument.pdf # Dokument verarbeiten
-.\ki-cli.ps1 query "Ihre Frage"   # Abfrage stellen
-.\ki-cli.ps1 stats                # Statistiken anzeigen
-.\stop-all.ps1                    # System stoppen
+# Frontend Development
+cd ki-wissenssystem-webapp
+npm run dev
 
-# Windows (Explorer - Doppelklick)
-start-all.bat                     # System starten
-ki-cli.bat process dokument.pdf   # CLI verwenden
-stop-all.bat                      # System stoppen
+# Beide Services parallel starten
+make dev  # Siehe Makefile
 ```
 
-### Web Interface
+### Testing
 
-- **API Dokumentation**: http://localhost:8080/docs
-- **Neo4j Browser**: http://localhost:7474 (neo4j/password)
-
-### Obsidian Plugin
-
-#### 🚀 Automatische Installation (empfohlen):
 ```bash
-# macOS/Linux
+# Backend Tests
 cd ki-wissenssystem
-./setup-obsidian.sh    # All-in-One Setup
+python -m pytest tests/
 
-# Windows
-cd ki-wissenssystem
-.\setup-obsidian.ps1   # Windows All-in-One Setup
+# Frontend Tests
+cd ki-wissenssystem-webapp
+npm test
+
+# E2E Tests
+npm run test:e2e
 ```
 
-#### 📋 Manuelle Installation:
-1. **Plugin bauen**:
-   ```bash
-   cd obsidian-ki-plugin
-   npm install
-   npm run build
-   ```
+### Code Quality
 
-2. **Plugin installieren**:
-   - **macOS lokal**: `~/Library/Application Support/obsidian/IhrVault/.obsidian/plugins/`
-   - **macOS iCloud**: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/IhrVault/.obsidian/plugins/`
-   - **Windows**: `%APPDATA%\Obsidian\IhrVault\.obsidian\plugins\`
+```bash
+# Linting & Formatting
+make lint
+make format
 
-3. **In Obsidian aktivieren**:
-   - Settings → Community Plugins → "KI-Wissenssystem" aktivieren
+# Type Checking
+make typecheck
 
-4. **API-URL konfigurieren**: `http://localhost:8080`
+# Security Scan
+make security-check
+```
 
-#### 📄 Plugin-Features nutzen:
-- **📤 Dokumentenupload**: Ribbon-Icon oder Cmd+P → "Open Document Upload"
-- **💬 Chat**: Ribbon-Icon oder Cmd+P → "Open Knowledge Chat"  
-- **🕸️ Graph**: Ribbon-Icon oder Cmd+P → "Open Knowledge Graph"
+## 📖 Weitere Dokumentation
+
+| Dokument | Beschreibung |
+|----------|-------------|
+| [🏭 Production Deployment](PRODUCTION-DEPLOYMENT.md) | Vollständige Produktions-Setup Anleitung |
+| [🔧 API Analyse](API-Analyse_und_Anpassungsempfehlungen.md) | Backend API Dokumentation und Empfehlungen |
+| [🌐 Web-App Guide](README-WEBAPP.md) | Frontend-spezifische Dokumentation |
+| [📔 Obsidian Plugin](OBSIDIAN-PLUGIN-ANALYSE.md) | Plugin-Entwicklung und Integration |
+| [💻 Entwicklungsguide](ENTWICKLUNG.md) | Entwicklungsumgebung und Workflows |
+| [🏗️ Workflow Dokumentation](WORKFLOW-DOKUMENTATION.md) | Entwicklungs- und Deployment-Prozesse |
+| [🔄 Migration Guide](PLATTFORM-MIGRATIONSSTRATEGIE.md) | Platform Migration Strategien |
+| [🎯 Prototyp Status](PROTOTYP-FERTIGSTELLUNG.md) | Projektfortschritt und Milestones |
+| [📋 Branch Struktur](BRANCH-STRUKTUR.md) | Git Branch Management |
 
 ## 🔧 Konfiguration
 
 ### Environment Variables
 
-```bash
-# .env Datei bearbeiten
-nano .env
-```
-
-Wichtige Variablen:
+**Development (.env):**
 ```env
+# LLM Configuration
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.1:8b
 OPENAI_API_KEY=your-openai-key
-ANTHROPIC_API_KEY=your-anthropic-key
-GOOGLE_API_KEY=your-google-key
 
+# Database URLs  
 NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password
-
 CHROMA_HOST=localhost
 CHROMA_PORT=8000
+
+# API Configuration
+API_HOST=localhost
+API_PORT=8000
+CORS_ORIGINS=["http://localhost:3000"]
+```
+
+**Production (production.env):**
+```env
+# Siehe production-env.template für vollständige Konfiguration
+NODE_ENV=production
+SECURE_SSL_REDIRECT=true
+RATE_LIMIT_ENABLED=true
+MONITORING_ENABLED=true
+BACKUP_ENABLED=true
 ```
 
 ### 🤖 KI-Modell Konfiguration
 
-#### Profil-basierte Modell-Auswahl (✨ NEU)
+```bash
+# Modell-Profile wechseln
+./ki-wissenssystem/scripts/system/switch-model-profile.sh
+
+# Verfügbare Profile:
+# - development (Ollama lokal)
+# - production-openai (OpenAI GPT-4)
+# - production-anthropic (Claude Sonnet)
+# - production-google (Gemini Pro)
+```
+
+### 🔒 Sicherheitskonfiguration
+
+- **JWT Secrets**: Automatische Generierung bei Setup
+- **SSL/TLS**: Let's Encrypt oder Custom Certificates
+- **Rate Limiting**: API-basierte Limits
+- **CORS**: Konfigurierbare Origins
+- **Network Security**: Docker Network Isolation
+
+## 🔄 Wartung & Support
+
+### Monitoring & Health Checks
 
 ```bash
-# Einfaches Umschalten zwischen Modell-Profilen
-./switch-model-profile.sh --show      # Aktuelles Profil anzeigen
-./switch-model-profile.sh --list      # Alle Profile auflisten
-./switch-model-profile.sh balanced    # Zu Balanced-Profil wechseln
+# System Status prüfen
+./deploy.sh status
+
+# Logs einsehen
+./deploy.sh logs
+
+# Performance Metriken
+# Grafana Dashboard: http://your-domain:3001
 ```
 
-**Verfügbare Profile:**
-
-| Profil | Beschreibung | Kosten | Performance | Empfohlen für |
-|--------|--------------|--------|-------------|---------------|
-| **premium** | Neueste Top-Modelle | Hoch | Maximal | Produktion, beste Qualität |
-| **balanced** | Optimal ausgewogen | Mittel | Hoch | Entwicklung, gute Balance |
-| **cost_effective** | Kostenbewusst | Niedrig | Gut | Testing, Experimente |
-| **🧪 gemini_only** | Nur Google Gemini | Niedrig | Gut | Tests mit nur Google API |
-| **🧪 openai_only** | Nur OpenAI GPT | Mittel | Hoch | Tests mit nur OpenAI API |
-
-#### Environment-Konfiguration
-
-```env
-# Profil-Auswahl (empfohlen)
-MODEL_PROFILE=premium  # premium, balanced, cost_effective, gemini_only, openai_only
-
-# Manuelle Modell-Auswahl (optional - überschreibt Profil)
-# CLASSIFIER_MODEL=gemini-2.5-flash
-# EXTRACTOR_MODEL=gpt-4.1
-# SYNTHESIZER_MODEL=claude-opus-4-20250514
-# VALIDATOR_MODEL_1=gpt-4o
-# VALIDATOR_MODEL_2=claude-sonnet-4-20250514
-```
-
-**Aktuelle Modell-Zuordnung (Premium-Profil):**
-- **Classifier**: `gemini-2.5-flash` - Schnelle Dokumentklassifizierung
-- **Extractor**: `gpt-4.1` - Beste Datenextraktion  
-- **Synthesizer**: `claude-opus-4-20250514` - Hochwertige Antwortgenerierung
-- **Validator**: `gpt-4o` + `claude-sonnet-4-20250514` - Doppelte Qualitätsprüfung
-
-## 📚 Unterstützte Dokumenttypen
-
-### Automatische Erkennung und Verarbeitung
-
-| Dokumenttyp | Automatische Erkennung | Control-Extraktion | Chunk-Verarbeitung |
-|-------------|------------------------|--------------------|--------------------|
-| **BSI IT-Grundschutz** | ✅ | ✅ | ✅ |
-| **BSI C5 Cloud** | ✅ | ✅ | ✅ |
-| **ISO 27001** | ✅ | ✅ | ✅ |
-| **NIST CSF** | ✅ | ✅ | ✅ |
-| **Technische Whitepapers** | ✅ | ❌ | ✅ |
-| **FAQ-Dokumente** | ✅ | ❌ | ✅ |
-| **Allgemeine PDFs** | ✅ | ❌ | ✅ |
-
-### Dateiformate
-- **PDF** - Vollständige Text-Extraktion
-- **Word (.docx)** - Struktur und Formatierung
-- **Excel (.xlsx)** - Tabellen und Daten
-- **PowerPoint (.pptx)** - Folien und Inhalte
-- **Text (.txt)** - Einfache Textverarbeitung
-- **XML** - Strukturierte Datenextraktion
-
-## 📄 Transparenter Upload-Workflow
-
-Das Plugin bietet vollständige Transparenz über den Verarbeitungsprozess:
-
-### 1. **Upload-Analyse** (vor Verarbeitung)
-- Dateityp-Erkennung mit Konfidenz
-- Dokumentklassifizierung-Vorhersage
-- Geschätzte Verarbeitungsdauer
-- Erwartete Anzahl Controls/Chunks
-
-### 2. **Echtzeit-Verarbeitung**
-- Schritt-für-Schritt Fortschritt
-- Aktuelle Verarbeitungsphase
-- Geschätzte Restzeit
-- Fehlerbehandlung mit Details
-
-### 3. **Ergebnis-Transparenz**
-- Extraktions-Qualitätsbewertung
-- Beziehungs-Konfidenzwerte
-- Quellenangaben mit Seitenzahlen
-- Graph-Kontext mit Begründungen
-
-## 📁 Ordnerstruktur
-
-Das Projekt verwendet eine organisierte Skript-Struktur für bessere Wartbarkeit:
-
-```
-ki-wissenssystem/
-├── scripts/                    # Organisierte Skripte
-│   ├── setup/                 # Setup und Installation
-│   │   ├── setup.sh/.ps1           # Hauptinstallation
-│   │   ├── install-dev-tools.sh/.ps1  # Entwicklungstools
-│   │   └── requirements-dev.txt    # Dev-Dependencies
-│   ├── system/                # System-Management
-│   │   ├── start-all.sh/.ps1/.bat  # Vollständiger Start
-│   │   ├── stop-all.sh/.ps1/.bat   # Vollständiger Stop
-│   │   ├── start-services.sh/.ps1  # Nur Docker Services
-│   │   └── switch-model-profile.py/.sh/.ps1  # 🆕 Modell-Profil Umschalter
-│   ├── obsidian/              # Plugin-Management
-│   │   ├── setup-obsidian.sh/.ps1  # Plugin-Installation
-│   │   └── find-obsidian-paths.sh  # Vault-Erkennung
-│   ├── api/                   # API-Server
-│   │   ├── start-api.sh/.ps1/.bat  # API starten
-│   ├── cli/                   # CLI-Tools
-│   │   └── ki-cli.sh/.ps1/.bat     # CLI Wrapper
-│   └── dev/                   # Entwicklung
-│       └── dev-mode.sh/.ps1        # Hot Reload Modus
-├── setup.sh/.ps1              # Wrapper (Rückwärtskompatibilität)
-├── start-all.sh/.ps1/.bat     # Wrapper (Einfache Nutzung)
-├── stop-all.sh/.ps1/.bat      # Wrapper (Einfache Nutzung)
-├── ki-cli.sh/.ps1/.bat        # Wrapper (CLI-Zugang)
-└── switch-model-profile.sh/.ps1 # 🆕 Wrapper (Modell-Profile)
-```
-
-**Vorteile der neuen Struktur:**
-- 📂 **Bessere Organisation** - Skripte nach Funktion gruppiert
-- 🔍 **Einfache Navigation** - Intuitive Ordnerstruktur  
-- 🔄 **Rückwärtskompatibilität** - Wrapper im Hauptverzeichnis
-- 🛠️ **Wartbarkeit** - Verwandte Skripte zusammen
-
-## 🧪 Entwicklung
-
-### 🚀 Schneller Einstieg
+### Backup & Recovery
 
 ```bash
-# 1. Repository klonen
-git clone https://github.com/username/ki-wissenssystem.git
-cd ki-wissenssystem
+# Manuelles Backup
+./deploy.sh backup
 
-# 2. Setup ausführen (einmalig)
-./setup.sh                 # macOS/Linux
-# oder: .\setup.ps1         # Windows
+# Wiederherstellung
+./deploy.sh restore backup-timestamp
 
-# 3. Entwicklungstools installieren (optional)
-./scripts/setup/install-dev-tools.sh     # macOS/Linux
-# oder: .\scripts\setup\install-dev-tools.ps1  # Windows
-
-# 4. Entwicklungs-Modus starten
-./dev-mode.sh              # macOS/Linux - Wrapper
-.\dev-mode.ps1             # Windows - Wrapper
-# oder direkt:
-./scripts/dev/dev-mode.sh  # macOS/Linux - Original
-.\scripts\dev\dev-mode.ps1 # Windows - Original
+# Rollback auf letzte Version
+./deploy.sh rollback
 ```
 
-### 🛠️ Entwicklungstools
-
-Nach Installation der Entwicklungstools stehen zur Verfügung:
+### Updates
 
 ```bash
-# Testing
-pytest                     # Tests ausführen
-pytest --cov              # Mit Coverage
-pytest tests/test_api.py   # Spezifische Tests
+# Sicherheits-Updates
+./deploy.sh update
 
-# Code Quality
-black .                    # Code formatieren
-isort .                    # Imports sortieren
-flake8                     # Linting
-mypy src/                  # Type checking
+# Rolling Update (Zero-Downtime)
+./deploy.sh update --rolling
 
-# Debugging
-ipython                    # Bessere REPL
-jupyter notebook           # Notebooks für Experimente
-memory_profiler            # Memory profiling
-
-# API Testing
-http localhost:8080/docs   # API testen
-httpie                     # HTTP client
+# Hot-Fix Deployment
+./deploy.sh hotfix
 ```
 
-### 🔥 Hot Reload verfügbar!
+### Troubleshooting
 
-- **Backend**: Code-Änderungen werden automatisch übernommen
-- **Plugin**: Watch-Modus mit `npm run dev`
-- **Keine Neuinstallation** für die meisten Änderungen nötig
+**Häufige Probleme:**
 
-### 📚 Detaillierte Anleitung
+1. **Port Konflikte**: Web-App läuft auf Port 3001 statt 3000
+2. **Docker Issues**: `docker system prune` für Cleanup
+3. **Memory Issues**: Erhöhen Sie die Docker Memory Limits
+4. **SSL Certificate**: Let's Encrypt Renewal mit Certbot
 
-Siehe [ENTWICKLUNG.md](ENTWICKLUNG.md) für:
-- Hot Reload Setup
-- Entwicklungs-Workflow
-- Debugging-Tools
-- Häufige Probleme
+**Support Kanäle:**
+- 📖 **Dokumentation**: Siehe `/docs` Verzeichnis
+- 🐛 **Issues**: GitHub Issues für Bug Reports
+- 💬 **Discussions**: GitHub Discussions für Fragen
 
-### Tests ausführen
+## 🏷️ Version & Branch Information
 
-```bash
-pytest tests/
-npm test  # Plugin-Tests
-```
-
-## 🐳 Docker Services
-
-Das System verwendet folgende Services:
-
-- **Neo4j 5** - Knowledge Graph Database
-- **ChromaDB 0.5** - Vector Database für Embeddings
-- **Redis 7** - Caching und Session-Management
-
-### Service-Management
-
-```bash
-# Alle Services starten
-docker-compose up -d
-
-# Logs anzeigen
-docker-compose logs -f
-
-# Services stoppen
-docker-compose down
-```
-
-## 🔍 Fehlerbehebung
-
-### Häufige Probleme
-
-#### Docker-Probleme
-```bash
-# Docker Status prüfen
-docker info
-
-# Services neu starten
-docker-compose down && docker-compose up -d
-```
-
-#### Python-Probleme
-```bash
-# Virtual Environment neu erstellen
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-#### Plugin-Build-Probleme
-```bash
-cd obsidian-ki-plugin
-rm -rf node_modules
-npm install
-npm run build
-```
-
-### Log-Dateien
-
-- **Setup**: `setup.log` / `setup.log` (Windows)
-- **API**: `logs/api.log`
-- **Docker**: `docker-compose logs`
-
-## 📄 Lizenz
-
-MIT License - siehe [LICENSE](LICENSE) für Details.
-
-## 🤝 Contributing
-
-1. Fork das Repository
-2. Feature Branch erstellen (`git checkout -b feature/amazing-feature`)
-3. Changes committen (`git commit -m 'Add amazing feature'`)
-4. Branch pushen (`git push origin feature/amazing-feature`)
-5. Pull Request erstellen
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/username/ki-wissenssystem/issues)
-- **Diskussionen**: [GitHub Discussions](https://github.com/username/ki-wissenssystem/discussions)
-- **Dokumentation**: [Wiki](https://github.com/username/ki-wissenssystem/wiki)
+- **Current Branch**: `webapp-version` (Production-ready Web Application)
+- **Main Branch**: `main` (Obsidian Plugin Version)
+- **Version**: v2.0.0-enterprise
+- **Last Updated**: 2024-06-25
 
 ---
 
-**Entwickelt mit ❤️ für bessere Compliance und IT-Sicherheit**
+**🎯 Status**: ✅ **Production Ready** - Vollständig getestet und deployment-bereit
+
+Für technischen Support oder Fragen zur Implementierung siehe die verlinkte Dokumentation oder erstellen Sie ein GitHub Issue.

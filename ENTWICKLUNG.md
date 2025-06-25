@@ -1,4 +1,6 @@
-# 🛠️ Entwicklerdokumentation
+# 🛠️ KI-Wissenssystem - Entwicklungsguide
+
+> **📚 Navigation**: [🏠 Hauptdokumentation](README.md) | [🌐 Web-App Guide](README-WEBAPP.md) | [📖 Dokumentationsübersicht](docs/README.md)
 
 ## ❓ **Code-Änderungen nach Setup**
 

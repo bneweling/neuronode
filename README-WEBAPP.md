@@ -2,6 +2,8 @@
 
 Eine moderne, eigenständige Web-Anwendung für intelligente Dokumentenverarbeitung und Wissensmanagement.
 
+> **📚 Navigation**: [🏠 Hauptdokumentation](README.md) | [🏭 Production Deployment](PRODUCTION-DEPLOYMENT.md) | [📖 Dokumentationsübersicht](docs/README.md)
+
 ## Überblick
 
 Diese Version des KI-Wissenssystems bietet eine vollständig eigenständige Web-Anwendung mit:

@@ -1,0 +1,100 @@
+# =============================================================================
+# KI-Wissenssystem Frontend - Production Dockerfile
+# =============================================================================
+
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# =============================================================================
+# Build Stage
+# =============================================================================
+
+FROM base AS builder
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_ENV=production
+
+# Set environment variables for build
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV
+ENV NODE_ENV=production
+
+# Build the application
+RUN npm run build
+
+# =============================================================================
+# Production Stage  
+# =============================================================================
+
+FROM base AS runner
+
+# Build arguments
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+
+# Metadata
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="KI-Wissenssystem Frontend" \
+      org.label-schema.description="Production-ready Next.js frontend for KI-Wissenssystem" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/your-org/ki-wissenssystem" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+
+# Set correct permissions for Next.js cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Copy built application with correct permissions
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Set hostname
+ENV HOSTNAME="0.0.0.0"
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+# Start the application
+CMD ["node", "server.js"] 
