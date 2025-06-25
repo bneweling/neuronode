@@ -84,6 +84,11 @@ Nach der Installation stehen mehrere Optionen zur Verfügung:
 # Entwicklung
 .\dev-mode.ps1           # Entwicklungs-Modus
 .\install-dev-tools.ps1  # Entwicklungstools installieren
+
+# 🆕 KI-Modell Profile (Neu!)
+.\switch-model-profile.ps1 -Show      # Aktuelles Profil anzeigen
+.\switch-model-profile.ps1 -List      # Alle Profile auflisten
+.\switch-model-profile.ps1 -Profile balanced  # Zu Balanced wechseln
 ```
 
 #### Batch-Dateien (einfacher - Doppelklick im Explorer):
@@ -135,7 +140,8 @@ ki-wissenssystem\
 │   ├── system\                # System-Management
 │   │   ├── start-all.ps1/.bat      # Vollständiger Start
 │   │   ├── stop-all.ps1/.bat       # Vollständiger Stop
-│   │   └── start-services.ps1      # Nur Docker Services
+│   │   ├── start-services.ps1      # Nur Docker Services
+│   │   └── switch-model-profile.py/.ps1  # 🆕 Modell-Profil Umschalter
 │   ├── obsidian\              # Plugin-Management
 │   │   └── setup-obsidian.ps1      # Plugin-Installation
 │   ├── api\                   # API-Server
@@ -150,6 +156,7 @@ ki-wissenssystem\
 ├── start-all.ps1/.bat     # Wrapper (Einfache Nutzung)
 ├── stop-all.ps1/.bat      # Wrapper (Einfache Nutzung)
 ├── ki-cli.ps1/.bat        # Wrapper (CLI-Zugang)
+├── switch-model-profile.ps1 # 🆕 Wrapper (Modell-Profile)
 ├── dev-mode.ps1           # Wrapper (Entwicklung)
 ├── venv\                  # Python Virtual Environment
 ├── data\                  # Daten-Verzeichnis

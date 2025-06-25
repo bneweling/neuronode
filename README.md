@@ -172,13 +172,44 @@ CHROMA_HOST=localhost
 CHROMA_PORT=8000
 ```
 
-### LLM Model Routing
+### 🤖 KI-Modell Konfiguration
+
+#### Profil-basierte Modell-Auswahl (✨ NEU)
+
+```bash
+# Einfaches Umschalten zwischen Modell-Profilen
+./switch-model-profile.sh --show      # Aktuelles Profil anzeigen
+./switch-model-profile.sh --list      # Alle Profile auflisten
+./switch-model-profile.sh balanced    # Zu Balanced-Profil wechseln
+```
+
+**Verfügbare Profile:**
+
+| Profil | Beschreibung | Kosten | Performance | Empfohlen für |
+|--------|--------------|--------|-------------|---------------|
+| **premium** | Neueste Top-Modelle | Hoch | Maximal | Produktion, beste Qualität |
+| **balanced** | Optimal ausgewogen | Mittel | Hoch | Entwicklung, gute Balance |
+| **cost_effective** | Kostenbewusst | Niedrig | Gut | Testing, Experimente |
+
+#### Environment-Konfiguration
 
 ```env
-CLASSIFIER_MODEL=gemini-pro
-EXTRACTOR_MODEL=gpt-4-turbo-preview
-SYNTHESIZER_MODEL=claude-3-opus-20240229
+# Profil-Auswahl (empfohlen)
+MODEL_PROFILE=premium  # premium, balanced, cost_effective
+
+# Manuelle Modell-Auswahl (optional - überschreibt Profil)
+# CLASSIFIER_MODEL=gemini-2.5-flash
+# EXTRACTOR_MODEL=gpt-4.1
+# SYNTHESIZER_MODEL=claude-opus-4-20250514
+# VALIDATOR_MODEL_1=gpt-4o
+# VALIDATOR_MODEL_2=claude-sonnet-4-20250514
 ```
+
+**Aktuelle Modell-Zuordnung (Premium-Profil):**
+- **Classifier**: `gemini-2.5-flash` - Schnelle Dokumentklassifizierung
+- **Extractor**: `gpt-4.1` - Beste Datenextraktion  
+- **Synthesizer**: `claude-opus-4-20250514` - Hochwertige Antwortgenerierung
+- **Validator**: `gpt-4o` + `claude-sonnet-4-20250514` - Doppelte Qualitätsprüfung
 
 ## 📚 Unterstützte Dokumenttypen
 
@@ -238,7 +269,8 @@ ki-wissenssystem/
 │   ├── system/                # System-Management
 │   │   ├── start-all.sh/.ps1/.bat  # Vollständiger Start
 │   │   ├── stop-all.sh/.ps1/.bat   # Vollständiger Stop
-│   │   └── start-services.sh/.ps1  # Nur Docker Services
+│   │   ├── start-services.sh/.ps1  # Nur Docker Services
+│   │   └── switch-model-profile.py/.sh/.ps1  # 🆕 Modell-Profil Umschalter
 │   ├── obsidian/              # Plugin-Management
 │   │   ├── setup-obsidian.sh/.ps1  # Plugin-Installation
 │   │   └── find-obsidian-paths.sh  # Vault-Erkennung
@@ -251,7 +283,8 @@ ki-wissenssystem/
 ├── setup.sh/.ps1              # Wrapper (Rückwärtskompatibilität)
 ├── start-all.sh/.ps1/.bat     # Wrapper (Einfache Nutzung)
 ├── stop-all.sh/.ps1/.bat      # Wrapper (Einfache Nutzung)
-└── ki-cli.sh/.ps1/.bat        # Wrapper (CLI-Zugang)
+├── ki-cli.sh/.ps1/.bat        # Wrapper (CLI-Zugang)
+└── switch-model-profile.sh/.ps1 # 🆕 Wrapper (Modell-Profile)
 ```
 
 **Vorteile der neuen Struktur:**
