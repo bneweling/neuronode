@@ -17,17 +17,20 @@ export const metadata: Metadata = {
   creator: "KI-Wissenssystem",
   publisher: "KI-Wissenssystem",
   robots: "index, follow",
-  viewport: {
+  manifest: '/manifest.json',
+};
+
+export function generateViewport() {
+  return {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
-  },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#6750A4" },
-    { media: "(prefers-color-scheme: dark)", color: "#D0BCFF" }
-  ],
-  manifest: '/manifest.json',
-};
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: "#6750A4" },
+      { media: "(prefers-color-scheme: dark)", color: "#D0BCFF" }
+    ],
+  }
+}
 
 export default function RootLayout({
   children,

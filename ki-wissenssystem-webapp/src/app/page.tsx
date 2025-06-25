@@ -15,6 +15,25 @@ interface SystemStatus {
   lastCheck: string
 }
 
+interface SystemDiagnostics {
+  system: {
+    status: 'healthy' | 'partial' | 'error'
+    timestamp: string
+    components: Record<string, string>
+  }
+  performance: {
+    response_time: number
+    database_latency: number
+    memory_usage: number
+    cpu_usage: number
+  }
+  capabilities: {
+    models_available: string[]
+    features_enabled: string[]
+    max_upload_size: number
+  }
+}
+
 interface NavigationItem {
   id: ViewType
   label: string
@@ -30,16 +49,19 @@ export default function HomePage() {
     graphDb: false,
     lastCheck: 'Nie'
   })
+  const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  // System Status Check
+  // System Status Check mit erweiterten Diagnostics
   useEffect(() => {
     const checkSystemStatus = async () => {
       setIsLoading(true)
       try {
         const apiClient = getAPIClient()
+        
+        // Basis Health Check
         const health = await apiClient.healthCheck()
         setSystemStatus({
           api: health.status === 'healthy',
@@ -47,6 +69,16 @@ export default function HomePage() {
           graphDb: health.components?.graph_db === 'healthy' || false,
           lastCheck: new Date().toLocaleTimeString('de-DE')
         })
+
+        // Erweiterte Diagnostics (wenn API verfügbar)
+        if (health.status === 'healthy') {
+          try {
+            const diag = await apiClient.getDiagnostics()
+            setDiagnostics(diag)
+          } catch (error) {
+            console.log('Erweiterte Diagnostics nicht verfügbar:', error)
+          }
+        }
       } catch (error) {
         console.error('Systemstatus-Check fehlgeschlagen:', error)
         setSystemStatus(prev => ({
@@ -54,6 +86,7 @@ export default function HomePage() {
           api: false,
           lastCheck: new Date().toLocaleTimeString('de-DE')
         }))
+        setDiagnostics(null)
       } finally {
         setIsLoading(false)
       }
@@ -113,7 +146,10 @@ export default function HomePage() {
 
             {/* System Status */}
             <div className="surface-card">
-              <h2 className="title-large">Systemstatus</h2>
+              <h2 className="title-large flex items-center gap-2">
+                <span className="material-symbols-outlined">monitor_health</span>
+                Systemstatus
+              </h2>
               <div className="flex flex-col gap-3 mt-4">
                 <div className="flex items-center justify-between">
                   <span className="body-medium">API-Server</span>
@@ -153,6 +189,80 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Performance Metrics (wenn verfügbar) */}
+            {diagnostics?.performance && (
+              <div className="surface-card">
+                <h2 className="title-large flex items-center gap-2">
+                  <span className="material-symbols-outlined">speed</span>
+                  Performance
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div className="text-center p-3 md-surface-variant md-shape-medium">
+                    <div className="text-2xl font-bold text-primary">
+                      {diagnostics.performance.response_time}ms
+                    </div>
+                    <div className="text-sm opacity-60">Antwortzeit</div>
+                  </div>
+                  <div className="text-center p-3 md-surface-variant md-shape-medium">
+                    <div className="text-2xl font-bold text-primary">
+                      {diagnostics.performance.database_latency}ms
+                    </div>
+                    <div className="text-sm opacity-60">DB-Latenz</div>
+                  </div>
+                  <div className="text-center p-3 md-surface-variant md-shape-medium">
+                    <div className="text-2xl font-bold text-primary">
+                      {Math.round(diagnostics.performance.memory_usage)}%
+                    </div>
+                    <div className="text-sm opacity-60">RAM-Nutzung</div>
+                  </div>
+                  <div className="text-center p-3 md-surface-variant md-shape-medium">
+                    <div className="text-2xl font-bold text-primary">
+                      {Math.round(diagnostics.performance.cpu_usage)}%
+                    </div>
+                    <div className="text-sm opacity-60">CPU-Nutzung</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* System Capabilities */}
+            {diagnostics?.capabilities && (
+              <div className="surface-card">
+                <h2 className="title-large flex items-center gap-2">
+                  <span className="material-symbols-outlined">settings</span>
+                  Systemfähigkeiten
+                </h2>
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <h3 className="body-medium font-semibold mb-2">Verfügbare KI-Modelle:</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {diagnostics.capabilities.models_available.map((model, index) => (
+                        <span key={index} className="badge-primary">
+                          {model}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="body-medium font-semibold mb-2">Features:</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {diagnostics.capabilities.features_enabled.map((feature, index) => (
+                        <span key={index} className="badge-secondary">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="body-medium font-semibold mb-2">Max. Upload-Größe:</h3>
+                    <span className="text-lg text-primary font-medium">
+                      {Math.round(diagnostics.capabilities.max_upload_size / 1024 / 1024)} MB
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="surface-card">
               <h2 className="title-large">Schnellzugriff</h2>
@@ -160,6 +270,7 @@ export default function HomePage() {
                 <button 
                   className="md-filled-button"
                   onClick={() => handleNavigation('chat')}
+                  disabled={!systemStatus.api}
                 >
                   <span className="material-symbols-outlined">chat</span>
                   KI-Chat starten
@@ -168,6 +279,7 @@ export default function HomePage() {
                 <button 
                   className="md-outlined-button"
                   onClick={() => handleNavigation('upload')}
+                  disabled={!systemStatus.api}
                 >
                   <span className="material-symbols-outlined">upload_file</span>
                   Dokumente hochladen
@@ -176,6 +288,7 @@ export default function HomePage() {
                 <button 
                   className="md-outlined-button"
                   onClick={() => handleNavigation('graph')}
+                  disabled={!systemStatus.graphDb}
                 >
                   <span className="material-symbols-outlined">account_tree</span>
                   Wissensgraph erkunden

@@ -692,3 +692,207 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Status Badges */
+.badge-primary {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  background-color: rgba(var(--md-sys-color-primary-rgb), 0.12);
+  color: var(--md-sys-color-primary);
+  border: 1px solid rgba(var(--md-sys-color-primary-rgb), 0.2);
+}
+
+.badge-secondary {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  background-color: rgba(var(--md-sys-color-secondary-rgb), 0.12);
+  color: var(--md-sys-color-secondary);
+  border: 1px solid rgba(var(--md-sys-color-secondary-rgb), 0.2);
+}
+
+.badge-success {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  background-color: rgba(76, 175, 80, 0.12);
+  color: rgb(76, 175, 80);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.badge-warning {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  background-color: rgba(255, 152, 0, 0.12);
+  color: rgb(255, 152, 0);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.badge-error {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  background-color: rgba(244, 67, 54, 0.12);
+  color: rgb(244, 67, 54);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+/* Enhanced Material Design Components */
+.md-card-elevated {
+  @apply md-surface md-elevation-3 md-shape-large p-6;
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md-progress-indicator {
+  @apply relative overflow-hidden rounded-full;
+  background-color: var(--md-sys-color-surface-variant);
+}
+
+.md-progress-indicator::after {
+  content: '';
+  @apply absolute top-0 left-0 h-full rounded-full transition-all duration-300;
+  background-color: var(--md-sys-color-primary);
+  width: var(--progress, 0%);
+}
+
+/* Metric Cards */
+.metric-card {
+  @apply bg-surface-container rounded-xl p-4 border border-outline-variant;
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  @apply md-elevation-2;
+  border-color: var(--md-sys-color-primary);
+}
+
+.metric-value {
+  @apply text-2xl font-bold;
+  color: var(--md-sys-color-primary);
+}
+
+.metric-label {
+  @apply text-sm opacity-70 mt-1;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* System Status Enhancements */
+.status-indicator {
+  @apply flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.status-online {
+  background-color: rgba(76, 175, 80, 0.12);
+  color: rgb(76, 175, 80);
+}
+
+.status-offline {
+  background-color: rgba(244, 67, 54, 0.12);
+  color: rgb(244, 67, 54);
+}
+
+.status-warning {
+  background-color: rgba(255, 152, 0, 0.12);
+  color: rgb(255, 152, 0);
+}
+
+/* Enhanced Button States */
+.md-filled-button:disabled {
+  @apply opacity-38 cursor-not-allowed;
+  background-color: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-surface);
+}
+
+.md-outlined-button:disabled {
+  @apply opacity-38 cursor-not-allowed;
+  border-color: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Loading Animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.loading-pulse {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Responsive Grid Improvements */
+.metrics-grid {
+  @apply grid gap-4;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Enhanced Surface Cards */
+.surface-card {
+  @apply bg-surface-container rounded-xl p-6 mb-6;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  transition: all 0.2s ease;
+}
+
+.surface-card:hover {
+  @apply md-elevation-1;
+}
+
+/* Advanced Material States */
+.md-state-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+.md-state-layer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.md-state-layer:hover::before {
+  opacity: 0.08;
+}
+
+.md-state-layer:focus::before {
+  opacity: 0.12;
+}
+
+.md-state-layer:active::before {
+  opacity: 0.16;
+}
+
+/* Improved Typography Scale */
+.display-large {
+  font-size: 3.5rem;
+  line-height: 4rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.display-medium {
+  font-size: 2.8rem;
+  line-height: 3.2rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.display-small {
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  font-weight: 400;
+}

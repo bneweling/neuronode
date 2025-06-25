@@ -2,28 +2,66 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useWebSocketChat, ChatMessage } from '@/lib/websocket'
+import { useAPI, QueryRequest } from '@/lib/api'
 import { useMaterialTheme } from '@/lib/theme'
 
 export default function ChatInterface() {
   const { connected, messages, isTyping, sendMessage, clearMessages } = useWebSocketChat()
+  const api = useAPI()
   const [inputValue, setInputValue] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [streamingMessage, setStreamingMessage] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [useStreaming, setUseStreaming] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { breakpoint } = useMaterialTheme()
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping])
+  }, [messages, isTyping, streamingMessage])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputValue.trim() || !connected || isSubmitting) return
 
     setIsSubmitting(true)
+    const userMessage = inputValue.trim()
+    setInputValue('')
+
     try {
-      await sendMessage(inputValue.trim())
-      setInputValue('')
+      if (useStreaming && api) {
+        // Streaming-Ansatz
+        setIsStreaming(true)
+        setStreamingMessage('')
+
+        const request: QueryRequest = {
+          query: userMessage,
+          use_cache: true
+        }
+
+        await api.sendMessageStreaming(
+          request,
+          (chunk: string) => {
+            setStreamingMessage(prev => prev + chunk)
+          },
+          (response) => {
+            setIsStreaming(false)
+            setStreamingMessage('')
+            // Die finale Antwort wird über WebSocket abgehandelt
+          },
+          (error) => {
+            console.error('Streaming-Fehler:', error)
+            setIsStreaming(false)
+            setStreamingMessage('')
+            // Fallback zu normalem WebSocket
+            sendMessage(userMessage)
+          }
+        )
+      } else {
+        // Normaler WebSocket-Ansatz
+        await sendMessage(userMessage)
+      }
     } catch (error) {
       console.error('Fehler beim Senden der Nachricht:', error)
     } finally {
@@ -58,17 +96,23 @@ export default function ChatInterface() {
               : 'chat-message-assistant'
           }`}
         >
-          <div className="md-body-large">{message.content}</div>
+          <div className="md-body-large whitespace-pre-wrap">{message.content}</div>
           
           {/* Sources Display */}
           {message.sources && message.sources.length > 0 && (
             <div className="mt-3 space-y-2">
-              <div className="text-xs font-semibold opacity-70">Quellen:</div>
+              <div className="text-xs font-semibold opacity-70 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">source</span>
+                Quellen:
+              </div>
               {message.sources.map((source, index) => (
                 <div key={index} className="text-xs opacity-80 md-surface-variant md-shape-small p-2">
                   <div className="font-medium">{source.title}</div>
                   <div className="truncate">{source.content}</div>
-                  <div className="text-right opacity-60">Relevanz: {(source.score * 100).toFixed(1)}%</div>
+                  <div className="text-right opacity-60 flex items-center justify-end gap-1">
+                    <span className="material-symbols-outlined text-xs">psychology</span>
+                    Relevanz: {(source.score * 100).toFixed(1)}%
+                  </div>
                 </div>
               ))}
             </div>
@@ -88,9 +132,7 @@ export default function ChatInterface() {
       <div className="app-header md-elevation-1 p-4 flex items-center justify-between border-b">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-              <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-            </svg>
+            <span className="material-symbols-outlined text-white">smart_toy</span>
           </div>
           <div>
             <h2 className="md-headline-large text-lg font-semibold">
@@ -101,20 +143,40 @@ export default function ChatInterface() {
               <span className="opacity-60">
                 {connected ? 'Verbunden' : 'Nicht verbunden'}
               </span>
+              {useStreaming && (
+                <>
+                  <span className="opacity-60">•</span>
+                  <span className="opacity-60 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">stream</span>
+                    Streaming
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
         
-        <button
-          onClick={clearMessages}
-          className="md-surface hover:md-elevation-2 md-shape-medium px-4 py-2 text-sm md-motion-short flex items-center space-x-2"
-          disabled={messages.length === 0}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-          <span>Verlauf löschen</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          {/* Streaming Toggle */}
+          <button
+            onClick={() => setUseStreaming(!useStreaming)}
+            className={`p-2 rounded-full transition-colors ${
+              useStreaming ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
+            }`}
+            title="Streaming ein/ausschalten"
+          >
+            <span className="material-symbols-outlined text-sm">stream</span>
+          </button>
+          
+          <button
+            onClick={clearMessages}
+            className="md-surface hover:md-elevation-2 md-shape-medium px-4 py-2 text-sm md-motion-short flex items-center space-x-2"
+            disabled={messages.length === 0}
+          >
+            <span className="material-symbols-outlined text-sm">delete_sweep</span>
+            <span>Verlauf löschen</span>
+          </button>
+        </div>
       </div>
 
       {/* Messages Container */}
@@ -123,9 +185,7 @@ export default function ChatInterface() {
           <div className="flex items-center justify-center h-full">
             <div className="md-surface md-elevation-2 md-shape-large p-8 text-center max-w-md">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
+                <span className="material-symbols-outlined text-primary text-2xl">psychology</span>
               </div>
               <h3 className="md-headline-large text-lg font-semibold mb-2">
                 Willkommen beim KI-Assistenten
@@ -143,8 +203,25 @@ export default function ChatInterface() {
 
         {messages.map(renderMessage)}
 
+        {/* Streaming Message */}
+        {isStreaming && streamingMessage && (
+          <div className="flex justify-start mb-4">
+            <div className="chat-message-assistant max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3">
+              <div className="md-body-large whitespace-pre-wrap">{streamingMessage}</div>
+              <div className="flex items-center space-x-2 mt-2 opacity-60">
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-current rounded-full animate-bounce"></div>
+                  <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span className="text-xs">Streaming...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Typing Indicator */}
-        {isTyping && (
+        {isTyping && !isStreaming && (
           <div className="flex justify-start mb-4">
             <div className="chat-message-assistant flex items-center space-x-3 px-4 py-3">
               <div className="flex space-x-1">
@@ -186,9 +263,7 @@ export default function ChatInterface() {
             {isSubmitting ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
+              <span className="material-symbols-outlined text-white">send</span>
             )}
           </button>
         </form>
@@ -197,10 +272,8 @@ export default function ChatInterface() {
         {!connected && (
           <div className="mt-3 text-center">
             <span className="text-sm text-red-600 md-surface-variant md-shape-medium px-3 py-2 inline-flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M1 21h2v-2H1v2zm0-4h2v-2H1v2zm0-4h2v-2H1v2zm0-4h2V7H1v2zm0-4h2V3H1v2zm4 16h2v-2H5v2zm0-8h2v-2H5v2zm0-8h2V3H5v2zm4 16h2v-2H9v2zm0-4h2v-2H9v2zm0-8h2v-2H9v2zm0-8h2V3H9v2zm4 8h2v-2h-2v2zm0-4h2V7h-2v2zm0-4h2V3h-2v2zm4 16h2v-2h-2v2zm0-4h2v-2h-2v2zm0-8h2v-2h-2v2zm0-8h2V3h-2v2zm4 12h2v-2h-2v2zm0-4h2v-2h-2v2zm0-4h2V7h-2v2z"/>
-              </svg>
-              <span>Verbindung zum Backend unterbrochen</span>
+              <span className="material-symbols-outlined text-sm">wifi_off</span>
+              <span>Verbindung zum Server unterbrochen</span>
             </span>
           </div>
         )}
