@@ -70,6 +70,11 @@ class ResponseSynthesizer:
                 query, response, analysis
             )
             
+            # Determine if graph visualization would be helpful
+            graph_metadata = self._analyze_graph_relevance(
+                analysis, retrieval_results, response
+            )
+            
             return SynthesizedResponse(
                 answer=response,
                 sources=sources,
@@ -77,7 +82,8 @@ class ResponseSynthesizer:
                 metadata={
                     "intent": analysis.primary_intent.value,
                     "entities": analysis.entities,
-                    "num_sources": len(sources)
+                    "num_sources": len(sources),
+                    **graph_metadata  # Include graph-related metadata
                 },
                 follow_up_questions=follow_ups
             )
@@ -461,7 +467,11 @@ Dies könnte folgende Gründe haben:
             answer=answer,
             sources=[],
             confidence=0.2,
-            metadata={"no_results": True, "intent": analysis.primary_intent.value}
+            metadata={
+                "no_results": True, 
+                "intent": analysis.primary_intent.value,
+                "graph_relevant": False
+            }
         )
     
     def _create_error_response(self, query: str, error: str) -> SynthesizedResponse:
@@ -480,5 +490,120 @@ Falls das Problem weiterhin besteht, wenden Sie sich bitte an den Support.
             answer=answer,
             sources=[],
             confidence=0.0,
-            metadata={"error": True, "error_message": error}
+            metadata={"error": True, "error_message": error, "graph_relevant": False}
         )
+    
+    def _analyze_graph_relevance(
+        self,
+        analysis: QueryAnalysis,
+        retrieval_results: List[RetrievalResult],
+        response: str
+    ) -> Dict[str, Any]:
+        """Analyze if the response would benefit from graph visualization"""
+        
+        # Initialize graph metadata
+        graph_metadata = {
+            "graph_relevant": False,
+            "graph_confidence": 0.0,
+            "graph_nodes": [],
+            "graph_edges": [],
+            "suggested_visualization": "none"
+        }
+        
+        # Calculate graph relevance score
+        relevance_score = 0.0
+        
+        # 1. Intent-based scoring
+        graph_relevant_intents = {
+            QueryIntent.MAPPING_COMPARISON: 0.9,
+            QueryIntent.SPECIFIC_CONTROL: 0.8,
+            QueryIntent.COMPLIANCE_REQUIREMENT: 0.7,
+            QueryIntent.BEST_PRACTICE: 0.4,
+            QueryIntent.TECHNICAL_IMPLEMENTATION: 0.3,
+            QueryIntent.GENERAL_INFORMATION: 0.2
+        }
+        
+        intent_score = graph_relevant_intents.get(analysis.primary_intent, 0.0)
+        relevance_score += intent_score * 0.4
+        
+        # 2. Graph data source usage
+        graph_sources = [r for r in retrieval_results if r.source == "graph"]
+        if graph_sources:
+            graph_source_score = min(len(graph_sources) / 10.0, 1.0)  # Max 1.0
+            relevance_score += graph_source_score * 0.3
+            
+            # Extract nodes and relationships from graph sources
+            nodes = []
+            edges = []
+            
+            for result in graph_sources:
+                if result.metadata:
+                    node_id = result.metadata.get("id")
+                    node_type = result.node_type or "unknown"
+                    
+                    if node_id:
+                        nodes.append({
+                            "id": node_id,
+                            "type": node_type,
+                            "label": result.metadata.get("title", node_id),
+                            "relevance": result.relevance_score
+                        })
+                    
+                    # Extract relationships if available
+                    if result.relationships:
+                        for rel in result.relationships:
+                            edges.append({
+                                "source": rel.get("source"),
+                                "target": rel.get("target"),
+                                "type": rel.get("type", "RELATES_TO"),
+                                "weight": rel.get("weight", 0.5)
+                            })
+            
+            graph_metadata["graph_nodes"] = nodes[:20]  # Limit nodes
+            graph_metadata["graph_edges"] = edges[:50]  # Limit edges
+        
+        # 3. Entity analysis - multiple entities suggest relationships
+        if analysis.entities:
+            total_entities = sum(len(entities) for entities in analysis.entities.values())
+            if total_entities >= 2:
+                entity_score = min(total_entities / 5.0, 1.0)
+                relevance_score += entity_score * 0.2
+        
+        # 4. Content keywords analysis
+        graph_keywords = [
+            'beziehung', 'verbindung', 'zusammenhang', 'verknüpfung',
+            'mapping', 'zuordnung', 'entsprechung', 'äquivalenz',
+            'struktur', 'hierarchie', 'abhängigkeit', 'vernetzung',
+            'graph', 'netzwerk', 'topologie', 'architektur',
+            'control', 'controls', 'standard', 'standards',
+            'framework', 'richtlinie', 'compliance'
+        ]
+        
+        response_lower = response.lower()
+        keyword_matches = sum(1 for keyword in graph_keywords if keyword in response_lower)
+        if keyword_matches > 0:
+            keyword_score = min(keyword_matches / 10.0, 1.0)
+            relevance_score += keyword_score * 0.1
+        
+        # Set final values
+        graph_metadata["graph_confidence"] = round(relevance_score, 2)
+        
+        # Determine if graph should be shown (threshold: 0.5)
+        if relevance_score >= 0.5:
+            graph_metadata["graph_relevant"] = True
+            
+            # Suggest visualization type based on content
+            if analysis.primary_intent == QueryIntent.MAPPING_COMPARISON:
+                graph_metadata["suggested_visualization"] = "mapping_graph"
+            elif len(graph_metadata["graph_nodes"]) > 10:
+                graph_metadata["suggested_visualization"] = "network_graph"
+            elif analysis.entities.get("controls"):
+                graph_metadata["suggested_visualization"] = "control_hierarchy"
+            else:
+                graph_metadata["suggested_visualization"] = "knowledge_graph"
+        
+        logger.info(f"Graph relevance analysis: score={relevance_score:.2f}, "
+                   f"relevant={graph_metadata['graph_relevant']}, "
+                   f"nodes={len(graph_metadata['graph_nodes'])}")
+        
+        return graph_metadata
