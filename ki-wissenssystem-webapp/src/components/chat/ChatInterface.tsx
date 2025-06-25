@@ -12,8 +12,16 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Container,
   IconButton,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Button,
+  Menu,
+  MenuItem,
+  Slide,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import {
   Send as SendIcon,
@@ -21,37 +29,60 @@ import {
   Person as PersonIcon,
   SmartToy as BotIcon,
   Settings as SettingsIcon,
+  Menu as MenuIcon,
+  Chat as ChatIcon,
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  AccountTree as GraphIcon,
 } from '@mui/icons-material'
-import { getAPIClient } from '@/lib/api'
-
-interface Message {
-  id: string
-  content: string
-  role: 'user' | 'assistant' | 'system'
-  timestamp: Date
-}
+import { getAPIClient } from '@/lib/serviceFactory'
+import GraphVisualization from '@/components/graph/GraphVisualization'
+import { useChatManager, type Message } from '@/hooks/useChatManager'
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'Hallo! Ich bin Ihr KI-Assistent. Wie kann ich Ihnen heute helfen?',
-      role: 'assistant',
-      timestamp: new Date()
-    }
-  ])
+  // Chat Management Hook
+  const chatManager = useChatManager()
+  
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [graphViewOpen, setGraphViewOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+  const [selectedChatForMenu, setSelectedChatForMenu] = useState<string | null>(null)
+  
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
+  // Current chat messages
+  const messages = chatManager.currentChat?.messages || []
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // Check if message content suggests graph-related information
+  const hasGraphRelevantContent = (content: string): boolean => {
+    const graphKeywords = [
+      'graph', 'knoten', 'verbindung', 'beziehung', 'netzwerk', 
+      'visualisierung', 'struktur', 'zusammenhang', 'vernetzung',
+      'diagramm', 'topologie', 'hierarchie'
+    ]
+    return graphKeywords.some(keyword => 
+      content.toLowerCase().includes(keyword.toLowerCase())
+    )
+  }
+
   const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim() || isLoading) return
+    if (!inputValue.trim() || isLoading || !chatManager.currentChat) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -60,7 +91,8 @@ export default function ChatInterface() {
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    // Add user message to current chat
+    chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
     setInputValue('')
     setIsLoading(true)
     setError(null)
@@ -69,35 +101,86 @@ export default function ChatInterface() {
       const apiClient = getAPIClient()
       const response = await apiClient.sendMessage(inputValue.trim())
       
+      const hasGraphData = hasGraphRelevantContent(response.message || '')
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
         role: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        hasGraphData
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      // Add assistant message to current chat
+      chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
+
+      // Show graph view if response has graph-relevant content
+      if (hasGraphData) {
+        setGraphViewOpen(true)
+      }
+
     } catch (error) {
       console.error('Chat-Fehler:', error)
       setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading])
+  }, [inputValue, isLoading, chatManager])
+
+  const handleNewChat = () => {
+    chatManager.createNewChat()
+    setSidebarOpen(false)
+  }
+
+  const handleDeleteChat = (chatId: string) => {
+    if (chatManager.chatSessions.length === 1) return
+    chatManager.deleteChat(chatId)
+    handleMenuClose()
+  }
+
+  const handleRenameChat = (chatId: string, newName: string) => {
+    chatManager.renameChat(chatId, newName)
+  }
+
+  const handleSwitchChat = (chatId: string) => {
+    chatManager.switchToChat(chatId)
+    setSidebarOpen(false)
+  }
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
+    setMenuAnchor(event.currentTarget)
+    setSelectedChatForMenu(chatId)
+    event.stopPropagation()
+  }
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null)
+    setSelectedChatForMenu(null)
+  }
+
+  // Handle outside click to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [sidebarOpen])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages.length])
 
-  // Listen for pending messages from Quick Chat and auto-send them
+  // Listen for pending messages from Quick Chat
   useEffect(() => {
     const handlePendingMessage = (event: CustomEvent) => {
       const pendingMessage = event.detail.message
-      if (pendingMessage && !isLoading) {
-        // Set the message in input field
+      if (pendingMessage && !isLoading && chatManager.currentChat) {
         setInputValue(pendingMessage)
         
-        // Create a user message immediately and send it
         const userMessage: Message = {
           id: Date.now().toString(),
           content: pendingMessage,
@@ -105,30 +188,37 @@ export default function ChatInterface() {
           timestamp: new Date()
         }
 
-        setMessages(prev => [...prev, userMessage])
+        chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
         setIsLoading(true)
         setError(null)
 
-        // Send to API
         const sendPendingMessage = async () => {
           try {
             const apiClient = getAPIClient()
             const response = await apiClient.sendMessage(pendingMessage)
             
+            const hasGraphData = hasGraphRelevantContent(response.message || '')
+            
             const assistantMessage: Message = {
               id: (Date.now() + 1).toString(),
               content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
               role: 'assistant',
-              timestamp: new Date()
+              timestamp: new Date(),
+              hasGraphData
             }
 
-            setMessages(prev => [...prev, assistantMessage])
+            chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
+
+            if (hasGraphData) {
+              setGraphViewOpen(true)
+            }
+
           } catch (error) {
             console.error('Chat-Fehler:', error)
             setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
           } finally {
             setIsLoading(false)
-            setInputValue('') // Clear input after sending
+            setInputValue('')
           }
         }
 
@@ -141,7 +231,7 @@ export default function ChatInterface() {
     return () => {
       window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
     }
-  }, [isLoading])
+  }, [isLoading, chatManager])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -182,111 +272,233 @@ export default function ChatInterface() {
     })
   }
 
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box mb={3}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          KI-Chat
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Stellen Sie Fragen zu Ihrem Wissenssystem
-        </Typography>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Chat Messages */}
-      <Paper 
-        elevation={1} 
-        sx={{ 
-          flexGrow: 1, 
-          mb: 2, 
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Chat Management Sidebar */}
+      <Box
+        ref={sidebarRef}
+        sx={{
+          width: sidebarOpen ? (isMobile ? '280px' : '320px') : '0px',
+          transition: 'width 0.3s ease-in-out',
           overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
+          bgcolor: 'background.paper',
+          borderRight: sidebarOpen ? 1 : 0,
+          borderColor: 'divider',
+          position: 'relative',
+          zIndex: 1000,
         }}
       >
-        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-          <List>
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
+            <Typography variant="h6" fontWeight="600">
+              Chat-Verlauf
+            </Typography>
+          </Box>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleNewChat}
+            sx={{ mb: 2 }}
+          >
+            Neuer Chat
+          </Button>
+        </Box>
+
+        <List sx={{ flex: 1, overflow: 'auto' }}>
+          {chatManager.chatSessions
+            .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
+            .map((chat) => (
+            <ListItem key={chat.id} disablePadding>
+              <ListItemButton
+                selected={chat.id === chatManager.currentChatId}
+                onClick={() => handleSwitchChat(chat.id)}
+                sx={{
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    }
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ color: 'inherit' }}>
+                  <ChatIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={chat.name}
+                  secondary={
+                    <Box component="span" sx={{ color: 'inherit', opacity: 0.7 }}>
+                      {formatDate(chat.lastActivity)}
+                    </Box>
+                  }
+                />
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleMenuOpen(e, chat.id)}
+                  sx={{ color: 'inherit' }}
+                >
+                  <MoreVertIcon />
+                </IconButton>
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      {/* Main Chat Area */}
+      <Box 
+        sx={{ 
+          flex: graphViewOpen ? '1 1 50%' : '1 1 100%',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'flex 0.5s ease-in-out',
+          minWidth: '300px'
+        }}
+      >
+        {/* Chat Header */}
+        <Box 
+          sx={{ 
+            p: 2, 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+          <IconButton
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            sx={{
+              bgcolor: sidebarOpen ? 'primary.main' : 'transparent',
+              color: sidebarOpen ? 'primary.contrastText' : 'inherit',
+              '&:hover': {
+                bgcolor: sidebarOpen ? 'primary.dark' : 'action.hover',
+              }
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          
+          <Box flex={1}>
+            <Typography variant="h6" fontWeight="600">
+              {chatManager.currentChat?.name || 'Chat'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {messages.length - 1} Nachrichten
+            </Typography>
+          </Box>
+
+          {graphViewOpen && (
+            <IconButton
+              onClick={() => setGraphViewOpen(false)}
+              color="primary"
+            >
+              <GraphIcon />
+            </IconButton>
+          )}
+        </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Messages */}
+        <Paper
+          elevation={0}
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            bgcolor: 'grey.50',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <List sx={{ flex: 1, p: 2 }}>
             {messages.map((message) => (
-              <ListItem 
+              <ListItem
                 key={message.id}
                 sx={{
-                  flexDirection: 'column',
-                  alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  display: 'flex',
+                  flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
+                  alignItems: 'flex-start',
+                  gap: 2,
                   mb: 2
                 }}
               >
+                {getMessageAvatar(message.role)}
                 <Box
                   sx={{
-                    display: 'flex',
-                    flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
-                    alignItems: 'flex-start',
-                    gap: 2,
-                    maxWidth: '70%'
+                    maxWidth: '70%',
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
+                    color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                    boxShadow: 1
                   }}
                 >
-                  {getMessageAvatar(message.role)}
-                  <Box>
-                    <Paper
-                      elevation={1}
+                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {message.content}
+                  </Typography>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+                    <Typography
+                      variant="caption"
                       sx={{
-                        p: 2,
-                        bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
-                        color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                        borderRadius: 2,
-                        '&:hover': {
-                          elevation: 2
-                        }
-                      }}
-                    >
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                        {message.content}
-                      </Typography>
-                    </Paper>
-                    <Typography 
-                      variant="caption" 
-                      color="text.secondary" 
-                      sx={{ 
-                        display: 'block', 
-                        mt: 0.5,
-                        textAlign: message.role === 'user' ? 'right' : 'left'
+                        opacity: 0.7,
+                        color: 'inherit'
                       }}
                     >
                       {formatTime(message.timestamp)}
                     </Typography>
+                    {message.hasGraphData && (
+                      <Chip
+                        icon={<GraphIcon />}
+                        label="Graph"
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
                   </Box>
                 </Box>
               </ListItem>
             ))}
-            
             {isLoading && (
-              <ListItem sx={{ justifyContent: 'flex-start' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  {getMessageAvatar('assistant')}
-                  <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CircularProgress size={16} />
-                      <Typography variant="body2" color="text.secondary">
-                        KI denkt nach...
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Box>
+              <ListItem sx={{ justifyContent: 'center' }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2" sx={{ ml: 2 }}>
+                  KI antwortet...
+                </Typography>
               </ListItem>
             )}
+            <div ref={messagesEndRef} />
           </List>
-          <div ref={messagesEndRef} />
-        </Box>
-      </Paper>
+        </Paper>
 
-      {/* Input Area */}
-      <Paper elevation={2} sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+        {/* Input */}
+        <Paper
+          elevation={3}
+          sx={{
+            p: 2,
+            display: 'flex',
+            gap: 2,
+            alignItems: 'flex-end',
+            bgcolor: 'background.paper'
+          }}
+        >
           <TextField
             ref={inputRef}
             fullWidth
@@ -295,42 +507,104 @@ export default function ChatInterface() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Schreiben Sie Ihre Nachricht..."
+            placeholder="Nachricht eingeben..."
             disabled={isLoading}
             variant="outlined"
             size="small"
           />
           <IconButton
+            color="primary"
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            color="primary"
-            size="large"
             sx={{
               bgcolor: 'primary.main',
               color: 'primary.contrastText',
               '&:hover': {
-                bgcolor: 'primary.dark'
+                bgcolor: 'primary.dark',
               },
               '&:disabled': {
-                bgcolor: 'action.disabled'
+                bgcolor: 'grey.300',
+                color: 'grey.500',
               }
             }}
           >
             {isLoading ? <StopIcon /> : <SendIcon />}
           </IconButton>
+        </Paper>
+      </Box>
+
+      {/* Dynamic Graph View */}
+      <Slide direction="left" in={graphViewOpen} mountOnEnter unmountOnExit>
+        <Box 
+          sx={{ 
+            flex: '1 1 50%',
+            borderLeft: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: '400px'
+          }}
+        >
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Box display="flex" alignItems="center" justifyContent="between">
+              <Typography variant="h6" fontWeight="600">
+                Wissensgraph
+              </Typography>
+              <IconButton
+                onClick={() => setGraphViewOpen(false)}
+                size="small"
+              >
+                <GraphIcon />
+              </IconButton>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Visualisierung der gefundenen Zusammenhänge
+            </Typography>
+          </Box>
+          
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <GraphVisualization />
+          </Box>
         </Box>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            Drücken Sie Enter zum Senden, Shift+Enter für neue Zeile
-          </Typography>
-          <Chip 
-            label={`${messages.length} Nachrichten`} 
-            size="small" 
-            variant="outlined" 
-          />
-        </Box>
-      </Paper>
-    </Container>
+      </Slide>
+
+      {/* Context Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem
+          onClick={() => {
+            const newName = prompt('Neuer Name:', 
+              chatManager.chatSessions.find(c => c.id === selectedChatForMenu)?.name
+            )
+            if (newName && selectedChatForMenu) {
+              handleRenameChat(selectedChatForMenu, newName)
+            }
+            handleMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <EditIcon />
+          </ListItemIcon>
+          <ListItemText>Umbenennen</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (selectedChatForMenu && chatManager.chatSessions.length > 1) {
+              handleDeleteChat(selectedChatForMenu)
+            }
+          }}
+          disabled={chatManager.chatSessions.length <= 1}
+        >
+          <ListItemIcon>
+            <DeleteIcon />
+          </ListItemIcon>
+          <ListItemText>Löschen</ListItemText>
+        </MenuItem>
+      </Menu>
+    </Box>
   )
 } 

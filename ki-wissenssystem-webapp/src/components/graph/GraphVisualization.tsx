@@ -32,7 +32,7 @@ import {
   Article as DocumentIcon,
   Tag as TagIcon,
 } from '@mui/icons-material'
-import { getAPIClient } from '@/lib/api'
+import { getAPIClient } from '@/lib/serviceFactory'
 import type { Core, NodeSingular, EventObject } from 'cytoscape'
 
 // Dynamic import for cytoscape to avoid SSR issues

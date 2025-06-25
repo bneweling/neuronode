@@ -24,7 +24,7 @@ import {
   Error as ErrorIcon,
   Folder as FolderIcon,
 } from '@mui/icons-material'
-import { getAPIClient } from '@/lib/api'
+import { getAPIClient } from '@/lib/serviceFactory'
 
 interface UploadFile {
   id: string

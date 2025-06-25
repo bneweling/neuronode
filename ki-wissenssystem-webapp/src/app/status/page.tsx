@@ -20,7 +20,7 @@ import {
   Storage as StorageIcon,
   Computer as ComputerIcon,
 } from '@mui/icons-material'
-import { getAPIClient } from '@/lib/api'
+import { getAPIClient } from '@/lib/serviceFactory'
 
 interface SystemStatus {
   api: boolean

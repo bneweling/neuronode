@@ -10,6 +10,8 @@ import {
   Fade,
   Grow,
   Typography,
+  Chip,
+  Alert,
 } from '@mui/material'
 import {
   Chat as ChatIcon,
@@ -17,12 +19,17 @@ import {
   CloudUpload as UploadIcon,
   Assessment as StatusIcon,
   School as KnowledgeIcon,
+  Science as DemoIcon,
+  Cloud as ProductionIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import QuickChatInterface from '@/components/chat/QuickChatInterface'
+import { useAppConfig } from '@/hooks/useAppConfig'
 
 export default function HomePage() {
   const router = useRouter()
+  const { isDemo } = useAppConfig()
 
   const handleNavigation = (path: string) => {
     router.push(path)
@@ -63,6 +70,36 @@ export default function HomePage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
+      {/* Mode Indicator */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Chip
+          icon={isDemo ? <DemoIcon /> : <ProductionIcon />}
+          label={isDemo ? 'Demo Modus' : 'Produktions Modus'}
+          color={isDemo ? 'warning' : 'primary'}
+          variant="filled"
+          onClick={() => handleNavigation('/settings')}
+          sx={{ cursor: 'pointer' }}
+        />
+      </Box>
+
+      {isDemo && (
+        <Alert 
+          severity="info" 
+          sx={{ mb: 4, maxWidth: 800, mx: 'auto' }}
+          action={
+            <Chip
+              icon={<SettingsIcon />}
+              label="Einstellungen"
+              size="small"
+              onClick={() => handleNavigation('/settings')}
+              sx={{ cursor: 'pointer' }}
+            />
+          }
+        >
+          Sie befinden sich im Demo-Modus. Alle Daten sind synthetisch und dienen nur zur Demonstration.
+        </Alert>
+      )}
+
       {/* Hero Section */}
       <Fade in timeout={800}>
         <Box textAlign="center" mb={6}>

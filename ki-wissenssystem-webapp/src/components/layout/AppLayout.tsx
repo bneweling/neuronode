@@ -24,8 +24,8 @@ import {
   AccountTree as GraphIcon,
   CloudUpload as UploadIcon,
   Menu as MenuIcon,
-  Assessment as StatusIcon,
   AutoAwesome as AIIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 
 interface NavigationItem {
@@ -76,12 +76,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
       description: 'Datei-Management',
       path: '/upload'
     },
+
     { 
-      id: 'status', 
-      label: 'Systemstatus', 
-      icon: StatusIcon,
-      description: 'System-Überwachung',
-      path: '/status'
+      id: 'settings', 
+      label: 'Einstellungen', 
+      icon: SettingsIcon,
+      description: 'Demo/Produktions-Modus',
+      path: '/settings'
     },
   ]
 
@@ -112,7 +113,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </IconButton>
           )}
           
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={2} sx={{ flexGrow: 1 }}>
             <AIIcon sx={{ fontSize: 32 }} />
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
               {getCurrentPageTitle()}
@@ -121,7 +122,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
           {!isMobile && (
             <Box display="flex" gap={1}>
-              {navigationItems.map((item) => (
+              {navigationItems.filter(item => item.id !== 'settings').map((item) => (
                 <Button
                   key={item.id}
                   color="inherit"
@@ -140,6 +141,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
               ))}
             </Box>
           )}
+
+          {/* Settings Icon - Always visible */}
+          <IconButton
+            color="inherit"
+            onClick={() => handleNavigation('/settings')}
+            sx={{
+              backgroundColor: pathname === '/settings' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <SettingsIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 

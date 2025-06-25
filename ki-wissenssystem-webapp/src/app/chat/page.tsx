@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Box } from '@mui/material'
 import ChatInterface from '@/components/chat/ChatInterface'
 
 export default function ChatPage() {
@@ -20,5 +21,9 @@ export default function ChatPage() {
     }
   }, [])
 
-  return <ChatInterface />
+  return (
+    <Box sx={{ height: '100vh', overflow: 'hidden' }}>
+      <ChatInterface />
+    </Box>
+  )
 } 

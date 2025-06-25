@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
-import { ThemeProvider } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import { theme } from '@/lib/theme'
 import AppLayout from '@/components/layout/AppLayout'
+import { CustomThemeProvider } from '@/contexts/ThemeContext'
 
 export const metadata: Metadata = {
   title: "KI-Wissenssystem",
@@ -22,12 +20,11 @@ export default function RootLayout({
     <html lang="de">
       <body>
         <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
+          <CustomThemeProvider>
             <AppLayout>
               {children}
             </AppLayout>
-          </ThemeProvider>
+          </CustomThemeProvider>
         </AppRouterCacheProvider>
       </body>
     </html>
