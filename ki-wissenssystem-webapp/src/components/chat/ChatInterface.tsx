@@ -101,7 +101,10 @@ export default function ChatInterface() {
       const apiClient = getAPIClient()
       const response = await apiClient.sendMessage(inputValue.trim())
       
-      const hasGraphData = hasGraphRelevantContent(response.message || '')
+      // Use backend decision first, fallback to keyword analysis
+      const backendGraphRelevant = response.metadata?.graph_relevant || false
+      const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
+      const hasGraphData = backendGraphRelevant || keywordGraphRelevant
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -197,7 +200,10 @@ export default function ChatInterface() {
             const apiClient = getAPIClient()
             const response = await apiClient.sendMessage(pendingMessage)
             
-            const hasGraphData = hasGraphRelevantContent(response.message || '')
+            // Use backend decision first, fallback to keyword analysis
+            const backendGraphRelevant = response.metadata?.graph_relevant || false
+            const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
+            const hasGraphData = backendGraphRelevant || keywordGraphRelevant
             
             const assistantMessage: Message = {
               id: (Date.now() + 1).toString(),

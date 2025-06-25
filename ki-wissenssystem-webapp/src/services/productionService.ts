@@ -5,6 +5,11 @@
 
 import { KIWissenssystemAPI, GraphNodeData, GraphEdgeData } from '@/lib/api'
 
+interface ChatResponseWithMetadata {
+  message: string
+  metadata?: Record<string, unknown>
+}
+
 export class ProductionAPIService implements KIWissenssystemAPI {
   private baseUrl: string
 
@@ -12,7 +17,7 @@ export class ProductionAPIService implements KIWissenssystemAPI {
     this.baseUrl = baseUrl
   }
 
-  async sendMessage(message: string): Promise<{ message: string }> {
+  async sendMessage(message: string): Promise<ChatResponseWithMetadata> {
     try {
       const response = await fetch(`${this.baseUrl}/query`, {
         method: 'POST',
@@ -33,14 +38,17 @@ export class ProductionAPIService implements KIWissenssystemAPI {
       const result = await response.json()
       
       // Backend returns QueryResponse with 'response' field, we need 'message'
+      // Also include graph metadata for intelligent graph triggering
       return {
-        message: result.response || result.answer || 'Keine Antwort erhalten'
+        message: result.response || result.answer || 'Keine Antwort erhalten',
+        metadata: result.metadata || {}
       }
     } catch (error) {
       console.error('Production API error:', error)
       // Fallback response
       return {
-        message: 'Entschuldigung, der Service ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.'
+        message: 'Entschuldigung, der Service ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.',
+        metadata: { graph_relevant: false }
       }
     }
   }

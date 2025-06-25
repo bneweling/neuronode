@@ -9,7 +9,7 @@ export class MockAPIService implements KIWissenssystemAPI {
   private simulateDelay = (ms: number = 1000) => 
     new Promise(resolve => setTimeout(resolve, ms))
 
-  async sendMessage(message: string): Promise<{ message: string }> {
+  async sendMessage(message: string): Promise<{ message: string; metadata?: Record<string, unknown> }> {
     await this.simulateDelay(1500)
     
     // Demo responses based on message content
@@ -41,8 +41,20 @@ export class MockAPIService implements KIWissenssystemAPI {
       r.trigger.some(trigger => lowerMessage.includes(trigger))
     )
 
+    const responseMessage = matchedResponse?.response || `Das ist eine interessante Frage zu "${message}". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.`
+
+    // Simulate graph metadata for specific triggers
+    const isGraphRelevant = ['graph', 'wissensgraph', 'knoten', 'verbindung', 'beziehung', 'struktur', 'zusammenhang'].some(keyword => 
+      lowerMessage.includes(keyword)
+    )
+
     return {
-      message: matchedResponse?.response || `Das ist eine interessante Frage zu "${message}". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.`
+      message: responseMessage,
+      metadata: {
+        graph_relevant: isGraphRelevant,
+        graph_confidence: isGraphRelevant ? 0.85 : 0.1,
+        suggested_visualization: isGraphRelevant ? "knowledge_graph" : "none"
+      }
     }
   }
 
