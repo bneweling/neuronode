@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Box,
   Paper,
@@ -50,11 +50,7 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return
 
     const userMessage: Message = {
@@ -87,7 +83,31 @@ export default function ChatInterface() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [inputValue, isLoading])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  // Listen for pending messages from Quick Chat
+  useEffect(() => {
+    const handlePendingMessage = (event: CustomEvent) => {
+      const pendingMessage = event.detail.message
+      if (pendingMessage && !isLoading) {
+        setInputValue(pendingMessage)
+        // Auto-send the message after a short delay
+        setTimeout(() => {
+          handleSendMessage()
+        }, 500)
+      }
+    }
+
+    window.addEventListener('sendPendingMessage', handlePendingMessage as EventListener)
+    
+    return () => {
+      window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
+    }
+  }, [isLoading, handleSendMessage])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
