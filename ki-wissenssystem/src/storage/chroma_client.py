@@ -62,14 +62,21 @@ class ChromaClient:
         # Generate embedding using Gemini
         embedding = self._get_embedding(chunk["text"])
         
-        # Prepare metadata
+        # Prepare metadata - ChromaDB only accepts strings, numbers, or booleans
         metadata = {
-            "source": chunk.get("source", "unknown"),
-            "page": chunk.get("page"),
-            "summary": chunk.get("summary", ""),
+            "source": str(chunk.get("source", "unknown")),
+            "page": str(chunk.get("page", "")) if chunk.get("page") is not None else "",
+            "summary": str(chunk.get("summary", "")),
             "keywords": ", ".join(chunk.get("keywords", [])),
-            **chunk.get("metadata", {})
         }
+        
+        # Add other metadata, ensuring all values are strings
+        chunk_metadata = chunk.get("metadata", {})
+        for key, value in chunk_metadata.items():
+            if value is not None:
+                metadata[key] = str(value)
+            else:
+                metadata[key] = ""
         
         # Add to collection
         collection = self.collections.get(collection_name, self.collections["general"])

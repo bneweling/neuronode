@@ -89,7 +89,17 @@ class UnstructuredProcessor:
                 # Analyze chunk
                 analysis = self._analyze_chunk(raw_chunk["text"])
                 
-                # Create knowledge chunk
+                # Create knowledge chunk with simplified metadata for Neo4j compatibility
+                chunk_metadata = raw_chunk.get("metadata", {})
+                simple_metadata = {
+                    "chunk_index": str(chunk_metadata.get("chunk_index", i)),
+                    "section": str(chunk_metadata.get("section", "Main")),
+                    "chunk_type": str(chunk_metadata.get("chunk_type", "text")),
+                    "topics": ", ".join(analysis.topics) if analysis.topics else "",
+                    "document_type": str(document_type),
+                    **(metadata or {})
+                }
+                
                 knowledge_chunk = KnowledgeChunk(
                     id=chunk_id,
                     text=raw_chunk["text"],
@@ -98,20 +108,25 @@ class UnstructuredProcessor:
                     entities=analysis.entities,
                     relationships=self._format_relationships(analysis.potential_relations),
                     source=source,
-                    page=raw_chunk.get("metadata", {}).get("page"),
-                    metadata={
-                        **raw_chunk.get("metadata", {}),
-                        "topics": analysis.topics,
-                        "document_type": document_type,
-                        **(metadata or {})
-                    }
+                    page=chunk_metadata.get("page"),
+                    metadata=simple_metadata
                 )
                 
                 knowledge_chunks.append(knowledge_chunk)
                 
             except Exception as e:
                 logger.error(f"Error processing chunk {i}: {e}")
-                # Create basic chunk without analysis
+                # Create basic chunk without analysis with simplified metadata
+                chunk_metadata = raw_chunk.get("metadata", {})
+                simple_metadata = {
+                    "chunk_index": str(chunk_metadata.get("chunk_index", i)),
+                    "section": str(chunk_metadata.get("section", "Main")),
+                    "chunk_type": str(chunk_metadata.get("chunk_type", "text")),
+                    "topics": "",
+                    "document_type": str(document_type),
+                    **(metadata or {})
+                }
+                
                 knowledge_chunks.append(KnowledgeChunk(
                     id=chunk_id,
                     text=raw_chunk["text"],
@@ -120,7 +135,8 @@ class UnstructuredProcessor:
                     entities=[],
                     relationships=[],
                     source=source,
-                    metadata=raw_chunk.get("metadata", {})
+                    page=chunk_metadata.get("page"),
+                    metadata=simple_metadata
                 ))
         
         logger.info(f"Processed {len(knowledge_chunks)} chunks from {source}")

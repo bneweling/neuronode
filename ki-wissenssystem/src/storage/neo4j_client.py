@@ -38,6 +38,14 @@ class Neo4jClient:
     def create_control_item(self, control: ControlItem) -> str:
         """Create or update a control item"""
         with self.driver.session() as session:
+            # Convert complex types to strings for Neo4j compatibility
+            control_data = control.dict()
+            
+            # Convert metadata dict to JSON string
+            if 'metadata' in control_data and isinstance(control_data['metadata'], dict):
+                import json
+                control_data['metadata'] = json.dumps(control_data['metadata'])
+            
             result = session.run("""
                 MERGE (c:ControlItem {id: $id})
                 SET c.title = $title,
@@ -47,13 +55,25 @@ class Neo4jClient:
                     c.source = $source,
                     c.metadata = $metadata
                 RETURN c.id as id
-            """, **control.dict())
+            """, **control_data)
             
             return result.single()["id"]
     
     def create_knowledge_chunk(self, chunk: KnowledgeChunk) -> str:
         """Create a knowledge chunk"""
         with self.driver.session() as session:
+            # Convert complex types to strings for Neo4j compatibility
+            chunk_data = chunk.dict()
+            
+            # Convert keywords list to string
+            if 'keywords' in chunk_data and isinstance(chunk_data['keywords'], list):
+                chunk_data['keywords'] = ', '.join(chunk_data['keywords'])
+            
+            # Convert metadata dict to JSON string
+            if 'metadata' in chunk_data and isinstance(chunk_data['metadata'], dict):
+                import json
+                chunk_data['metadata'] = json.dumps(chunk_data['metadata'])
+            
             result = session.run("""
                 CREATE (k:KnowledgeChunk {
                     id: $id,
@@ -65,7 +85,7 @@ class Neo4jClient:
                     metadata: $metadata
                 })
                 RETURN k.id as id
-            """, **chunk.dict())
+            """, **chunk_data)
             
             chunk_id = result.single()["id"]
             
