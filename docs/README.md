@@ -8,7 +8,6 @@ Zentrale Anlaufstelle für alle technischen Dokumentationen des KI-Wissenssystem
 |----------|-------------|------------|
 | [System-Architektur](../README.md#-architektur) | Gesamtarchitektur mit Mermaid-Diagramm | Entwickler, DevOps |
 | [API-Analyse](../API-Analyse_und_Anpassungsempfehlungen.md) | Backend API Struktur und Optimierungen | Backend-Entwickler |
-| [Platform Migration](../PLATTFORM-MIGRATIONSSTRATEGIE.md) | Migrations-Strategien zwischen Plattformen | System-Architekten |
 
 ## 🚀 Deployment & Operations
 
@@ -24,14 +23,12 @@ Zentrale Anlaufstelle für alle technischen Dokumentationen des KI-Wissenssystem
 |----------|-------------|------------|
 | [Entwicklungsguide](../ENTWICKLUNG.md) | Entwicklungsumgebung und lokale Workflows | Entwickler |
 | [Web-App Dokumentation](../README-WEBAPP.md) | Frontend-spezifische Dokumentation | Frontend-Entwickler |
-| [Obsidian Plugin](../OBSIDIAN-PLUGIN-ANALYSE.md) | Plugin-Entwicklung und Integration | Plugin-Entwickler |
 
 ## 📊 Projekt-Management
 
 | Dokument | Beschreibung | Zielgruppe |
 |----------|-------------|------------|
 | [Prototyp-Status](../PROTOTYP-FERTIGSTELLUNG.md) | Projektfortschritt und erreichte Milestones | Projekt-Manager |
-| [Web-App Entwicklungsplan](../WEB-APP-ENTWICKLUNGSPLAN.md) | Entwicklungsroadmap für Frontend | Projekt-Manager |
 
 ## 🎯 Quick Navigation
 
@@ -46,14 +43,8 @@ Zentrale Anlaufstelle für alle technischen Dokumentationen des KI-Wissenssystem
 **...an der Web-App entwickeln**
 → [Web-App Guide](../README-WEBAPP.md) + [Entwicklungsguide](../ENTWICKLUNG.md)
 
-**...das Obsidian Plugin verwenden**
-→ [Obsidian Plugin Analyse](../OBSIDIAN-PLUGIN-ANALYSE.md)
-
 **...die APIs verstehen**
 → [API-Analyse](../API-Analyse_und_Anpassungsempfehlungen.md)
-
-**...das System migrieren**
-→ [Platform Migration Guide](../PLATTFORM-MIGRATIONSSTRATEGIE.md)
 
 **...den Entwicklungsprozess verstehen**
 → [Workflow Dokumentation](../WORKFLOW-DOKUMENTATION.md)
@@ -62,20 +53,37 @@ Zentrale Anlaufstelle für alle technischen Dokumentationen des KI-Wissenssystem
 
 | Komponente | Vollständigkeit | Letztes Update | Status |
 |------------|----------------|----------------|---------|
-| **Production Setup** | ✅ 100% | 2024-06-25 | ✅ Aktuell |
-| **API Dokumentation** | ✅ 95% | 2024-06-20 | ✅ Aktuell |
-| **Web-App Guide** | ✅ 90% | 2024-06-25 | ✅ Aktuell |
-| **Entwicklungsguide** | ✅ 85% | 2024-06-15 | ⚠️ Teilweise veraltet |
-| **Obsidian Plugin** | ✅ 80% | 2024-06-10 | ⚠️ Überarbeitung nötig |
-| **Workflow Prozesse** | ✅ 90% | 2024-06-25 | ✅ Aktuell |
-| **Migration Guide** | ✅ 70% | 2024-06-05 | ⚠️ Ergänzungen nötig |
+| **Production Setup** | ✅ 100% | 2025-01-27 | ✅ Aktuell |
+| **API Dokumentation** | ✅ 100% | 2025-01-27 | ✅ Aktuell |
+| **Web-App Guide** | ✅ 100% | 2025-01-27 | ✅ Aktuell |
+| **Entwicklungsguide** | ✅ 95% | 2025-01-27 | ✅ Aktuell |
+| **Workflow Prozesse** | ✅ 100% | 2025-01-27 | ✅ Aktuell |
+| **Projekt Status** | ✅ 100% | 2025-01-27 | ✅ Vollständig |
+
+## 🧹 **Repository-Aufräumung (27.01.2025)**
+
+### ❌ **Entfernte veraltete Dokumentationen:**
+- `FRONTEND-BACKEND-INTEGRATION-PLAN.md` - Integration ist abgeschlossen
+- `WEB-APP-ENTWICKLUNGSPLAN.md` - Web-App ist fertig entwickelt
+- `PLATTFORM-MIGRATIONSSTRATEGIE.md` - Migration ist abgeschlossen
+- `OBSIDIAN-PLUGIN-ANALYSE.md` - Fokus liegt auf Web-App
+- `ki-wissenssystem/RESTART-ANLEITUNG.md` - In anderen Docs integriert
+- `ki-wissenssystem/README-Windows.md` - In Hauptdoks integriert
+- `ki-wissenssystem/scripts/README.md` - In SKRIPTE-ÜBERSICHT.md integriert
+
+### ✅ **Verbesserte Dokumentationsstruktur:**
+- Weniger Verwirrung durch reduzierte Dokumentenanzahl
+- Alle Informationen in relevanten, aktuellen Dokumenten
+- Klarere Navigation und Struktur
+- Fokus auf produktive Web-App Version
 
 ## 🔄 Dokumentations-Wartung
 
-### Prioritäten für nächste Updates:
-1. **Entwicklungsguide** - Aktualisierung der neuen Features
-2. **Obsidian Plugin** - Integration der neuesten Änderungen  
-3. **Migration Guide** - Ergänzung um Production-Szenarien
+### ✅ **Alle Dokumentationen sind aktuell (Stand: 27.01.2025)**
+- Prototyp-Status aktualisiert auf "VOLLSTÄNDIG ABGESCHLOSSEN"
+- Branch-Struktur aktualisiert für webapp-version Fokus
+- Veraltete Planungsdokumente entfernt
+- Links und Referenzen bereinigt
 
 ### Feedback & Verbesserungen
 - 📝 Fehlende Dokumentation? → [GitHub Issue erstellen](https://github.com/username/ki-wissenssystem/issues/new)
@@ -84,4 +92,4 @@ Zentrale Anlaufstelle für alle technischen Dokumentationen des KI-Wissenssystem
 
 ---
 
-**📚 Hinweis**: Diese Übersicht wird automatisch bei größeren Dokumentationsänderungen aktualisiert. 
+**📚 Hinweis**: Diese Übersicht wurde am 27.01.2025 komplett überarbeitet und ist auf dem neuesten Stand. 

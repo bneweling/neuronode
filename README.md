@@ -198,12 +198,11 @@ make security-check
 | [🏭 Production Deployment](PRODUCTION-DEPLOYMENT.md) | Vollständige Produktions-Setup Anleitung |
 | [🔧 API Analyse](API-Analyse_und_Anpassungsempfehlungen.md) | Backend API Dokumentation und Empfehlungen |
 | [🌐 Web-App Guide](README-WEBAPP.md) | Frontend-spezifische Dokumentation |
-| [📔 Obsidian Plugin](OBSIDIAN-PLUGIN-ANALYSE.md) | Plugin-Entwicklung und Integration |
 | [💻 Entwicklungsguide](ENTWICKLUNG.md) | Entwicklungsumgebung und Workflows |
 | [🏗️ Workflow Dokumentation](WORKFLOW-DOKUMENTATION.md) | Entwicklungs- und Deployment-Prozesse |
-| [🔄 Migration Guide](PLATTFORM-MIGRATIONSSTRATEGIE.md) | Platform Migration Strategien |
-| [🎯 Prototyp Status](PROTOTYP-FERTIGSTELLUNG.md) | Projektfortschritt und Milestones |
+| [🎯 Prototyp Status](PROTOTYP-FERTIGSTELLUNG.md) | Projektfortschritt und erreichte Milestones |
 | [📋 Branch Struktur](BRANCH-STRUKTUR.md) | Git Branch Management |
+| [📖 Dokumentationsübersicht](docs/README.md) | Zentrale Navigation aller Dokumentationen |
 
 ## 🔧 Konfiguration
 

@@ -4,54 +4,67 @@
 
 Das KI-Wissenssystem wird in zwei parallelen Versionen entwickelt, um verschiedene Frontend-Interfaces zu unterstützen:
 
-## Branches
+## Aktuelle Branches
+
+### `webapp-version` - Standalone Web-App Version ⭐ **AKTUELL**
+- **Zweck**: Eigenständige Web-Anwendung (Hauptfokus)
+- **Frontend**: Next.js Web-App (`ki-wissenssystem-webapp/`)
+- **Status**: ✅ **Produktionsbereit** - Vollständig entwickelt und getestet
+- **Zielgruppe**: Alle Nutzer - eigenständige, professionelle Lösung
+- **Features**:
+  - Moderne Web-App mit Material Design 3
+  - Responsives Design für alle Geräte
+  - Multi-Chat System mit Verlauf
+  - Interaktive Graph-Visualisierung
+  - Drag & Drop File Upload
+  - Dark/Light Mode Support
+  - Production-ready Deployment
 
 ### `main` - Obsidian Plugin Version
-- **Zweck**: Vollständige Integration mit Obsidian
+- **Zweck**: Vollständige Integration mit Obsidian (Legacy)
 - **Frontend**: Obsidian Plugin (`obsidian-ki-plugin/`)
-- **Zielgruppe**: Nutzer, die bereits Obsidian verwenden
+- **Status**: ⚠️ **Wartungsmodus** - Basisfunktionen verfügbar
+- **Zielgruppe**: Existing Obsidian power users
 - **Features**:
   - Nahtlose Integration in Obsidian-Workflows
   - Plugin-basierte Benutzeroberfläche
   - Direkte Einbindung in Obsidian Vault
 
-### `webapp-version` - Standalone Web-App Version
-- **Zweck**: Eigenständige Web-Anwendung
-- **Frontend**: Next.js Web-App (`ki-wissenssystem-webapp/`)
-- **Zielgruppe**: Nutzer ohne Obsidian oder für allgemeine Nutzung
-- **Features**:
-  - Moderne Web-App mit Material Design 3
-  - Responsives Design für alle Geräte
-  - Eigenständige Benutzeroberfläche
-
 ## Gemeinsame Komponenten
 
 Beide Branches teilen sich:
-- **Backend-API** (`ki-wissenssystem/src/api/`)
-- **Core-Funktionalitäten** (Document Processing, Retrievers, etc.)
-- **Konfiguration und Setup-Skripte**
+- **Backend-API** (`ki-wissenssystem/src/api/`) - ✅ Identisch
+- **Core-Funktionalitäten** (Document Processing, Retrievers, etc.) - ✅ Identisch
+- **Konfiguration und Setup-Skripte** - ✅ Cross-kompatibel
+- **Docker Services** (Neo4j, ChromaDB, Redis) - ✅ Identisch
 
-## Entwicklungsstrategie
+## Entwicklungsstrategie (Stand: 2025)
 
-1. **Feature-Entwicklung**: Neue Backend-Features werden in `main` entwickelt
-2. **Branch-Sync**: Regelmäßige Merges von Backend-Änderungen zwischen Branches
-3. **Frontend-spezifisch**: UI/UX-Änderungen bleiben Branch-spezifisch
+1. **Primäre Entwicklung**: Fokus auf `webapp-version` (aktuelle Branch)
+2. **Backend-Features**: Alle neuen Features werden hier entwickelt
+3. **Plugin-Maintenance**: `main` Branch wird nur für kritische Fixes aktualisiert
+4. **Production Focus**: Alle Production-Features für Web-App
 
-## Deployment
+## Deployment-Status
 
-- `main`: Obsidian Plugin + Backend Services
-- `webapp-version`: Web-App + Backend Services
+- **`webapp-version`**: ✅ **Production-ready** mit vollständigem Monitoring
+- **`main`**: ⚠️ Development/Personal use
 
 ## Migration zwischen Branches
 
 ```bash
-# Zu Obsidian Version wechseln
+# Aktuelle Web-App Version (empfohlen)
+git checkout webapp-version
+
+# Legacy Obsidian Version  
 git checkout main
 
-# Zu Web-App Version wechseln  
-git checkout webapp-version
+# Backend-Änderungen synchronisieren (bei Bedarf)
+git checkout main
+git merge webapp-version --strategy-option theirs
+```
 
-# Backend-Änderungen synchronisieren
-git checkout webapp-version
-git merge main
-``` 
+## Empfohlene Nutzung
+
+**Für neue Projekte**: 🚀 `webapp-version` verwenden
+**Für bestehende Obsidian-Nutzer**: `main` bis Migration abgeschlossen 
