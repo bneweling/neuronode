@@ -141,6 +141,23 @@ setup_python_env() {
     echo "Installiere Python-Pakete..."
     pip install -r requirements.txt || handle_error "Python-Pakete konnten nicht installiert werden"
     
+    # Aktualisiere kritische Abhängigkeiten für Gemini API
+    echo "Aktualisiere Gemini API-Abhängigkeiten..."
+    pip install --upgrade langchain-google-genai==2.1.5 || warning "LangChain Google GenAI Update fehlgeschlagen"
+    pip install --upgrade pydantic-settings>=2.10.0 || warning "Pydantic Settings Update fehlgeschlagen"
+    
+    # Protobuf-Kompatibilität sicherstellen
+    echo "Konfiguriere Protobuf-Kompatibilität..."
+    echo 'export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python' >> venv/bin/activate || true
+    echo "Protobuf-Workaround zu venv/bin/activate hinzugefügt"
+    
+    # Auch in Start-Skripte einbauen
+    if [ -f "./start-all.sh" ]; then
+        sed -i '' '1i\
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+' ./start-all.sh || true
+    fi
+    
     success "Python Environment eingerichtet"
 }
 
@@ -154,12 +171,12 @@ setup_env_file() {
         else
             # .env.example erstellen
             cat > .env.example << 'EOF'
-# LLM API Keys
-OPENAI_API_KEY=your-openai-key
-ANTHROPIC_API_KEY=your-anthropic-key
-GOOGLE_API_KEY=your-google-key
+# API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
 
-# Database Connections
+# Database Configuration
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=password
@@ -167,12 +184,22 @@ NEO4J_PASSWORD=password
 CHROMA_HOST=localhost
 CHROMA_PORT=8000
 
-# LLM Routing Preferences
-CLASSIFIER_MODEL=gemini-pro
-EXTRACTOR_MODEL=gpt-4-turbo-preview
-SYNTHESIZER_MODEL=claude-3-opus-20240229
-VALIDATOR_MODEL_1=gpt-4-turbo-preview
-VALIDATOR_MODEL_2=claude-3-opus-20240229
+# Model Profile Configuration
+# Options: premium, balanced, cost_effective, gemini_only, openai_only
+# Test modes: gemini_only (only Google API), openai_only (only OpenAI API)
+MODEL_PROFILE=premium
+
+# Legacy Model Configuration (Optional - overrides MODEL_PROFILE if all are set)
+# CLASSIFIER_MODEL=gemini-2.5-flash
+# EXTRACTOR_MODEL=gpt-4.1
+# SYNTHESIZER_MODEL=claude-opus-4-20250514
+# VALIDATOR_MODEL_1=gpt-4o
+# VALIDATOR_MODEL_2=claude-sonnet-4-20250514
+
+# Processing Settings
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+MAX_RETRIES=3
 EOF
             cp .env.example .env
         fi
@@ -261,6 +288,10 @@ test_system() {
     # CLI testen
     echo "Teste CLI..."
     python -m src.cli --help > /dev/null && success "CLI funktioniert" || warning "CLI-Fehler"
+    
+    # Gemini API testen
+    echo "Teste Gemini API-Integration..."
+    python scripts/setup/test-gemini-api.py > /dev/null 2>&1 && success "Gemini API funktioniert" || warning "Gemini API-Fehler - Bitte API-Keys prüfen"
     
     # Verbindungen testen
     python << 'EOF'

@@ -24,7 +24,7 @@ services:
       retries: 5
 
   chromadb:
-    image: ghcr.io/chroma-core/chroma:0.5.0
+    image: ghcr.io/chroma-core/chroma:latest
     container_name: ki-wissenssystem-chromadb
     ports:
       - "8000:8000"
@@ -36,11 +36,11 @@ services:
       - chroma_data:/chroma/chroma
     networks:
       - ki-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
 
   redis:
     image: redis:7-alpine

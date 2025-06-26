@@ -3,7 +3,7 @@ from chromadb.config import Settings
 from typing import List, Dict, Any, Optional
 from src.config.settings import settings
 import uuid
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,10 +21,22 @@ class ChromaClient:
         except Exception as e:
             logger.error(f"Failed to connect to ChromaDB: {e}")
             raise
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=settings.openai_api_key
+        
+        # Configure Gemini embeddings via LangChain
+        self.embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001",
+            google_api_key=settings.google_api_key
         )
         self._init_collections()
+    
+    def _get_embedding(self, text: str) -> List[float]:
+        """Generate embedding using Gemini embedding model via LangChain"""
+        try:
+            embedding = self.embeddings.embed_query(text)
+            return embedding
+        except Exception as e:
+            logger.error(f"Error generating embedding: {e}")
+            raise
     
     def _init_collections(self):
         """Initialize collections for different document types"""
@@ -47,8 +59,8 @@ class ChromaClient:
         """Add a chunk to the vector store"""
         chunk_id = chunk.get("id", str(uuid.uuid4()))
         
-        # Generate embedding
-        embedding = self.embeddings.embed_query(chunk["text"])
+        # Generate embedding using Gemini
+        embedding = self._get_embedding(chunk["text"])
         
         # Prepare metadata
         metadata = {
@@ -82,7 +94,7 @@ class ChromaClient:
             collection_names = list(self.collections.keys())
         
         all_results = []
-        query_embedding = self.embeddings.embed_query(query)
+        query_embedding = self._get_embedding(query)
         
         for collection_name in collection_names:
             if collection_name not in self.collections:

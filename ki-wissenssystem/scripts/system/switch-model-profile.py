@@ -60,9 +60,9 @@ PROFILES = {
     },
     "gemini_only": {
         "name": "🧪 Gemini Only",
-        "description": "Nur Google Gemini Modelle (neueste Generation)",
+        "description": "Nur Google Gemini Modelle (neueste 2.5 Generation mit verbessertem Denken)",
         "cost": "Niedrig",
-        "performance": "Gut",
+        "performance": "Hoch",
         "models": {
             "classifier_model": "gemini-2.5-flash",
             "extractor_model": "gemini-2.5-pro",

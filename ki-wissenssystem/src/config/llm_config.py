@@ -128,7 +128,7 @@ class LLMRouter:
                 top_p=0.95
             ),
             
-            # Google Models - Optimierte Temperatur-Einstellungen (2025)
+            # Google Models - Aktualisiert auf neueste 2.5 Generation (Januar 2025)
             "gemini-2.5-pro": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
                 model="gemini-2.5-pro",
@@ -143,6 +143,14 @@ class LLMRouter:
                 max_output_tokens=8192,
                 top_p=0.95
             ),
+            "gemini-2.5-flash-lite-preview": ChatGoogleGenerativeAI(
+                google_api_key=settings.google_api_key,
+                model="gemini-2.5-flash-lite-preview-06-17",
+                temperature=0.0,  # Minimale Temperatur für maximale Konsistenz
+                max_output_tokens=4096,
+                top_p=0.9
+            ),
+            # Deprecated: Alte Modellnamen als Fallback
             "gemini-2.5-flash-lite-preview-06-17": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
                 model="gemini-2.5-flash-lite-preview-06-17",
@@ -152,8 +160,8 @@ class LLMRouter:
             ),
             "gemini-2.0-flash": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
-                model="gemini-2.0-flash",
-                temperature=0.3,  # Balanced für Synthese
+                model="gemini-2.0-flash-exp",
+                temperature=0.3,  # Ausgewogen für Validierung
                 max_output_tokens=8192,
                 top_p=0.95
             ),
