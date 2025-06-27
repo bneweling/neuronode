@@ -10,9 +10,13 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     """Response model for query processing"""
+    query: str
     response: str
     sources: List[Dict[str, Any]] = []
+    confidence: float = 0.0
+    follow_up_questions: List[str] = []
     metadata: Dict[str, Any] = {}
+    analysis: Optional[Dict[str, Any]] = {}
 
 class DocumentUploadResponse(BaseModel):
     """Response model for document upload"""

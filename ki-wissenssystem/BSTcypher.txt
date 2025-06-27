@@ -1,0 +1,105 @@
+// =================================================================
+// Skript zur Erstellung des Wissensgraphen für BSI-Bausteine
+// OPS.1.1.2 (Ordnungsgemäße IT-Administration)
+// SYS.1.1 (Allgemeiner Server)
+// =================================================================
+
+// == TEIL 1: NODES FÜR BAUSTEIN OPS.1.1.2 ERSTELLEN ==
+
+// Hauptknoten für den Baustein
+MERGE (b_ops:Baustein {id: 'OPS.1.1.2', title: 'Ordnungsgemäße IT-Administration', category: 'IT-Betrieb'});
+
+// ControlItem-Knoten für OPS.1.1.2
+MERGE (c_ops_a2:ControlItem {id: 'OPS.1.1.2.A2', title: 'Vertretungsregelungen', level: 'Basis', domain: 'OPS'});
+MERGE (c_ops_a4:ControlItem {id: 'OPS.1.1.2.A4', title: 'Beendigung der Tätigkeit in der IT-Administration', level: 'Basis', domain: 'OPS'});
+MERGE (c_ops_a5:ControlItem {id: 'OPS.1.1.2.A5', title: 'Nachweisbarkeit von administrativen Tätigkeiten', level: 'Basis', domain: 'OPS'});
+MERGE (c_ops_a7:ControlItem {id: 'OPS.1.1.2.A7', title: 'Regelung der IT-Administrationstätigkeit', level: 'Standard', domain: 'OPS'});
+MERGE (c_ops_a16:ControlItem {id: 'OPS.1.1.2.A16', title: 'Erweiterte Sicherheitsmaßnahmen für Administrationszugänge', level: 'Standard', domain: 'OPS'});
+MERGE (c_ops_a17:ControlItem {id: 'OPS.1.1.2.A17', title: 'IT-Administration im Vier-Augen-Prinzip', level: 'Hoch', domain: 'OPS'});
+
+// KnowledgeChunk-Knoten für OPS.1.1.2
+MERGE (k_ops_1:KnowledgeChunk {id: 'BSI_OPS112_chunk_001', summary: 'Definition der IT-Administration als Konfigurationsänderungen...', section: 'Einleitung', chunk_type: 'definition'});
+MERGE (k_ops_2:KnowledgeChunk {id: 'BSI_OPS112_chunk_002', summary: 'Die Gefährdung durch unzureichende Dokumentation...', section: 'Gefährdungslage', chunk_type: 'threat'});
+MERGE (k_ops_3:KnowledgeChunk {id: 'BSI_OPS112_chunk_003', summary: 'Die Gefährdung durch Missbrauch von privilegierten Berechtigungen...', section: 'Gefährdungslage', chunk_type: 'threat'});
+
+// Technology-Knoten für OPS.1.1.2
+MERGE (t_ops_2fa:Technology {name: 'Zwei-Faktor-Authentisierung', category: 'Sicherheitstechnik'});
+MERGE (t_ops_monitor:Technology {name: 'System-Monitoring-Tool', category: 'Betriebs-Software'});
+MERGE (t_ops_backup:Technology {name: 'Backup-System', category: 'Betriebs-Software'});
+
+// Entity-Knoten für OPS.1.1.2
+MERGE (e_ops_admin:Entity {name: 'IT-Administration', type: 'Prozess'});
+MERGE (e_ops_priv:Entity {name: 'Privilegierte Berechtigung', type: 'Konzept'});
+MERGE (e_ops_rbk:Entity {name: 'Rollen- und Berechtigungskonzept', type: 'Dokument'});
+
+
+// == TEIL 2: NODES FÜR BAUSTEIN SYS.1.1 ERSTELLEN ==
+
+// Hauptknoten für den Baustein
+MERGE (b_sys:Baustein {id: 'SYS.1.1', title: 'Allgemeiner Server', category: 'IT-Systeme'});
+
+// ControlItem-Knoten für SYS.1.1
+MERGE (c_sys_a1:ControlItem {id: 'SYS.1.1.A1', title: 'Zugriffsschutz und Nutzung', level: 'Basis', domain: 'SYS'});
+MERGE (c_sys_a6:ControlItem {id: 'SYS.1.1.A6', title: 'Deaktivierung nicht benötigter Dienste', level: 'Basis', domain: 'SYS'});
+MERGE (c_sys_a10:ControlItem {id: 'SYS.1.1.A10', title: 'Protokollierung', level: 'Basis', domain: 'SYS'});
+MERGE (c_sys_a11:ControlItem {id: 'SYS.1.1.A11', title: 'Festlegung einer Sicherheitsrichtlinie für Server', level: 'Standard', domain: 'SYS'});
+MERGE (c_sys_a19:ControlItem {id: 'SYS.1.1.A19', title: 'Einrichtung lokaler Paketfilter', level: 'Standard', domain: 'SYS'});
+MERGE (c_sys_a27:ControlItem {id: 'SYS.1.1.A27', title: 'Hostbasierte Angriffserkennung', level: 'Hoch', domain: 'SYS'});
+MERGE (c_sys_a34:ControlItem {id: 'SYS.1.1.A34', title: 'Festplattenverschlüsselung', level: 'Hoch', domain: 'SYS'});
+
+// KnowledgeChunk-Knoten für SYS.1.1
+MERGE (k_sys_1:KnowledgeChunk {id: 'BSI_SYS11_chunk_001', summary: 'Definition eines allgemeinen Servers...', section: 'Einleitung', chunk_type: 'definition'});
+MERGE (k_sys_2:KnowledgeChunk {id: 'BSI_SYS11_chunk_002', summary: 'Die Gefährdung durch Datenverlust auf Servern...', section: 'Gefährdungslage', chunk_type: 'threat'});
+MERGE (k_sys_3:KnowledgeChunk {id: 'BSI_SYS11_chunk_003', summary: 'Die Gefährdung durch unnötige Applikationen und Dienste...', section: 'Gefährdungslage', chunk_type: 'threat'});
+
+// Technology-Knoten für SYS.1.1
+MERGE (t_sys_filter:Technology {name: 'Lokaler Paketfilter (Host-Firewall)', category: 'Sicherheitstechnik'});
+MERGE (t_sys_hids:Technology {name: 'Host-based Intrusion Detection System (HIDS/HIPS)', category: 'Sicherheitstechnik'});
+MERGE (t_sys_fde:Technology {name: 'Festplattenverschlüsselung (FDE)', category: 'Kryptografie'});
+MERGE (t_sys_usv:Technology {name: 'Unterbrechungsfreie Stromversorgung (USV)', category: 'Infrastruktur'});
+
+// Entity-Knoten für SYS.1.1
+MERGE (e_sys_server:Entity {name: 'Server', type: 'IT-System'});
+MERGE (e_sys_dienst:Entity {name: 'Dienst', type: 'Software'});
+MERGE (e_sys_pfilter:Entity {name: 'Paketfilter', type: 'Technologie'});
+
+
+// == TEIL 3: BEZIEHUNGEN INNERHALB DER BAUSTEINE ERSTELLEN ==
+
+// Beziehungen für OPS.1.1.2
+MATCH (b:Baustein {id: 'OPS.1.1.2'}), (c:ControlItem) WHERE c.id STARTS WITH 'OPS.1.1.2' MERGE (b)-[:CONTAINS]->(c);
+MATCH (b:Baustein {id: 'OPS.1.1.2'}), (k:KnowledgeChunk) WHERE k.id STARTS WITH 'BSI_OPS112' MERGE (b)-[:CONTAINS]->(k);
+
+MATCH (k:KnowledgeChunk {id: 'BSI_OPS112_chunk_002'}), (c:ControlItem {id: 'OPS.1.1.2.A11'}) MERGE (k)-[:IS_MITIGATED_BY {confidence: 0.95}]->(c);
+MATCH (k:KnowledgeChunk {id: 'BSI_OPS112_chunk_003'}), (c:ControlItem {id: 'OPS.1.1.2.A4'}) MERGE (k)-[:IS_MITIGATED_BY {confidence: 0.90}]->(c);
+MATCH (t:Technology {name: 'Zwei-Faktor-Authentisierung'}), (c:ControlItem {id: 'OPS.1.1.2.A16'}) MERGE (t)-[:IMPLEMENTS]->(c);
+MATCH (t:Technology {name: 'Backup-System'}), (c:ControlItem {id: 'OPS.1.1.2.A26'}) MERGE (t)-[:IMPLEMENTS]->(c);
+MATCH (k:KnowledgeChunk {id: 'BSI_OPS112_chunk_003'}), (e:Entity {name: 'Privilegierte Berechtigung'}) MERGE (k)-[:MENTIONS]->(e);
+
+
+// Beziehungen für SYS.1.1
+MATCH (b:Baustein {id: 'SYS.1.1'}), (c:ControlItem) WHERE c.id STARTS WITH 'SYS.1.1' MERGE (b)-[:CONTAINS]->(c);
+MATCH (b:Baustein {id: 'SYS.1.1'}), (k:KnowledgeChunk) WHERE k.id STARTS WITH 'BSI_SYS11' MERGE (b)-[:CONTAINS]->(k);
+
+MATCH (k:KnowledgeChunk {id: 'BSI_SYS11_chunk_003'}), (c:ControlItem {id: 'SYS.1.1.A6'}) MERGE (c)-[:MITIGATES {confidence: 0.95}]->(k);
+MATCH (t:Technology {name: 'Lokaler Paketfilter (Host-Firewall)'}), (c:ControlItem {id: 'SYS.1.1.A19'}) MERGE (t)-[:IMPLEMENTS]->(c);
+MATCH (t:Technology {name: 'Host-based Intrusion Detection System (HIDS/HIPS)'}), (c:ControlItem {id: 'SYS.1.1.A27'}) MERGE (t)-[:IMPLEMENTS]->(c);
+MATCH (t:Technology {name: 'Festplattenverschlüsselung (FDE)'}), (c:ControlItem {id: 'SYS.1.1.A34'}) MERGE (t)-[:IMPLEMENTS]->(c);
+MATCH (c:ControlItem {id: 'SYS.1.1.A19'}), (e:Entity {name: 'Paketfilter'}) MERGE (c)-[:REQUIRES {confidence: 1.0}]->(e);
+
+
+// == TEIL 4: VERBINDUNGEN ZWISCHEN DEN BAUSTEINEN ERSTELLEN ==
+
+// Expliziter Verweis von SYS.1.1 auf OPS.1.1.2
+MATCH (sys:Baustein {id: 'SYS.1.1'}), (ops:Baustein {id: 'OPS.1.1.2'})
+MERGE (sys)-[r:REFERENCES]->(ops)
+SET r.description = 'Der Baustein "Allgemeiner Server" verweist explizit auf die Notwendigkeit, die Anforderungen der "Ordnungsgemäßen IT-Administration" zu beachten.',
+    r.source = 'BSI IT-Grundschutz Kompendium SYS.1.1 - 1.3 Abgrenzung';
+
+// Implizite logische Verbindung zwischen den Entitäten
+MATCH (admin_process:Entity {name: 'IT-Administration'}), (server_system:Entity {name: 'Server'})
+MERGE (admin_process)-[:MANAGES]->(server_system);
+
+// Die Administration von Servern erfordert Zugriffsschutz (eine Verbindung von einem Prozess zu einer Anforderung)
+MATCH (admin_process:Entity {name: 'IT-Administration'}), (access_control:ControlItem {id: 'SYS.1.1.A1'})
+MERGE (admin_process)-[:MUST_ADHERE_TO]->(access_control);

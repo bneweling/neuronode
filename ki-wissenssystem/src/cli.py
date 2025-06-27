@@ -76,58 +76,303 @@ def query(query: str, format: str, no_cache: bool):
 @click.argument('file_path', type=click.Path(exists=True))
 @click.option('--type', '-t', 'doc_type', help='Force document type')
 @click.option('--no-validate', is_flag=True, help='Skip validation')
-def process(file_path: str, doc_type: Optional[str], no_validate: bool):
+@click.option('--verbose', '-v', is_flag=True, help='Verbose output with detailed processing information')
+@click.option('--fast', is_flag=True, help='Fast mode - skip LLM processing, use rule-based classification only')
+@click.option('--debug', is_flag=True, help='Debug mode - show where processing gets stuck')
+def process(file_path: str, doc_type: Optional[str], no_validate: bool, verbose: bool, fast: bool, debug: bool):
     """Process a document"""
     
+    import time
+    import logging
+    from src.models.document_types import DocumentType
+    
+    # Setup verbose logging if requested
+    if verbose:
+        # Configure selective logging for document processing only
+        doc_logger = logging.getLogger('src.document_processing')
+        doc_logger.setLevel(logging.INFO)
+        
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        doc_logger.addHandler(handler)
+        
+        console.print("[bold yellow]🔍 Verbose Mode aktiviert[/bold yellow]")
+        console.print("Detaillierte Verarbeitungsinformationen werden angezeigt.\n")
+    
+    if fast:
+        console.print("[bold cyan]⚡ Fast Mode aktiviert[/bold cyan]")
+        console.print("Rule-based Verarbeitung ohne LLM - deutlich schneller.\n")
+    
+    def verbose_status_callback(task_id: str, status: str, progress: float, metadata: dict = None):
+        """Detailed status callback for verbose mode"""
+        if verbose:
+            timestamp = time.strftime("%H:%M:%S")
+            progress_bar = "█" * int(progress * 20) + "░" * (20 - int(progress * 20))
+            console.print(f"[dim]{timestamp}[/dim] [{progress*100:5.1f}%] {progress_bar} [cyan]{status}[/cyan]")
+            
+            if metadata:
+                for key, value in metadata.items():
+                    if isinstance(value, (list, dict)) and len(str(value)) > 100:
+                        console.print(f"   📊 {key}: {type(value).__name__} with {len(value)} items")
+                    else:
+                        console.print(f"   📊 {key}: {value}")
+    
+    async def run_fast_process():
+        """Fast processing without LLM - rule-based only"""
+        start_time = time.time()
+        
+        # Simple file analysis
+        file_path_obj = Path(file_path)
+        file_size = file_path_obj.stat().st_size
+        
+        console.print(f"[bold]📄 Schnelle Datei-Analyse:[/bold]")
+        console.print(f"   📁 Pfad: {file_path}")
+        console.print(f"   📏 Größe: {file_size:,} Bytes ({file_size/1024:.1f} KB)")
+        console.print(f"   📅 Geändert: {time.ctime(file_path_obj.stat().st_mtime)}")
+        
+        # Read file content
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            console.print(f"   📊 Text-Length: {len(content):,} Zeichen")
+        except Exception as e:
+            console.print(f"[red]❌ Fehler beim Lesen der Datei: {e}[/red]")
+            return
+        
+        # Simple rule-based classification
+        if ("BSI" in content and "Grundschutz" in content) or "INF." in content:
+            doc_type_detected = "BSI_GRUNDSCHUTZ"
+        elif "ISO" in content and "27001" in content:
+            doc_type_detected = "ISO_27001"
+        elif "NIST" in content:
+            doc_type_detected = "NIST_CSF"
+        else:
+            doc_type_detected = "UNKNOWN"
+        
+        # Simple pattern extraction
+        import re
+        bsi_patterns = re.findall(r'INF\.\d+\.A\d+[:\s]', content)
+        iso_patterns = re.findall(r'[A-Z]\.\d+\.\d+', content)
+        
+        processing_time = time.time() - start_time
+        
+        console.print(f"\n[green]✓ Fast processing completed in {processing_time:.2f} seconds![/green]")
+        console.print(f"\n[bold]📊 Fast Analysis Results:[/bold]")
+        console.print(f"   🎯 Document type (detected): {doc_type_detected}")
+        console.print(f"   📊 BSI Controls found: {len(bsi_patterns)}")
+        console.print(f"   📊 ISO Patterns found: {len(iso_patterns)}")
+        console.print(f"   ⚡ Processing rate: {file_size/(processing_time*1024):.1f} KB/s")
+        
+        if bsi_patterns[:5]:
+            console.print(f"\n[bold]🎯 Sample BSI Controls:[/bold]")
+            for pattern in bsi_patterns[:5]:
+                console.print(f"   • {pattern.strip()}")
+        
+        console.print(f"\n[bold cyan]⚡ Fast mode - keine Datenbank-Speicherung[/bold cyan]")
+        return
+
     async def run_process():
-        processor = DocumentProcessor()
+        start_time = time.time()
+        
+        if debug:
+            console.print("[blue]🐛 DEBUG: Initialisiere DocumentProcessor...[/blue]")
+        
+        try:
+            processor = DocumentProcessor()
+            if debug:
+                console.print("[blue]🐛 DEBUG: DocumentProcessor initialisiert ✓[/blue]")
+        except Exception as e:
+            console.print(f"[red]❌ DEBUG: Fehler bei DocumentProcessor-Initialisierung: {e}[/red]")
+            return
+        
+        file_path_obj = Path(file_path)
+        file_size = file_path_obj.stat().st_size
+        
+        if verbose:
+            console.print(f"[bold]📄 Datei-Analyse:[/bold]")
+            console.print(f"   📁 Pfad: {file_path}")
+            console.print(f"   📏 Größe: {file_size:,} Bytes ({file_size/1024:.1f} KB)")
+            console.print(f"   📅 Geändert: {time.ctime(file_path_obj.stat().st_mtime)}")
+            console.print()
         
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console
+            console=console,
+            disable=verbose  # Disable progress bar in verbose mode to avoid conflicts
         ) as progress:
-            task = progress.add_task(f"Processing {Path(file_path).name}...", total=None)
+            task = None if verbose else progress.add_task(f"Processing {file_path_obj.name}...", total=None)
             
             if doc_type:
-                from src.models.document_types import DocumentType
                 force_type = DocumentType[doc_type.upper()]
+                if verbose:
+                    console.print(f"[yellow]🎯 Forcing document type: {force_type.value}[/yellow]\n")
             else:
                 force_type = None
+                if verbose:
+                    console.print("[yellow]🔍 Auto-detecting document type...[/yellow]\n")
             
-            result = await processor.process_document(
-                file_path,
-                force_type=force_type,
-                validate=not no_validate
-            )
+            # Enhanced processing with verbose callbacks
+            if verbose:
+                console.print("[bold blue]🚀 Starting document processing pipeline...[/bold blue]\n")
             
-            progress.update(task, completed=True)
+            if debug:
+                console.print("[blue]🐛 DEBUG: Starte Dokumentenverarbeitung...[/blue]")
+            
+            # Add timeout for processing
+            try:
+                result = await asyncio.wait_for(
+                    processor.process_document(
+                        file_path,
+                        force_type=force_type,
+                        validate=not no_validate,
+                        status_callback=verbose_status_callback if verbose else None,
+                        task_id="cli-process"
+                    ),
+                    timeout=300.0  # 5 minutes timeout
+                )
+            except asyncio.TimeoutError:
+                console.print("[red]⚠️ Processing timeout (5 minutes) - möglicherweise LLM-API-Problem[/red]")
+                console.print("[yellow]Versuchen Sie es erneut oder prüfen Sie die LLM-Konfiguration[/yellow]")
+                return
+            except Exception as e:
+                console.print(f"[red]❌ Processing failed: {str(e)}[/red]")
+                if verbose:
+                    console.print(f"[dim]Exception details: {type(e).__name__}[/dim]")
+                return
+            
+            if not verbose and task:
+                progress.update(task, completed=True)
         
-        # Display results
-        console.print(f"\n[green]✓[/green] Document processed successfully!")
+        processing_time = time.time() - start_time
+        
+        # Display detailed results
+        console.print(f"\n[green]✓ Document processed successfully![/green]")
+        
+        if verbose:
+            console.print(f"\n[bold]📊 Processing Summary:[/bold]")
+            console.print(f"   ⏱️  Total time: {processing_time:.2f} seconds")
+            console.print(f"   🎯 Document type: {result.document_type.value}")
+            console.print(f"   📊 Processing rate: {file_size/(processing_time*1024):.1f} KB/s")
+            console.print()
+        
         console.print(f"Type: {result.document_type.value}")
         console.print(f"Controls extracted: {len(result.controls)}")
         console.print(f"Chunks created: {len(result.chunks)}")
         
+        if verbose and hasattr(result, 'metadata'):
+            console.print(f"\n[bold]🔍 Processing Metadata:[/bold]")
+            for key, value in result.metadata.items():
+                if isinstance(value, (list, dict)):
+                    console.print(f"   {key}: {type(value).__name__} with {len(value)} items")
+                else:
+                    console.print(f"   {key}: {value}")
+        
         if result.controls:
-            console.print("\n[bold]Sample controls:[/bold]")
-            table = Table()
-            table.add_column("ID", style="cyan")
-            table.add_column("Title", style="white")
-            table.add_column("Level", style="yellow")
+            if verbose:
+                console.print(f"\n[bold]🎯 All Controls ({len(result.controls)}):[/bold]")
+                controls_table = Table(show_header=True, header_style="bold magenta")
+                controls_table.add_column("ID", style="cyan", min_width=12)
+                controls_table.add_column("Title", style="white")
+                controls_table.add_column("Level", style="yellow", min_width=8)
+                controls_table.add_column("Domain", style="green", min_width=8)
+                controls_table.add_column("Text Length", style="blue", min_width=10)
+                
+                for control in result.controls:
+                    controls_table.add_row(
+                        control.id,
+                        control.title[:60] + "..." if len(control.title) > 60 else control.title,
+                        control.level or "N/A",
+                        control.domain or "N/A",
+                        f"{len(control.text)} chars"
+                    )
+                
+                console.print(controls_table)
+            else:
+                console.print("\n[bold]Sample controls:[/bold]")
+                table = Table()
+                table.add_column("ID", style="cyan")
+                table.add_column("Title", style="white")
+                table.add_column("Level", style="yellow")
+                
+                for control in result.controls[:5]:
+                    table.add_row(
+                        control.id,
+                        control.title[:50] + "..." if len(control.title) > 50 else control.title,
+                        control.level or "N/A"
+                    )
+                
+                console.print(table)
+        
+        if verbose and result.chunks:
+            console.print(f"\n[bold]📝 Chunks Overview ({len(result.chunks)}):[/bold]")
+            chunks_table = Table(show_header=True, header_style="bold magenta")
+            chunks_table.add_column("Index", style="cyan", min_width=5)
+            chunks_table.add_column("Type", style="yellow", min_width=12)
+            chunks_table.add_column("Length", style="blue", min_width=8)
+            chunks_table.add_column("Preview", style="white")
             
-            for control in result.controls[:5]:
-                table.add_row(
-                    control.id,
-                    control.title[:50] + "..." if len(control.title) > 50 else control.title,
-                    control.level or "N/A"
+            for i, chunk in enumerate(result.chunks[:10]):  # Show first 10 chunks
+                chunk_text = chunk.content if hasattr(chunk, 'content') else str(chunk)
+                preview = chunk_text[:80].replace('\n', ' ') + "..." if len(chunk_text) > 80 else chunk_text
+                
+                chunks_table.add_row(
+                    str(i),
+                    getattr(chunk, 'chunk_type', 'text'),
+                    f"{len(chunk_text)} chars",
+                    preview
                 )
             
-            console.print(table)
+            if len(result.chunks) > 10:
+                console.print(f"   [dim]... and {len(result.chunks) - 10} more chunks[/dim]")
+                
+            console.print(chunks_table)
+        
+        if verbose:
+            console.print(f"\n[bold]💾 Storage Information:[/bold]")
+            try:
+                from src.storage.neo4j_client import Neo4jClient
+                from src.storage.chroma_client import ChromaClient
+                
+                # Check Neo4j storage
+                neo4j = Neo4jClient()
+                with neo4j.driver.session() as session:
+                    result_nodes = session.run("MATCH (n) RETURN count(n) as count")
+                    node_count = result_nodes.single()['count']
+                    
+                    result_rels = session.run("MATCH ()-[r]->() RETURN count(r) as count")
+                    rel_count = result_rels.single()['count']
+                
+                console.print(f"   🗄️  Neo4j: {node_count} nodes, {rel_count} relationships")
+                
+                # Check ChromaDB storage
+                import chromadb
+                chroma_client = chromadb.HttpClient(host='localhost', port=8000)
+                collections = chroma_client.list_collections()
+                
+                total_docs = 0
+                for collection in collections:
+                    coll = chroma_client.get_collection(collection.name)
+                    docs = coll.get()
+                    doc_count = len(docs['ids']) if docs['ids'] else 0
+                    total_docs += doc_count
+                    console.print(f"   📊 ChromaDB '{collection.name}': {doc_count} documents")
+                
+            except Exception as e:
+                console.print(f"   ⚠️  Storage check failed: {str(e)}")
         
         processor.close()
+        
+        if verbose:
+            console.print(f"\n[bold green]🎉 Processing completed in {processing_time:.2f} seconds![/bold green]")
     
-    asyncio.run(run_process())
+    # Choose processing mode
+    if fast:
+        asyncio.run(run_fast_process())
+    else:
+        asyncio.run(run_process())
 
 @cli.command()
 @click.argument('directory', type=click.Path(exists=True))

@@ -136,17 +136,17 @@ class Neo4jClient:
             
             return [dict(record) for record in result]
     
-    def search_controls(self, query: str) -> List[Dict[str, Any]]:
+    def search_controls(self, search_term: str) -> List[Dict[str, Any]]:
         """Search controls by text"""
         with self.driver.session() as session:
             result = session.run("""
                 MATCH (c:ControlItem)
-                WHERE c.text CONTAINS $query 
-                   OR c.title CONTAINS $query
-                   OR c.id CONTAINS $query
+                WHERE c.text CONTAINS $search_term 
+                   OR c.title CONTAINS $search_term
+                   OR c.id CONTAINS $search_term
                 RETURN c
                 LIMIT 20
-            """, query=query)
+            """, search_term=search_term)
             
             return [dict(record["c"]) for record in result]
     

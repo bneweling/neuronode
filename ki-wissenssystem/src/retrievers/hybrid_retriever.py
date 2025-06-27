@@ -355,10 +355,9 @@ class HybridRetriever:
         
         # Filter by source/standard if specific standard mentioned
         if analysis.entities.get("standards"):
-            filters["$or"] = [
-                {"source": {"$contains": std}} 
-                for std in analysis.entities["standards"]
-            ]
+            # Use $in operator instead of $contains for ChromaDB compatibility
+            standards_list = analysis.entities["standards"]
+            filters["source"] = {"$in": standards_list}
         
         # Filter by document type for technical queries
         if config.get("boost_technical"):

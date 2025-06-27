@@ -82,15 +82,8 @@ def initialize_components():
     try:
         # Initialize QueryOrchestrator
         from src.orchestration.query_orchestrator import QueryOrchestrator
-        if chroma_client and neo4j_client:
-            query_orchestrator = QueryOrchestrator(
-                chroma_client=chroma_client,
-                neo4j_client=neo4j_client
-            )
-            logger.info("✅ QueryOrchestrator initialized successfully")
-        else:
-            logger.warning("⚠️ QueryOrchestrator not initialized - missing dependencies")
-            query_orchestrator = None
+        query_orchestrator = QueryOrchestrator()
+        logger.info("✅ QueryOrchestrator initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize QueryOrchestrator: {e}")
         query_orchestrator = None
@@ -98,12 +91,8 @@ def initialize_components():
     try:
         # Initialize GraphGardener
         from src.orchestration.graph_gardener import GraphGardener
-        if neo4j_client:
-            graph_gardener = GraphGardener(neo4j_client=neo4j_client)
-            logger.info("✅ GraphGardener initialized successfully")
-        else:
-            logger.warning("⚠️ GraphGardener not initialized - missing Neo4j client")
-            graph_gardener = None
+        graph_gardener = GraphGardener()
+        logger.info("✅ GraphGardener initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize GraphGardener: {e}")
         graph_gardener = None
@@ -382,8 +371,10 @@ async def process_query(request: QueryRequest):
             
             # Fallback: Simple response without RAG
             return QueryResponse(
+                query=request.query,
                 response="Entschuldigung, das Abfragesystem ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
                 sources=[],
+                confidence=0.0,
                 metadata={
                     "status": "fallback",
                     "reason": "QueryOrchestrator not initialized",
@@ -410,8 +401,10 @@ async def process_query(request: QueryRequest):
                 search_results = await _fallback_chromadb_search(request.query)
                 
                 return QueryResponse(
+                    query=request.query,
                     response=f"Basierend auf den verfügbaren Dokumenten: {search_results['summary']}",
                     sources=search_results['sources'],
+                    confidence=0.6,
                     metadata={
                         "status": "chromadb_fallback",
                         "error": str(e),
@@ -729,7 +722,7 @@ async def search_graph(
                     LIMIT $limit
                 """
             
-            result = session.run(cypher, query=query, limit=limit)
+            result = session.run(cypher, {"query": query, "limit": limit})
             
             nodes = []
             for record in result:

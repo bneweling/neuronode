@@ -1,0 +1,147 @@
+{
+  "document_info": {
+    "filename": "BSI_OPS.1.1.2_Ordnungsgemäße_IT-Administration.pdf",
+    "document_type": "bsi_grundschutz",
+    "file_type": "pdf",
+    "source": "BSI IT-Grundschutz Kompendium",
+    "processing_timestamp": "2025-06-27T14:00:00Z"
+  },
+  "controls": [
+    {
+      "id": "OPS.1.1.2.A2",
+      "title": "Vertretungsregelungen",
+      "text": "Für jede Administrationsaufgabe MUSS eine Vertretung benannt werden. Die Vertretung MUSS über die notwendigen administrativen Berechtigungen (organisatorisch und technisch) verfügen, um die Tätigkeit durchführen zu können. Eine benannte Vertretung MUSS über die im Kontext der Administrationsaufgabe notwendigen Kenntnisse verfügen. Die Regelung der Vertretung MUSS Mangel- und Notfallsituationen berücksichtigen.",
+      "level": "Basis",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    },
+    {
+      "id": "OPS.1.1.2.A4",
+      "title": "Beendigung der Tätigkeit in der IT-Administration",
+      "text": "Falls eine Person von Administrationsaufgaben entbunden wird, MÜSSEN ihr alle damit zusammenhängenden privilegierten Berechtigungen auf organisatorischer und technischer Ebene entzogen werden. Insbesondere MÜSSEN persönliche administrative Konten gesperrt und Passwörter aller administrativer Konten geändert werden, die der Person bekannt sind. Weiterhin MÜSSEN alle betroffenen Parteien darauf hingewiesen werden, dass diese Person von den entsprechenden Aufgaben entbunden ist und daher keine administrativen Berechtigungen mehr haben darf.",
+      "level": "Basis",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    },
+    {
+      "id": "OPS.1.1.2.A5",
+      "title": "Nachweisbarkeit von administrativen Tätigkeiten",
+      "text": "Administrative Tätigkeiten MÜSSEN nachweisbar sein. Dafür MUSS mindestens festgehalten werden, welche Änderung bei einer Tätigkeit durchgeführt wurde, wer eine Tätigkeit durchgeführt hat und wann eine Tätigkeit durchgeführt wurde. Die Institution MUSS jederzeit nachweisen können, welche Person welche administrativen Tätigkeiten durchgeführt hat. Dazu SOLLTEN alle Administrierenden über eine eigene Zugangskennung verfügen. Auch Vertretungen von Administrierenden SOLLTEN eigene Zugangskennungen erhalten. Jeder Anmeldevorgang (Login) über eine Administrationskennung MUSS protokolliert werden.",
+      "level": "Basis",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    },
+    {
+      "id": "OPS.1.1.2.A7",
+      "title": "Regelung der IT-Administrationstätigkeit",
+      "text": "Jede IT-Administrationstätigkeit SOLLTE einer klar definierten Aufgabe zugeordnet sein. Für diese Aufgaben SOLLTE geregelt werden, durch wen diese Aufgabe ausgeführt werden darf und durch wen diese Aufgabe beauftragt werden darf. Es SOLLTE nachvollziehbar sein, in welchen Prozessen sich Administrationsaufgaben einfügen. IT-Administrationstätigkeiten SOLLTEN nur mit denjenigen Berechtigungen durchgeführt werden, die zur Erfüllung der entsprechenden Aufgabe notwendig sind. Es SOLLTE festgelegt werden, wie IT-Administrationstätigkeiten auszuführen sind.",
+      "level": "Standard",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    },
+    {
+      "id": "OPS.1.1.2.A16",
+      "title": "Erweiterte Sicherheitsmaßnahmen für Administrationszugänge",
+      "text": "Der Zugang zu administrativen Oberflächen und Schnittstellen SOLLTE auf IT-Systeme, die zur IT-Administration verwendet werden, beschränkt sein. Daher SOLLTEN Netze, die zur IT-Administration verwendet werden, durch Filter- und Segmentierungsmaßnahmen von produktiven Netzen zu administrierender Komponenten getrennt werden (Out-of-Band-Management). Wo kein Out-of-Band-Management möglich ist, SOLLTEN Software-Schnittstellen und physische Schnittstellen zur IT-Administration durch zusätzliche Maßnahmen abgesichert werden und nur für Personen erreichbar sein, die für deren Nutzung berechtigt sind. Hierzu SOLLTE eine Zwei-Faktor-Authentisierung verwendet werden.",
+      "level": "Standard",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    },
+    {
+      "id": "OPS.1.1.2.A17",
+      "title": "IT-Administration im Vier-Augen-Prinzip",
+      "text": "Es SOLLTE geregelt werden, welche Administrationsaufgaben eine zusätzliche Person erfordern, die die Ausführung überwacht. Diese Person SOLLTE im Kontext der durchzuführenden IT-Administrationstätigkeiten auch über die zur Ausführung notwendigen Qualifikationen verfügen.",
+      "level": "Hoch",
+      "domain": "OPS",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "metadata": { "baustein": "OPS.1.1.2", "kategorie": "IT-Betrieb", "standard": "BSI" }
+    }
+  ],
+  "knowledge_chunks": [
+    {
+      "id": "BSI_OPS112_chunk_001",
+      "text": "Unter IT-Administration werden Tätigkeiten hauptsächlich innerhalb des IT-Betriebs verstanden, für die administrative Rechte benötigt werden und die die Konfiguration von IT-Komponenten verändern. Administrierende sorgen nicht nur dafür, dass die IT-Komponenten verfügbar bleiben, sondern setzen auch Maßnahmen für die Informationssicherheit um und überprüfen, ob diese wirksam sind.",
+      "summary": "Definition der IT-Administration als Konfigurationsänderungen an IT-Komponenten mit administrativen Rechten, um Verfügbarkeit und Informationssicherheit zu gewährleisten.",
+      "keywords": ["IT-Administration", "administrative Rechte", "IT-Betrieb", "Konfiguration", "Informationssicherheit"],
+      "entities": ["IT-Administration", "IT-Betrieb", "Informationssicherheit"],
+      "relationships": [
+        {"type": "SUPPORTS", "target_id": "OPS.1.1.2.A21", "confidence": 0.8},
+        {"type": "SUPPORTS", "target_id": "OPS.1.1.2.A22", "confidence": 0.85}
+      ],
+      "source": "BSI IT-Grundschutz Kompendium OPS.1.1.2",
+      "page": 1,
+      "metadata": {"chunk_type": "definition", "section": "Einleitung", "baustein": "OPS.1.1.2"}
+    },
+    {
+      "id": "BSI_OPS112_chunk_002",
+      "text": "Unzureichende Dokumentation kann zu Fehlkonfigurationen oder allgemein fehlerhafter IT-Administration führen. Dadurch können alle Schutzziele der Informationssicherheit erheblich gefährdet werden. Außerdem kann auch das Notfallmanagement erheblich beeinträchtigt werden, weil für zeitkritische Aufgaben erst Informationen gesammelt werden müssen oder die Aufgaben aufgrund der Diskrepanz zwischen Dokumentation und Ist-Zustand nicht wie geplant durchgeführt werden können.",
+      "summary": "Die Gefährdung durch unzureichende Dokumentation führt zu Fehlkonfigurationen, gefährdet Schutzziele und behindert das Notfallmanagement.",
+      "keywords": ["Dokumentation", "Fehlkonfiguration", "Notfallmanagement", "Schutzziele", "Gefährdung"],
+      "entities": ["Dokumentation", "Notfallmanagement", "Fehlkonfiguration"],
+      "relationships": [
+        {"type": "IS_MITIGATED_BY", "target_id": "OPS.1.1.2.A11", "confidence": 0.95}
+      ],
+      "source": "BSI IT-Grundschutz Kompendium OPS.1.1.2",
+      "page": 2,
+      "metadata": {"chunk_type": "threat", "section": "Gefährdungslage", "baustein": "OPS.1.1.2"}
+    },
+    {
+      "id": "BSI_OPS112_chunk_003",
+      "text": "Zu weit gefasste administrative Berechtigungen können genutzt werden, um zu sabotieren oder Informationen auszuspähen, die als Ausgangspunkt für Angriffe verwendet werden können. Dadurch werden alle Schutzziele der Informationssicherheit gefährdet. Privilegierte Zutritte, Zugänge und Zugriffe können auch missbraucht werden, wenn die Prozesse beim Ausscheiden von internen oder externen Administrierenden unzureichend sind.",
+      "summary": "Die Gefährdung durch Missbrauch von privilegierten Berechtigungen, ermöglicht durch zu weite Rechtevergabe oder unzureichende Offboarding-Prozesse, bedroht alle Schutzziele.",
+      "keywords": ["Missbrauch", "privilegierte Berechtigungen", "Sabotage", "Ausscheiden", "Offboarding"],
+      "entities": ["privilegierte Berechtigungen", "Angriff", "Informationssicherheit"],
+      "relationships": [
+        {"type": "IS_MITIGATED_BY", "target_id": "OPS.1.1.2.A4", "confidence": 0.9},
+        {"type": "IS_MITIGATED_BY", "target_id": "OPS.1.1.2.A21", "confidence": 0.9},
+        {"type": "IS_MITIGATED_BY", "target_id": "OPS.1.1.2.A23", "confidence": 0.9}
+      ],
+      "source": "BSI IT-Grundschutz Kompendium OPS.1.1.2",
+      "page": 3,
+      "metadata": {"chunk_type": "threat", "section": "Gefährdungslage", "baustein": "OPS.1.1.2"}
+    }
+  ],
+  "technologies": [
+    {
+      "name": "Zwei-Faktor-Authentisierung",
+      "category": "Sicherheitstechnik",
+      "implements_controls": ["OPS.1.1.2.A16"],
+      "metadata": {"technology_type": "authentication", "domain": "access_control"}
+    },
+    {
+      "name": "System-Monitoring-Tool",
+      "category": "Betriebs-Software",
+      "implements_controls": ["OPS.1.1.2.A29", "OPS.1.1.2.A30"],
+      "metadata": {"technology_type": "monitoring_system", "domain": "it_operations"}
+    },
+    {
+      "name": "Backup-System",
+      "category": "Betriebs-Software",
+      "implements_controls": ["OPS.1.1.2.A26"],
+      "metadata": {"technology_type": "data_protection", "domain": "it_operations"}
+    }
+  ],
+  "entities": [
+    {"name": "IT-Administration", "type": "Prozess", "description": "Tätigkeiten mit administrativen Rechten zur Konfiguration und zum Betrieb von IT-Komponenten."},
+    {"name": "Privilegierte Berechtigung", "type": "Konzept", "description": "Erweiterte Rechte, die weitreichende Änderungen an IT-Systemen ermöglichen."},
+    {"name": "Rollen- und Berechtigungskonzept", "type": "Dokument", "description": "Definiert die Vergabe und Struktur von administrativen Rollen und Rechten."}
+  ],
+  "relationships": [
+    {"source": "OPS.1.1.2.A21", "target": "OPS.1.1.2.A23", "type": "RELATES_TO", "confidence": 0.9, "description": "A21 definiert die Rollen, A23 das übergreifende Konzept dafür."},
+    {"source": "BSI_OPS112_chunk_003", "target": "Privilegierte Berechtigung", "type": "MENTIONS", "confidence": 1.0, "description": "Der Chunk beschreibt die Gefahr durch Missbrauch von privilegierten Berechtigungen."}
+  ],
+  "graph_metadata": {
+    "baustein": "OPS.1.1.2",
+    "baustein_title": "Ordnungsgemäße IT-Administration",
+    "category": "IT-Betrieb",
+    "total_controls": 21,
+    "total_chunks": 50,
+    "complexity_score": 0.85,
+    "coverage_areas": ["Rollen- & Berechtigungsmanagement", "Prozesssicherheit", "Dokumentation", "Werkzeugabsicherung", "Notfallvorsorge", "Protokollierung"]
+  }
+}

@@ -1,0 +1,157 @@
+{
+    "document_info": {
+      "filename": "BSI_SYS.1.1_Allgemeiner_Server.pdf",
+      "document_type": "bsi_grundschutz",
+      "file_type": "pdf",
+      "source": "BSI IT-Grundschutz Kompendium",
+      "processing_timestamp": "2025-06-27T14:05:00Z"
+    },
+    "controls": [
+      {
+        "id": "SYS.1.1.A1",
+        "title": "Zugriffsschutz und Nutzung",
+        "text": "Physische Server MÜSSEN an Orten betrieben werden, zu denen nur berechtigte Personen Zutritt haben. Server DÜRFEN NICHT als Arbeitsplatzrechner genutzt werden. Server DÜRFEN NICHT zur Erledigung von Aufgaben und Tätigkeiten verwendet werden, die grundsätzlich auf einem Client-System aus- und durchgeführt werden können.",
+        "level": "Basis",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A6",
+        "title": "Deaktivierung nicht benötigter Dienste",
+        "text": "Alle nicht benötigten Serverrollen, Features und Funktionen, sonstige Software und Dienste MÜSSEN deaktiviert oder deinstalliert werden, vor allem Netzdienste. Auch alle nicht benötigten Funktionen in der Firmware MÜSSEN deaktiviert werden. Die Empfehlungen des Betriebssystemherstellers SOLLTEN hierbei als Orientierung berücksichtigt werden.",
+        "level": "Basis",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A10",
+        "title": "Protokollierung",
+        "text": "Generell MÜSSEN alle sicherheitsrelevanten Systemereignisse protokolliert werden, dazu gehören mindestens: Systemstarts und Reboots, erfolgreiche und erfolglose Anmeldungen, fehlgeschlagene Berechtigungsprüfungen, blockierte Datenströme, Einrichtung oder Änderungen von Benutzenden, Gruppen und Berechtigungen, sicherheitsrelevante Fehlermeldungen sowie Warnmeldungen von Sicherheitssystemen.",
+        "level": "Basis",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A11",
+        "title": "Festlegung einer Sicherheitsrichtlinie für Server",
+        "text": "Ausgehend von der allgemeinen Sicherheitsrichtlinie der Institution SOLLTEN die Anforderungen an Server in einer separaten Sicherheitsrichtlinie konkretisiert werden. Diese Richtlinie SOLLTE allen Administrierenden und anderen Personen, die an der Beschaffung und dem Betrieb der Server beteiligt sind, bekannt und Grundlage für deren Arbeit sein.",
+        "level": "Standard",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A19",
+        "title": "Einrichtung lokaler Paketfilter",
+        "text": "Vorhandene lokale Paketfilter SOLLTEN über ein Regelwerk so ausgestaltet werden, dass die eingehende und ausgehende Kommunikation auf die erforderlichen Kommunikationspartner, Kommunikationsprotokolle sowie Ports und Schnittstellen beschränkt wird. Die Identität von Remote-Systemen und die Integrität der Verbindungen mit diesen SOLLTE kryptografisch abgesichert sein.",
+        "level": "Standard",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A27",
+        "title": "Hostbasierte Angriffserkennung",
+        "text": "Hostbasierte Angriffserkennungssysteme (Host-based Intrusion Detection Systems, IDS und Intrusion Prevention Systems, IPS) SOLLTEN eingesetzt werden, um das Systemverhalten auf Anomalien und Missbrauch hin zu überwachen. Die eingesetzten IDS/IPS-Mechanismen SOLLTEN geeignet ausgewählt, konfiguriert und ausführlich getestet werden. Bei einer Angriffserkennung SOLLTE das Betriebspersonal in geeigneter Weise alarmiert werden.",
+        "level": "Hoch",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      },
+      {
+        "id": "SYS.1.1.A34",
+        "title": "Festplattenverschlüsselung",
+        "text": "Bei erhöhtem Schutzbedarf SOLLTEN die Datenträger des Servers mit einem als sicher geltenden Produkt oder Verfahren verschlüsselt werden. Dies SOLLTE auch für virtuelle Maschinen mit produktiven Daten gelten. Es SOLLTE nicht nur ein TPM allein als Schlüsselschutz dienen. Das Wiederherstellungspasswort SOLLTE an einem geeigneten sicheren Ort gespeichert werden. Bei sehr hohen Anforderungen z. B. an die Vertraulichkeit SOLLTE eine Full Volume oder Full Disk Encryption erfolgen.",
+        "level": "Hoch",
+        "domain": "SYS",
+        "source": "BSI IT-Grundschutz Kompendium",
+        "metadata": { "baustein": "SYS.1.1", "kategorie": "IT-Systeme", "standard": "BSI" }
+      }
+    ],
+    "knowledge_chunks": [
+      {
+        "id": "BSI_SYS11_chunk_001",
+        "text": "Als „Allgemeiner Server“ werden IT-Systeme mit einem beliebigen Betriebssystem bezeichnet, die Benutzenden und anderen IT-Systemen Dienste bereitstellen. Diese Dienste können Basisdienste für das lokale oder externe Netz sein, oder auch den E-Mail-Austausch ermöglichen oder Datenbanken und Druckerdienste anbieten. Server-IT-Systeme haben eine zentrale Bedeutung für die Informationstechnik und damit für funktionierende Arbeitsabläufe einer Institution.",
+        "summary": "Definition eines allgemeinen Servers als zentrales IT-System, das Dienste für Benutzer und andere Systeme bereitstellt.",
+        "keywords": ["Server", "Dienste", "Betriebssystem", "IT-System", "zentrale Bedeutung"],
+        "entities": ["Server", "Dienst", "Betriebssystem"],
+        "relationships": [],
+        "source": "BSI IT-Grundschutz Kompendium SYS.1.1",
+        "page": 1,
+        "metadata": {"chunk_type": "definition", "section": "Einleitung", "baustein": "SYS.1.1"}
+      },
+      {
+        "id": "BSI_SYS11_chunk_002",
+        "text": "Der Verlust von Daten kann besonders bei Servern erhebliche Auswirkungen auf Geschäftsprozesse und Fachaufgaben und damit auf die gesamte Institution haben. Sehr viele IT-Systeme wie Clients oder andere Server sind in der Regel darauf angewiesen, dass die dort zentral gespeicherten Daten immer verfügbar sind. Ein Verlust dieser zentral abgelegten Daten hat in einem solchen Fall gravierende Auswirkungen.",
+        "summary": "Die Gefährdung durch Datenverlust auf Servern hat gravierende Auswirkungen auf Geschäftsprozesse, da viele andere Systeme von der Verfügbarkeit der zentralen Daten abhängig sind.",
+        "keywords": ["Datenverlust", "Server", "Geschäftsprozesse", "Verfügbarkeit", "zentrale Daten"],
+        "entities": ["Datenverlust", "Server", "Verfügbarkeit"],
+        "relationships": [
+          {"type": "IS_MITIGATED_BY", "target_id": "OPS.1.1.1.A6", "confidence": 0.9} 
+        ],
+        "source": "BSI IT-Grundschutz Kompendium SYS.1.1",
+        "page": 3,
+        "metadata": {"chunk_type": "threat", "section": "Gefährdungslage", "baustein": "SYS.1.1"}
+      },
+      {
+        "id": "BSI_SYS11_chunk_003",
+        "text": "Schon bei der Installation des Server-Betriebssystems ist es möglich, mitgelieferte Applikationen und Dienste zu installieren, von denen einige unter Umständen gar nicht genutzt werden. Oft ist gar nicht bekannt, dass diese nicht genutzten Anwendungen und Dienste vorhanden sind. Auf diese Weise können sie leicht zum Einfallstor für Angriffe werden.",
+        "summary": "Die Gefährdung durch unnötige Applikationen und Dienste, die oft bei der Installation mitinstalliert werden, vergrößert die Angriffsfläche des Servers.",
+        "keywords": ["unnötige Dienste", "Installation", "Angriffsfläche", "Schwachstellen"],
+        "entities": ["Server-Betriebssystem", "Dienst", "Angriff"],
+        "relationships": [
+          {"type": "IS_MITIGATED_BY", "target_id": "SYS.1.1.A6", "confidence": 0.95}
+        ],
+        "source": "BSI IT-Grundschutz Kompendium SYS.1.1",
+        "page": 3,
+        "metadata": {"chunk_type": "threat", "section": "Gefährdungslage", "baustein": "SYS.1.1"}
+      }
+    ],
+    "technologies": [
+      {
+        "name": "Lokaler Paketfilter (Host-Firewall)",
+        "category": "Sicherheitstechnik",
+        "implements_controls": ["SYS.1.1.A19"],
+        "metadata": {"technology_type": "network_security", "domain": "host_security"}
+      },
+      {
+        "name": "Host-based Intrusion Detection System (HIDS/HIPS)",
+        "category": "Sicherheitstechnik",
+        "implements_controls": ["SYS.1.1.A27"],
+        "metadata": {"technology_type": "detection_system", "domain": "host_security"}
+      },
+      {
+        "name": "Festplattenverschlüsselung (FDE)",
+        "category": "Kryptografie",
+        "implements_controls": ["SYS.1.1.A34"],
+        "metadata": {"technology_type": "encryption", "domain": "data_at_rest_security"}
+      },
+      {
+        "name": "Unterbrechungsfreie Stromversorgung (USV)",
+        "category": "Infrastruktur",
+        "implements_controls": ["SYS.1.1.A15"],
+        "metadata": {"technology_type": "power_supply", "domain": "physical_security"}
+      }
+    ],
+    "entities": [
+      {"name": "Server", "type": "IT-System", "description": "Ein IT-System, das Dienste in einem Netzwerk bereitstellt."},
+      {"name": "Dienst", "type": "Software", "description": "Eine von einem Server bereitgestellte Funktionalität (z.B. E-Mail, Datenbank)."},
+      {"name": "Paketfilter", "type": "Technologie", "description": "Software oder Hardware, die den Datenverkehr basierend auf Regeln kontrolliert."}
+    ],
+    "relationships": [
+      {"source": "SYS.1.1.A6", "target": "BSI_SYS11_chunk_003", "type": "MITIGATES", "confidence": 0.95, "description": "Die Deaktivierung unnötiger Dienste mitigiert die in Chunk 3 beschriebene Gefahr."},
+      {"source": "SYS.1.1.A19", "target": "Paketfilter", "type": "REQUIRES", "confidence": 1.0, "description": "Die Anforderung A19 erfordert die Konfiguration eines Paketfilters."}
+    ],
+    "graph_metadata": {
+      "baustein": "SYS.1.1",
+      "baustein_title": "Allgemeiner Server",
+      "category": "IT-Systeme",
+      "total_controls": 28,
+      "total_chunks": 40,
+      "complexity_score": 0.75,
+      "coverage_areas": ["Grundkonfiguration", "Härtung", "Zugriffsschutz", "Protokollierung", "Monitoring", "Verfügbarkeit", "Notfallvorsorge"]
+    }
+  }

@@ -17,7 +17,7 @@ class ChunkAnalysis(BaseModel):
     keywords: List[str] = Field(description="Key technical terms and concepts")
     entities: List[str] = Field(description="Technologies, products, standards mentioned")
     topics: List[str] = Field(description="Main topics covered")
-    potential_relations: List[Dict[str, str]] = Field(
+    potential_relations: List[Dict[str, Any]] = Field(
         description="Potential relationships to compliance requirements",
         default_factory=list
     )

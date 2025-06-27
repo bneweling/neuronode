@@ -160,7 +160,7 @@ class LLMRouter:
             ),
             "gemini-2.0-flash": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
-                model="gemini-2.0-flash-exp",
+                model="gemini-1.5-flash", # Use stable 1.5-flash instead of experimental 2.0
                 temperature=0.3,  # Ausgewogen für Validierung
                 max_output_tokens=8192,
                 top_p=0.95
