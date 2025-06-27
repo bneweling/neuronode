@@ -13,7 +13,7 @@ interface ChatResponseWithMetadata {
 export class ProductionAPIService implements KIWissenssystemAPI {
   private baseUrl: string
 
-  constructor(baseUrl: string = 'http://localhost:8000') {
+  constructor(baseUrl: string = 'http://localhost:8080') {
     this.baseUrl = baseUrl
   }
 
@@ -53,7 +53,17 @@ export class ProductionAPIService implements KIWissenssystemAPI {
     }
   }
 
-  async uploadDocument(formData: FormData): Promise<{ success: boolean; id?: string }> {
+  async uploadDocument(formData: FormData): Promise<{ 
+    success: boolean; 
+    id?: string;
+    status?: string;
+    task_id?: string;
+    filename?: string;
+    document_type?: string;
+    num_chunks?: number;
+    num_controls?: number;
+    metadata?: any;
+  }> {
     try {
       const response = await fetch(`${this.baseUrl}/documents/upload`, {
         method: 'POST',
@@ -68,11 +78,74 @@ export class ProductionAPIService implements KIWissenssystemAPI {
       
       return {
         success: result.status === 'completed' || result.status === 'processing',
-        id: result.task_id || result.document_id
+        id: result.task_id || result.document_id,
+        status: result.status,
+        task_id: result.task_id,
+        filename: result.filename,
+        document_type: result.document_type,
+        num_chunks: result.num_chunks,
+        num_controls: result.num_controls,
+        metadata: result.metadata
       }
     } catch (error) {
       console.error('Upload API error:', error)
       throw new Error('Upload fehlgeschlagen')
+    }
+  }
+
+  async analyzeDocumentPreview(formData: FormData): Promise<{
+    predicted_document_type: string;
+    file_type: string;
+    preview_text: string;
+    processing_estimate: {
+      estimated_duration_seconds: number;
+      estimated_chunks: number;
+      will_extract_controls: boolean;
+      processing_steps: string[];
+    };
+    confidence_indicators: {
+      type_detection: string;
+      classification: string;
+    };
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/documents/analyze-preview`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result
+    } catch (error) {
+      console.error('Document analysis error:', error)
+      throw new Error('Dokument-Analyse fehlgeschlagen')
+    }
+  }
+
+  async getProcessingStatus(taskId: string): Promise<{
+    task_id: string;
+    status: string;
+    progress: number;
+    steps_completed: string[];
+    current_step: string;
+    estimated_completion: string;
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/documents/processing-status/${taskId}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      return result
+    } catch (error) {
+      console.error('Processing status error:', error)
+      throw new Error('Status konnte nicht abgerufen werden')
     }
   }
 

@@ -1,0 +1,35 @@
+# Core Dependencies
+langchain==0.1.0
+langchain-openai==0.0.2
+langchain-anthropic==0.1.1
+langchain-google-genai==0.0.1
+google-generativeai==0.8.3
+chromadb==0.4.22
+neo4j==5.16.0
+python-dotenv==1.0.0
+
+# Pydantic Settings (für BaseSettings)
+pydantic-settings==2.1.0
+
+# Document Processing
+pypdf==3.17.4
+python-docx==1.1.0
+openpyxl==3.1.2
+python-pptx==0.6.23
+lxml==5.1.0
+beautifulsoup4==4.12.3
+unstructured==0.11.8
+
+# API & Server
+fastapi==0.109.0
+uvicorn==0.27.0
+websockets==12.0
+pydantic==2.5.3
+python-multipart==0.0.6
+
+# Utilities
+tiktoken==0.5.2
+numpy==1.26.3
+pandas==2.1.4
+tenacity==8.2.3
+psutil==7.0.0 

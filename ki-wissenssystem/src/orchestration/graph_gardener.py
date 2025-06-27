@@ -432,23 +432,223 @@ class GraphGardener:
             """, source_id=source_id, target_id=target_id, 
                 confidence=confidence, reason=reason)
     
-    async def schedule_continuous_gardening(self, interval_hours: int = 24):
-        """Schedule continuous gardening cycles"""
+    async def find_and_fix_orphans(self, auto_fix: bool = False) -> Dict[str, Any]:
+        """Find orphan nodes and optionally fix them"""
+        try:
+            with self.neo4j.driver.session() as session:
+                # Find orphan nodes (nodes with no relationships)
+                result = session.run("""
+                    MATCH (n)
+                    WHERE NOT (n)--()
+                    RETURN n.id as id, labels(n) as labels, n.title as title
+                    LIMIT 100
+                """)
+                
+                orphans = []
+                for record in result:
+                    orphans.append({
+                        "id": record["id"],
+                        "labels": record["labels"],
+                        "title": record.get("title", "No title")
+                    })
+                
+                fixed_count = 0
+                if auto_fix and orphans:
+                    # Try to connect orphans based on text similarity
+                    for orphan in orphans[:10]:  # Limit to prevent overload
+                        try:
+                            # Find similar nodes
+                            similar_result = session.run("""
+                                MATCH (n), (m)
+                                WHERE n.id = $orphan_id 
+                                AND m.id <> $orphan_id
+                                AND n.text IS NOT NULL 
+                                AND m.text IS NOT NULL
+                                WITH n, m, 
+                                     gds.similarity.cosine(n.text, m.text) as similarity
+                                WHERE similarity > 0.7
+                                RETURN m.id as similar_id
+                                LIMIT 3
+                            """, orphan_id=orphan["id"])
+                            
+                            for similar_record in similar_result:
+                                # Create RELATED_TO relationship
+                                session.run("""
+                                    MATCH (n {id: $orphan_id}), (m {id: $similar_id})
+                                    CREATE (n)-[:RELATED_TO {
+                                        created_by: 'graph_gardener',
+                                        confidence: 0.7
+                                    }]->(m)
+                                """, orphan_id=orphan["id"], similar_id=similar_record["similar_id"])
+                                
+                                fixed_count += 1
+                                break  # One connection per orphan is enough
+                                
+                        except Exception as e:
+                            logger.warning(f"Could not fix orphan {orphan['id']}: {e}")
+                
+                return {
+                    "orphans": orphans,
+                    "total_orphans": len(orphans),
+                    "fixed": fixed_count
+                }
+                
+        except Exception as e:
+            logger.error(f"Error finding orphans: {e}")
+            return {"error": str(e), "orphans": [], "fixed": 0}
+
+    async def find_duplicates(self) -> Dict[str, Any]:
+        """Find potential duplicate nodes"""
+        try:
+            with self.neo4j.driver.session() as session:
+                # Find nodes with similar titles
+                result = session.run("""
+                    MATCH (n), (m)
+                    WHERE n.id < m.id  // Avoid duplicate pairs
+                    AND n.title IS NOT NULL 
+                    AND m.title IS NOT NULL
+                    AND n.title = m.title
+                    RETURN n.id as id1, n.title as title1, n.source as source1,
+                           m.id as id2, m.title as title2, m.source as source2
+                    LIMIT 50
+                """)
+                
+                duplicates = []
+                for record in result:
+                    duplicates.append({
+                        "pair": [
+                            {
+                                "id": record["id1"],
+                                "title": record["title1"], 
+                                "source": record.get("source1", "Unknown")
+                            },
+                            {
+                                "id": record["id2"],
+                                "title": record["title2"],
+                                "source": record.get("source2", "Unknown")
+                            }
+                        ],
+                        "similarity_type": "exact_title_match"
+                    })
+                
+                return {
+                    "duplicates": duplicates,
+                    "total_duplicates": len(duplicates)
+                }
+                
+        except Exception as e:
+            logger.error(f"Error finding duplicates: {e}")
+            return {"error": str(e), "duplicates": []}
+
+    async def quality_check(self) -> Dict[str, Any]:
+        """Perform quality check on the knowledge graph"""
+        try:
+            with self.neo4j.driver.session() as session:
+                issues = []
+                
+                # Check for nodes without required properties
+                result = session.run("""
+                    MATCH (n:ControlItem)
+                    WHERE n.title IS NULL OR n.text IS NULL
+                    RETURN count(n) as missing_props_count
+                """)
+                missing_props = result.single()["missing_props_count"]
+                if missing_props > 0:
+                    issues.append(f"{missing_props} ControlItems missing required properties")
+                
+                # Check for isolated clusters
+                result = session.run("""
+                    MATCH (n)
+                    WHERE NOT (n)--()
+                    RETURN count(n) as orphan_count
+                """)
+                orphan_count = result.single()["orphan_count"]
+                if orphan_count > 0:
+                    issues.append(f"{orphan_count} orphan nodes found")
+                
+                # Check relationship quality
+                result = session.run("""
+                    MATCH ()-[r]->()
+                    WHERE r.confidence IS NULL
+                    RETURN count(r) as no_confidence_rels
+                """)
+                no_confidence = result.single()["no_confidence_rels"]
+                if no_confidence > 0:
+                    issues.append(f"{no_confidence} relationships without confidence scores")
+                
+                # Calculate overall quality score
+                total_checks = 3
+                failed_checks = len(issues)
+                quality_score = (total_checks - failed_checks) / total_checks
+                
+                return {
+                    "score": quality_score,
+                    "issues": issues,
+                    "total_checks": total_checks,
+                    "passed_checks": total_checks - failed_checks
+                }
+                
+        except Exception as e:
+            logger.error(f"Error in quality check: {e}")
+            return {"error": str(e), "score": 0.0, "issues": [str(e)]}
+
+    async def schedule_continuous_gardening(self):
+        """Schedule continuous gardening operations"""
+        logger.info("🌱 Starting continuous graph gardening cycle")
         
-        focus_rotation = ["orphans", "technologies", "cross_reference"]
-        focus_index = 0
-        
-        while True:
-            try:
-                # Run gardening cycle
-                focus = focus_rotation[focus_index % len(focus_rotation)]
-                await self.run_gardening_cycle(focus)
+        try:
+            # Run orphan detection and fixing
+            orphan_result = await self.find_and_fix_orphans(auto_fix=True)
+            logger.info(f"Orphan gardening: {orphan_result.get('fixed', 0)} connections created")
+            
+            # Run quality check
+            quality_result = await self.quality_check()
+            logger.info(f"Graph quality score: {quality_result.get('score', 0):.2f}")
+            
+            # Run duplicate detection
+            duplicate_result = await self.find_duplicates()
+            logger.info(f"Found {len(duplicate_result.get('duplicates', []))} potential duplicates")
+            
+            # Enhanced relationship building
+            await self._build_enhanced_relationships()
+            
+            logger.info("✅ Graph gardening cycle completed successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Graph gardening failed: {e}")
+            raise
+
+    async def _build_enhanced_relationships(self):
+        """Build enhanced relationships between nodes"""
+        try:
+            with self.neo4j.driver.session() as session:
+                # Find controls that should be connected based on domain similarity
+                result = session.run("""
+                    MATCH (c1:ControlItem), (c2:ControlItem)
+                    WHERE c1.id < c2.id
+                    AND c1.domain = c2.domain
+                    AND NOT (c1)-[:RELATED_TO]-(c2)
+                    AND c1.domain IS NOT NULL
+                    RETURN c1.id as id1, c2.id as id2, c1.domain as domain
+                    LIMIT 20
+                """)
                 
-                focus_index += 1
+                connections_created = 0
+                for record in result:
+                    # Create domain-based relationship
+                    session.run("""
+                        MATCH (c1 {id: $id1}), (c2 {id: $id2})
+                        CREATE (c1)-[:RELATED_TO {
+                            type: 'domain_similarity',
+                            domain: $domain,
+                            created_by: 'graph_gardener',
+                            confidence: 0.8
+                        }]->(c2)
+                    """, id1=record["id1"], id2=record["id2"], domain=record["domain"])
+                    
+                    connections_created += 1
                 
-                # Wait for next cycle
-                await asyncio.sleep(interval_hours * 3600)
+                logger.info(f"Created {connections_created} domain-based relationships")
                 
-            except Exception as e:
-                logger.error(f"Error in scheduled gardening: {e}")
-                await asyncio.sleep(3600)  # Wait 1 hour on error
+        except Exception as e:
+            logger.warning(f"Enhanced relationship building failed: {e}")

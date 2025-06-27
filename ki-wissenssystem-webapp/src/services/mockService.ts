@@ -58,7 +58,154 @@ export class MockAPIService implements KIWissenssystemAPI {
     }
   }
 
-  async uploadDocument(formData: FormData): Promise<{ success: boolean; id?: string }> {
+  async analyzeDocumentPreview(formData: FormData): Promise<{
+    predicted_document_type: string
+    file_type: string
+    preview_text: string
+    processing_estimate: {
+      estimated_duration_seconds: number
+      estimated_chunks: number
+      will_extract_controls: boolean
+      processing_steps: string[]
+    }
+    confidence_indicators: {
+      type_detection: string
+      classification: string
+    }
+    estimated_processing_time?: string
+    estimated_chunk_count?: number
+    estimated_control_count?: number
+    preview_image?: string
+    file_size_mb?: number
+    complexity_score?: number
+    warnings?: string[]
+  }> {
+    await this.simulateDelay(1000)
+    
+    const file = formData.get('file') as File
+    if (!file) {
+      throw new Error('Keine Datei gefunden')
+    }
+
+    const fileExtension = file.name.split('.').pop()?.toLowerCase()
+    const fileSizeMB = file.size / 1024 / 1024
+
+    // Simulate document type detection based on filename
+    let predictedType = 'GENERAL_DOCUMENT'
+    let willExtractControls = false
+    let estimatedControls = 0
+
+    if (file.name.toLowerCase().includes('grundschutz') || file.name.toLowerCase().includes('bsi')) {
+      predictedType = 'BSI_GRUNDSCHUTZ'
+      willExtractControls = true
+      estimatedControls = Math.floor(Math.random() * 50) + 20
+    } else if (file.name.toLowerCase().includes('iso') && file.name.toLowerCase().includes('27001')) {
+      predictedType = 'ISO_27001'
+      willExtractControls = true
+      estimatedControls = Math.floor(Math.random() * 30) + 15
+    } else if (file.name.toLowerCase().includes('nist')) {
+      predictedType = 'NIST_CSF'
+      willExtractControls = true
+      estimatedControls = Math.floor(Math.random() * 40) + 10
+    }
+
+    const estimatedChunks = Math.max(1, Math.floor(fileSizeMB * 10))
+    const estimatedDuration = Math.max(30, Math.floor(fileSizeMB * 15))
+
+    return {
+      predicted_document_type: predictedType,
+      file_type: fileExtension || 'unknown',
+      preview_text: `Demo-Vorschau für ${file.name}. Dies ist eine Simulation der Dokumentenanalyse. In der Produktionsversion würde hier der echte Dokumenteninhalt analysiert werden.`,
+      processing_estimate: {
+        estimated_duration_seconds: estimatedDuration,
+        estimated_chunks: estimatedChunks,
+        will_extract_controls: willExtractControls,
+        processing_steps: willExtractControls 
+          ? ['Dokumentanalyse', 'Control-Extraktion', 'Strukturierung', 'Graph-Integration']
+          : ['Dokumentanalyse', 'Text-Extraktion', 'Chunking', 'Vektorisierung']
+      },
+      confidence_indicators: {
+        type_detection: willExtractControls ? 'high' : 'medium',
+        classification: 'demo_mode'
+      },
+      estimated_processing_time: `${Math.floor(estimatedDuration / 60)}:${(estimatedDuration % 60).toString().padStart(2, '0')} min`,
+      estimated_chunk_count: estimatedChunks,
+      estimated_control_count: estimatedControls,
+      file_size_mb: Math.round(fileSizeMB * 100) / 100,
+      complexity_score: Math.random() * 0.5 + 0.5, // 0.5 - 1.0
+      warnings: fileSizeMB > 10 ? ['Große Datei - längere Verarbeitungszeit erwartet'] : undefined
+    }
+  }
+
+  async getProcessingStatus(taskId: string): Promise<{
+    task_id: string
+    status: string
+    progress: number
+    steps_completed: string[]
+    current_step: string
+    estimated_completion: string
+    current_operation?: string
+    llm_metadata?: {
+      model_used?: string
+      tokens_processed?: number
+      confidence?: number
+    }
+    processing_start_time?: string
+    processing_end_time?: string
+  }> {
+    await this.simulateDelay(500)
+    
+    // Simulate progressive processing
+    const now = Date.now()
+    const taskStartTime = parseInt(taskId.split('_').pop() || '0')
+    const elapsedSeconds = Math.floor((now - taskStartTime) / 1000)
+    
+    let status = 'processing'
+    let progress = Math.min(100, Math.floor(elapsedSeconds * 10))
+    let currentStep = 'loading'
+    let stepsCompleted: string[] = []
+    
+    if (progress >= 20) {
+      stepsCompleted.push('loading')
+      currentStep = 'classifying'
+    }
+    if (progress >= 40) {
+      stepsCompleted.push('classifying')
+      currentStep = 'extracting'
+    }
+    if (progress >= 60) {
+      stepsCompleted.push('extracting')
+      currentStep = 'chunking'
+    }
+    if (progress >= 80) {
+      stepsCompleted.push('chunking')
+      currentStep = 'storing'
+    }
+    if (progress >= 100) {
+      stepsCompleted.push('storing')
+      currentStep = 'completed'
+      status = 'completed'
+    }
+
+    return {
+      task_id: taskId,
+      status,
+      progress,
+      steps_completed: stepsCompleted,
+      current_step: currentStep,
+      estimated_completion: status === 'completed' ? 'completed' : `${Math.max(0, 120 - elapsedSeconds)}s`,
+      current_operation: status === 'completed' ? undefined : `Demo-${currentStep}`,
+      llm_metadata: {
+        model_used: 'demo-model',
+        tokens_processed: Math.floor(progress * 50),
+        confidence: 0.85
+      },
+      processing_start_time: new Date(taskStartTime).toISOString(),
+      processing_end_time: status === 'completed' ? new Date().toISOString() : undefined
+    }
+  }
+
+  async uploadDocument(formData: FormData): Promise<{ success: boolean; id?: string; status?: string; task_id?: string; filename?: string; document_type?: string; num_chunks?: number; num_controls?: number; metadata?: any; processing_duration?: number; quality_score?: number; extracted_entities?: string[]; graph_nodes_created?: number; graph_relationships_created?: number }> {
     await this.simulateDelay(2000)
     
     const file = formData.get('file') as File
@@ -68,10 +215,34 @@ export class MockAPIService implements KIWissenssystemAPI {
 
     // Simulate processing
     const documentId = `demo_doc_${Date.now()}`
+    const taskId = `task_${Date.now()}`
     
-    return {
-      success: true,
-      id: documentId
+    // Simulate different response types based on file size
+    if (file.size > 5 * 1024 * 1024) { // > 5MB
+      return {
+        success: true,
+        id: documentId,
+        status: 'processing',
+        task_id: taskId,
+        filename: file.name
+      }
+    } else {
+      // Small file - immediate processing
+      return {
+        success: true,
+        id: documentId,
+        status: 'completed',
+        filename: file.name,
+        document_type: 'DEMO_DOCUMENT',
+        num_chunks: Math.floor(Math.random() * 20) + 5,
+        num_controls: Math.floor(Math.random() * 15) + 3,
+        metadata: { demo_mode: true },
+        processing_duration: Math.random() * 30 + 10,
+        quality_score: Math.random() * 0.3 + 0.7,
+        extracted_entities: ['Demo Entity 1', 'Demo Entity 2'],
+        graph_nodes_created: Math.floor(Math.random() * 10) + 3,
+        graph_relationships_created: Math.floor(Math.random() * 15) + 5
+      }
     }
   }
 

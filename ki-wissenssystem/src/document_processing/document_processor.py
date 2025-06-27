@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Union, Tuple, Callable
 from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -55,7 +55,9 @@ class DocumentProcessor:
         self, 
         file_path: str,
         force_type: Optional[DocumentType] = None,
-        validate: bool = True
+        validate: bool = True,
+        status_callback: Optional[Callable] = None,
+        task_id: Optional[str] = None
     ) -> ProcessedDocument:
         """Process a document through the entire pipeline"""
         
@@ -64,8 +66,16 @@ class DocumentProcessor:
         
         logger.info(f"Processing {file_path.name} (type: {file_type})")
         
+        # Callback: Document loading started
+        if status_callback:
+            status_callback(task_id, "loading", 0.1, {"step": "document_loading", "filename": file_path.name})
+        
         # Load document
         raw_content = await self._load_document(file_path, file_type)
+        
+        # Callback: Document loaded, starting classification
+        if status_callback:
+            status_callback(task_id, "classifying", 0.2, {"step": "document_classification", "text_length": len(raw_content.get("full_text", ""))})
         
         # Classify document type
         if force_type:
@@ -75,17 +85,29 @@ class DocumentProcessor:
         
         logger.info(f"Document classified as: {document_type}")
         
+        # Callback: Classification complete, starting extraction
+        if status_callback:
+            status_callback(task_id, "extracting", 0.4, {"step": "content_extraction", "document_type": document_type.value})
+        
         # Process based on document type
         if document_type in [DocumentType.BSI_GRUNDSCHUTZ, DocumentType.BSI_C5, 
                             DocumentType.ISO_27001, DocumentType.NIST_CSF]:
             controls, chunks = await self._process_structured_document(
-                raw_content, document_type, str(file_path), validate
+                raw_content, document_type, str(file_path), validate, status_callback, task_id
             )
         else:
             controls = []
             chunks = await self._process_unstructured_document(
-                raw_content, document_type, str(file_path)
+                raw_content, document_type, str(file_path), status_callback, task_id
             )
+        
+        # Callback: Processing complete, starting storage
+        if status_callback:
+            status_callback(task_id, "storing", 0.8, {
+                "step": "graph_storage", 
+                "num_controls": len(controls), 
+                "num_chunks": len(chunks)
+            })
         
         # Store in databases
         await self._store_results(controls, chunks, document_type)
@@ -103,6 +125,17 @@ class DocumentProcessor:
                 "raw_metadata": raw_content.get("metadata", {})
             }
         )
+        
+        # Callback: Processing completed
+        if status_callback:
+            status_callback(task_id, "completed", 1.0, {
+                "step": "processing_completed",
+                "filename": file_path.name,
+                "document_type": document_type.value,
+                "num_controls": len(controls),
+                "num_chunks": len(chunks),
+                "processing_timestamp": processed_doc.metadata["processing_timestamp"]
+            })
         
         logger.info(f"Successfully processed {file_path.name}: "
                    f"{len(controls)} controls, {len(chunks)} chunks")
@@ -172,7 +205,9 @@ class DocumentProcessor:
         content: Dict[str, Any], 
         document_type: DocumentType,
         source: str,
-        validate: bool
+        validate: bool,
+        status_callback: Optional[Callable] = None,
+        task_id: Optional[str] = None
     ) -> Tuple[List[ControlItem], List[KnowledgeChunk]]:
         """Process structured compliance document"""
         
@@ -186,6 +221,13 @@ class DocumentProcessor:
             document_type,
             source
         )
+        
+        # Callback: Controls extracted, starting validation
+        if status_callback:
+            status_callback(task_id, "validating", 0.5, {
+                "step": "control_validation", 
+                "num_controls_extracted": len(controls)
+            })
         
         # Validate if required
         if validate and controls:
@@ -202,6 +244,13 @@ class DocumentProcessor:
                 logger.warning(f"Validation failed for {len(failed_validations)} controls")
             
             controls = validated_controls
+        
+        # Callback: Validation complete, starting chunking
+        if status_callback:
+            status_callback(task_id, "chunking", 0.6, {
+                "step": "smart_chunking", 
+                "num_validated_controls": len(controls)
+            })
         
         # Also create chunks for vector search
         chunks = await loop.run_in_executor(
@@ -228,11 +277,20 @@ class DocumentProcessor:
         self,
         content: Dict[str, Any],
         document_type: DocumentType,
-        source: str
+        source: str,
+        status_callback: Optional[Callable] = None,
+        task_id: Optional[str] = None
     ) -> List[KnowledgeChunk]:
         """Process unstructured document"""
         
         loop = asyncio.get_event_loop()
+        
+        # Callback: Starting chunking for unstructured document
+        if status_callback:
+            status_callback(task_id, "chunking", 0.6, {
+                "step": "unstructured_chunking", 
+                "document_type": document_type.value
+            })
         
         chunks = await loop.run_in_executor(
             self.executor,

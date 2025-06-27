@@ -22,6 +22,8 @@ from typing import Optional, List, Dict, Any
 import asyncio
 import json
 import logging
+import traceback
+import uuid
 
 from src.api.models import (
     QueryRequest, QueryResponse, DocumentUploadResponse,
@@ -39,117 +41,357 @@ from src.config.settings import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global instances
-query_orchestrator = None
+# Initialize components with proper error handling
 document_processor = None
-graph_gardener = None
-neo4j_client = None
-chroma_client = None
-
-# Background tasks
-background_tasks = set()
-
-# Simplified startup - no complex lifecycle needed for working uploads
-# Initialize components with graceful fallbacks
 query_orchestrator = None
-document_processor = None
 graph_gardener = None
-neo4j_client = None
 chroma_client = None
+neo4j_client = None
 
-try:
-    logger.info("Starting KI-Wissenssystem API...")
+def initialize_components():
+    """Initialize all core components with error handling"""
+    global document_processor, query_orchestrator, graph_gardener, chroma_client, neo4j_client
     
-    # Initialize core components with fallbacks
     try:
-        from src.orchestration.query_orchestrator import QueryOrchestrator
+        # Initialize DocumentProcessor
         from src.document_processing.document_processor import DocumentProcessor
-        
-        query_orchestrator = QueryOrchestrator()
         document_processor = DocumentProcessor()
-        logger.info("✅ Core components initialized successfully")
+        logger.info("✅ DocumentProcessor initialized successfully")
     except Exception as e:
-        logger.warning(f"⚠️  Core components failed to initialize: {e}")
+        logger.error(f"❌ Failed to initialize DocumentProcessor: {e}")
+        document_processor = None
     
-    # Optional components - don't fail startup if they can't connect
     try:
-        from src.orchestration.graph_gardener import GraphGardener
-        from src.storage.neo4j_client import Neo4jClient
+        # Initialize ChromaDB client
         from src.storage.chroma_client import ChromaClient
-        
-        graph_gardener = GraphGardener()
-        neo4j_client = Neo4jClient()
         chroma_client = ChromaClient()
-        logger.info("✅ Optional components initialized successfully")
+        logger.info("✅ ChromaDB client initialized successfully")
     except Exception as e:
-        logger.warning(f"⚠️  Optional components failed to initialize: {e}")
+        logger.error(f"❌ Failed to initialize ChromaDB client: {e}")
+        chroma_client = None
     
-    logger.info("🚀 API startup complete")
+    try:
+        # Initialize Neo4j client
+        from src.storage.neo4j_client import Neo4jClient
+        neo4j_client = Neo4jClient()
+        logger.info("✅ Neo4j client initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Neo4j client: {e}")
+        neo4j_client = None
     
-except Exception as e:
-    logger.error(f"❌ API startup failed: {e}")
+    try:
+        # Initialize QueryOrchestrator
+        from src.orchestration.query_orchestrator import QueryOrchestrator
+        if chroma_client and neo4j_client:
+            query_orchestrator = QueryOrchestrator(
+                chroma_client=chroma_client,
+                neo4j_client=neo4j_client
+            )
+            logger.info("✅ QueryOrchestrator initialized successfully")
+        else:
+            logger.warning("⚠️ QueryOrchestrator not initialized - missing dependencies")
+            query_orchestrator = None
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize QueryOrchestrator: {e}")
+        query_orchestrator = None
+    
+    try:
+        # Initialize GraphGardener
+        from src.orchestration.graph_gardener import GraphGardener
+        if neo4j_client:
+            graph_gardener = GraphGardener(neo4j_client=neo4j_client)
+            logger.info("✅ GraphGardener initialized successfully")
+        else:
+            logger.warning("⚠️ GraphGardener not initialized - missing Neo4j client")
+            graph_gardener = None
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize GraphGardener: {e}")
+        graph_gardener = None
 
-# No complex lifecycle manager needed
+# Global task storage for real processing status
+processing_tasks: Dict[str, Dict[str, Any]] = {}
 
-# Create FastAPI app
+def update_task_status(task_id: str, status: str, progress: float, metadata: Dict = {}):
+    """Update task status in global store"""
+    processing_tasks[task_id] = {
+        "task_id": task_id,
+        "status": status,
+        "progress": progress,
+        "timestamp": datetime.utcnow().isoformat(),
+        "metadata": metadata,
+        "steps_completed": _get_completed_steps(status),
+        "current_step": status,
+        "estimated_completion": _estimate_completion(progress)
+    }
+    logger.info(f"Task {task_id}: {status} ({progress:.1%}) - {metadata.get('step', 'unknown')}")
+
+def _get_completed_steps(current_status: str) -> List[str]:
+    """Get list of completed steps based on current status"""
+    step_order = ["loading", "classifying", "extracting", "validating", "chunking", "storing", "completed"]
+    
+    if current_status == "failed":
+        return []
+    
+    try:
+        current_index = step_order.index(current_status)
+        return step_order[:current_index]
+    except ValueError:
+        return []
+
+def _estimate_completion(progress: float) -> str:
+    """Estimate completion time based on progress"""
+    if progress >= 1.0:
+        return datetime.utcnow().isoformat()
+    
+    # Estimate remaining time based on progress (simple linear estimation)
+    estimated_total_seconds = 60  # Assume 60 seconds total processing time
+    remaining_progress = 1.0 - progress
+    remaining_seconds = estimated_total_seconds * remaining_progress
+    
+    estimated_completion = datetime.utcnow() + timedelta(seconds=remaining_seconds)
+    return estimated_completion.isoformat()
+
+# Initialize FastAPI app
 app = FastAPI(
     title="KI-Wissenssystem API",
-    description="AI-powered knowledge system for compliance and security consulting",
+    description="API für intelligente Dokumentenverarbeitung und Wissensgraph-Management",
     version="1.0.0"
 )
 
-# Configure CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],  # In production, specify actual origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Initialize components on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize components and start background services"""
+    logger.info("🚀 Starting KI-Wissenssystem API...")
+    initialize_components()
+    
+    # Start automatic graph gardening if available
+    if graph_gardener:
+        asyncio.create_task(continuous_graph_gardening())
+        logger.info("🌱 Automatic graph gardening started")
+    else:
+        logger.warning("⚠️ Automatic graph gardening not started - GraphGardener not available")
+
+async def continuous_graph_gardening():
+    """Run continuous graph gardening in background"""
+    while True:
+        try:
+            if graph_gardener:
+                await graph_gardener.schedule_continuous_gardening()
+                logger.info("🌱 Graph gardening cycle completed")
+        except Exception as e:
+            logger.error(f"❌ Graph gardening failed: {e}")
+        await asyncio.sleep(3600)  # 1 hour pause
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Check system health"""
+    """Health check endpoint for monitoring"""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "components": {},
+        "version": "1.0.0"
+    }
+    
+    # Check Neo4j
     try:
-        components = {}
-        
-        # Check Neo4j connection (if available)
         if neo4j_client:
-            try:
-                with neo4j_client.driver.session() as session:
-                    session.run("RETURN 1")
-                components["neo4j"] = "connected"
-            except:
-                components["neo4j"] = "disconnected"
-        else:
-            components["neo4j"] = "not_initialized"
-        
-        # Check other components
-        components["document_processor"] = "available" if document_processor else "not_initialized"
-        components["query_orchestrator"] = "available" if query_orchestrator else "not_initialized"
-        components["chromadb"] = "available" if chroma_client else "not_initialized"
-        
-        return {
-            "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "components": components
-        }
-    except Exception as e:
-        return JSONResponse(
-            status_code=200,  # Don't fail health check completely
-            content={
-                "status": "partial",
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+            with neo4j_client.driver.session() as session:
+                result = session.run("RETURN 1")
+                result.single()
+            health_status["components"]["neo4j"] = {
+                "status": "healthy",
+                "message": "Connected"
             }
-        )
+        else:
+            health_status["components"]["neo4j"] = {
+                "status": "unhealthy", 
+                "message": "Not initialized"
+            }
+    except Exception as e:
+        health_status["components"]["neo4j"] = {
+            "status": "unhealthy",
+            "message": str(e)
+        }
+        health_status["status"] = "degraded"
+    
+    # Check ChromaDB
+    try:
+        if chroma_client:
+            chroma_client.client.heartbeat()
+            health_status["components"]["chromadb"] = {
+                "status": "healthy",
+                "message": "Connected"
+            }
+        else:
+            health_status["components"]["chromadb"] = {
+                "status": "unhealthy",
+                "message": "Not initialized"
+            }
+    except Exception as e:
+        health_status["components"]["chromadb"] = {
+            "status": "unhealthy", 
+            "message": str(e)
+        }
+        health_status["status"] = "degraded"
+    
+    # Check DocumentProcessor
+    try:
+        if document_processor:
+            health_status["components"]["document_processor"] = {
+                "status": "healthy",
+                "message": "Initialized"
+            }
+        else:
+            health_status["components"]["document_processor"] = {
+                "status": "unhealthy",
+                "message": "Not initialized"
+            }
+    except Exception as e:
+        health_status["components"]["document_processor"] = {
+            "status": "unhealthy",
+            "message": str(e)
+        }
+        health_status["status"] = "degraded"
+    
+    # Check QueryOrchestrator
+    try:
+        if query_orchestrator:
+            health_status["components"]["query_orchestrator"] = {
+                "status": "healthy",
+                "message": "Initialized"
+            }
+        else:
+            health_status["components"]["query_orchestrator"] = {
+                "status": "unhealthy",
+                "message": "Not initialized"
+            }
+    except Exception as e:
+        health_status["components"]["query_orchestrator"] = {
+            "status": "unhealthy",
+            "message": str(e)
+        }
+        health_status["status"] = "degraded"
+    
+    # Overall status
+    unhealthy_components = [
+        comp for comp, status in health_status["components"].items() 
+        if status["status"] == "unhealthy"
+    ]
+    
+    if len(unhealthy_components) > 2:
+        health_status["status"] = "unhealthy"
+    elif unhealthy_components:
+        health_status["status"] = "degraded"
+    
+    # Return appropriate HTTP status
+    if health_status["status"] == "unhealthy":
+        raise HTTPException(status_code=503, detail=health_status)
+    
+    return health_status
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check with metrics"""
+    health_info = await health_check()
+    
+    # Add detailed metrics
+    try:
+        if neo4j_client:
+            with neo4j_client.driver.session() as session:
+                # Node counts
+                node_result = session.run("MATCH (n) RETURN labels(n) as labels, count(n) as count")
+                nodes = {}
+                total_nodes = 0
+                for record in node_result:
+                    labels = record["labels"]
+                    count = record["count"]
+                    label_str = ":".join(labels) if labels else "Unknown"
+                    nodes[label_str] = count
+                    total_nodes += count
+                
+                # Relationship counts
+                rel_result = session.run("MATCH ()-[r]->() RETURN type(r) as rel_type, count(r) as count")
+                relationships = {}
+                total_rels = 0
+                for record in rel_result:
+                    rel_type = record["rel_type"]
+                    count = record["count"]
+                    relationships[rel_type] = count
+                    total_rels += count
+                
+                health_info["metrics"] = {
+                    "neo4j": {
+                        "total_nodes": total_nodes,
+                        "total_relationships": total_rels,
+                        "node_types": nodes,
+                        "relationship_types": relationships
+                    }
+                }
+    except Exception as e:
+        health_info["metrics"] = {"neo4j_error": str(e)}
+    
+    # ChromaDB metrics
+    try:
+        if chroma_client:
+            collections_info = {}
+            total_docs = 0
+            for name, collection in chroma_client.collections.items():
+                count = collection.count()
+                collections_info[name] = count
+                total_docs += count
+            
+            if "metrics" not in health_info:
+                health_info["metrics"] = {}
+            
+            health_info["metrics"]["chromadb"] = {
+                "total_documents": total_docs,
+                "collections": collections_info
+            }
+    except Exception as e:
+        if "metrics" not in health_info:
+            health_info["metrics"] = {}
+        health_info["metrics"]["chromadb_error"] = str(e)
+    
+    # Processing tasks info
+    health_info["processing"] = {
+        "active_tasks": len(processing_tasks),
+        "task_ids": list(processing_tasks.keys())
+    }
+    
+    return health_info
 
 # Query endpoints
 @app.post("/query", response_model=QueryResponse)
 async def process_query(request: QueryRequest):
-    """Process a user query"""
+    """Process a user query with RAG pipeline"""
     try:
+        # Check if query orchestrator is available
+        if not query_orchestrator:
+            logger.warning("QueryOrchestrator not available - using fallback")
+            
+            # Fallback: Simple response without RAG
+            return QueryResponse(
+                response="Entschuldigung, das Abfragesystem ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
+                sources=[],
+                metadata={
+                    "status": "fallback",
+                    "reason": "QueryOrchestrator not initialized",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+        
+        # Process with full RAG pipeline
         result = await query_orchestrator.process_query(
             query=request.query,
             user_context=request.context,
@@ -160,7 +402,76 @@ async def process_query(request: QueryRequest):
         
     except Exception as e:
         logger.error(f"Error processing query: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        
+        # Enhanced fallback with ChromaDB direct access if available
+        if chroma_client:
+            try:
+                # Direct ChromaDB search as fallback
+                search_results = await _fallback_chromadb_search(request.query)
+                
+                return QueryResponse(
+                    response=f"Basierend auf den verfügbaren Dokumenten: {search_results['summary']}",
+                    sources=search_results['sources'],
+                    metadata={
+                        "status": "chromadb_fallback",
+                        "error": str(e),
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                )
+            except Exception as fallback_error:
+                logger.error(f"Fallback search also failed: {fallback_error}")
+        
+        raise HTTPException(status_code=500, detail=f"Query processing failed: {str(e)}")
+
+async def _fallback_chromadb_search(query: str, n_results: int = 3):
+    """Fallback search using ChromaDB directly"""
+    try:
+        # Search across all collections
+        search_results = chroma_client.search_similar(
+            query=query,
+            collection_names=["compliance", "technical", "general"],
+            n_results=n_results * 2  # Get more results to filter
+        )
+        
+        # Create summary
+        if search_results:
+            summary = f"Gefunden: {len(search_results)} relevante Dokument-Abschnitte aus verarbeiteten Dokumenten. "
+            
+            # Add info about document types found
+            collections_found = set(result.get('collection', 'unknown') for result in search_results)
+            if 'compliance' in collections_found:
+                summary += "Enthält Compliance-Dokumente (BSI, ISO, NIST). "
+            if 'technical' in collections_found:
+                summary += "Enthält technische Dokumentation. "
+                
+            # Add sample content from top result
+            if search_results[0].get('text'):
+                sample_text = search_results[0]['text'][:200]
+                summary += f"\n\nAuszug aus relevantem Dokument: \"{sample_text}...\""
+        else:
+            summary = "Keine relevanten Dokumente gefunden. Möglicherweise wurden noch keine Dokumente verarbeitet oder die Anfrage ist zu spezifisch."
+        
+        # Format sources for response
+        formatted_sources = []
+        for result in search_results[:5]:  # Top 5 results
+            formatted_sources.append({
+                "text": result.get('text', ''),
+                "metadata": result.get('metadata', {}),
+                "confidence": 1.0 - result.get('distance', 1.0),  # Convert distance to confidence
+                "collection": result.get('collection', 'unknown')
+            })
+        
+        return {
+            "summary": summary,
+            "sources": formatted_sources
+        }
+        
+    except Exception as e:
+        logger.error(f"Fallback ChromaDB search failed: {e}")
+        return {
+            "summary": f"Suche in der Dokumentenbasis ist derzeit nicht verfügbar. Fehler: {str(e)}",
+            "sources": []
+        }
 
 @app.post("/query/stream")
 async def process_query_stream(request: QueryRequest):
@@ -170,6 +481,11 @@ async def process_query_stream(request: QueryRequest):
         try:
             # Start with metadata
             yield f"data: {json.dumps({'type': 'start', 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+            
+            # Check if query orchestrator is available
+            if not query_orchestrator:
+                yield f"data: {json.dumps({'type': 'error', 'error': 'QueryOrchestrator not available'})}\n\n"
+                return
             
             # Process query
             result = await query_orchestrator.process_query(
@@ -193,6 +509,7 @@ async def process_query_stream(request: QueryRequest):
             yield f"data: {json.dumps({'type': 'complete'})}\n\n"
             
         except Exception as e:
+            logger.error(f"Streaming query error: {e}")
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
     
     return StreamingResponse(
@@ -510,94 +827,15 @@ async def get_node_context(
 
 @app.get("/documents/processing-status/{task_id}")
 async def get_processing_status(task_id: str):
-    """Get status of document processing task"""
+    """Get REAL status of document processing task"""
     
-    # Extract timestamp from task_id for realistic simulation
-    try:
-        timestamp = float(task_id.split('_')[1]) if '_' in task_id else time.time()
-        elapsed = time.time() - timestamp
-        
-        # Simulate processing stages based on elapsed time
-        if elapsed < 5:  # First 5 seconds
-            return {
-                "task_id": task_id,
-                "status": "processing",
-                "progress": min(0.1 + (elapsed / 5) * 0.3, 0.4),  # 10% to 40%
-                "steps_completed": [
-                    "file_upload",
-                    "type_detection"
-                ],
-                "current_step": "classification",
-                "estimated_completion": datetime.utcnow() + timedelta(seconds=max(0, 30-elapsed))
-            }
-        elif elapsed < 15:  # 5-15 seconds
-            return {
-                "task_id": task_id,
-                "status": "processing", 
-                "progress": min(0.4 + ((elapsed-5) / 10) * 0.4, 0.8),  # 40% to 80%
-                "steps_completed": [
-                    "file_upload",
-                    "type_detection",
-                    "classification",
-                    "extraction"
-                ],
-                "current_step": "quality_validation",
-                "estimated_completion": datetime.utcnow() + timedelta(seconds=max(0, 30-elapsed))
-            }
-        elif elapsed < 25:  # 15-25 seconds
-            return {
-                "task_id": task_id,
-                "status": "processing",
-                "progress": min(0.8 + ((elapsed-15) / 10) * 0.15, 0.95),  # 80% to 95%
-                "steps_completed": [
-                    "file_upload",
-                    "type_detection", 
-                    "classification",
-                    "extraction",
-                    "quality_validation"
-                ],
-                "current_step": "graph_storage",
-                "estimated_completion": datetime.utcnow() + timedelta(seconds=max(0, 30-elapsed))
-            }
-        else:  # After 25 seconds - completed
-            return {
-                "task_id": task_id,
-                "status": "completed",
-                "progress": 1.0,
-                "steps_completed": [
-                    "file_upload",
-                    "type_detection",
-                    "classification", 
-                    "extraction",
-                    "quality_validation",
-                    "graph_storage",
-                    "vector_indexing",
-                    "relationship_analysis"
-                ],
-                "current_step": "completed",
-                "estimated_completion": datetime.utcnow().isoformat(),
-                "result": {
-                    "filename": "processed_document.pdf",
-                    "document_type": "bsi_grundschutz",
-                    "num_chunks": 12,
-                    "num_controls": 23,
-                    "metadata": {
-                        "processing_time": elapsed,
-                        "success": True
-                    }
-                }
-            }
-    except Exception as e:
-        logger.error(f"Error processing status for task {task_id}: {e}")
-        return {
-            "task_id": task_id,
-            "status": "error",
-            "progress": 0,
-            "steps_completed": [],
-            "current_step": "error",
-            "estimated_completion": datetime.utcnow().isoformat(),
-            "error": str(e)
-        }
+    # Check for real processing task first
+    if task_id in processing_tasks:
+        return processing_tasks[task_id]
+    
+    # If task not found, it might be an old simulation task or invalid
+    logger.warning(f"Task {task_id} not found in processing tasks")
+    raise HTTPException(status_code=404, detail="Processing task not found")
 
 @app.post("/documents/analyze-preview")
 async def analyze_document_preview(
@@ -945,10 +1183,10 @@ async def trigger_gardening(
         "focus": focus
     }
 
-# WebSocket endpoint for real-time chat
+# Enhanced WebSocket endpoint for real-time chat with RAG
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
-    """WebSocket endpoint for real-time chat"""
+    """WebSocket endpoint for real-time chat with RAG pipeline"""
     await websocket.accept()
     
     # Generate session ID
@@ -969,17 +1207,33 @@ async def websocket_chat(websocket: WebSocket):
                 })
                 
                 try:
-                    # Process with conversation context if provided
-                    if "conversation" in message:
-                        result = await query_orchestrator.process_conversation(
-                            messages=message["conversation"],
-                            conversation_id=session_id
-                        )
+                    if query_orchestrator:
+                        # Process with conversation context if provided
+                        if "conversation" in message:
+                            result = await query_orchestrator.process_conversation(
+                                messages=message["conversation"],
+                                conversation_id=session_id
+                            )
+                        else:
+                            result = await query_orchestrator.process_query(
+                                query=message["query"],
+                                user_context={"session_id": session_id}
+                            )
                     else:
-                        result = await query_orchestrator.process_query(
-                            query=message["query"],
-                            user_context={"session_id": session_id}
-                        )
+                        # Fallback to direct ChromaDB search
+                        if chroma_client:
+                            fallback_result = await _fallback_chromadb_search(message["query"])
+                            result = {
+                                "response": fallback_result["summary"],
+                                "sources": fallback_result["sources"],
+                                "metadata": {"status": "fallback_mode"}
+                            }
+                        else:
+                            result = {
+                                "response": "Das Abfragesystem ist derzeit nicht verfügbar.",
+                                "sources": [],
+                                "metadata": {"status": "unavailable"}
+                            }
                     
                     # Send response
                     await websocket.send_json({
@@ -995,14 +1249,29 @@ async def websocket_chat(websocket: WebSocket):
             
             elif message["type"] == "suggestions":
                 # Get query suggestions
-                suggestions = await query_orchestrator.get_query_suggestions(
-                    message.get("partial_query", "")
-                )
-                
-                await websocket.send_json({
-                    "type": "suggestions",
-                    "suggestions": suggestions
-                })
+                try:
+                    if query_orchestrator:
+                        suggestions = await query_orchestrator.get_query_suggestions(
+                            message.get("partial_query", "")
+                        )
+                    else:
+                        # Fallback suggestions
+                        suggestions = [
+                            "Welche BSI-Grundschutz Maßnahmen gibt es?",
+                            "Was sind die wichtigsten ISO 27001 Controls?",
+                            "Wie implementiere ich NIST CSF?",
+                            "Welche Sicherheitsrichtlinien sind relevant?"
+                        ]
+                    
+                    await websocket.send_json({
+                        "type": "suggestions",
+                        "suggestions": suggestions
+                    })
+                except Exception as e:
+                    await websocket.send_json({
+                        "type": "error",
+                        "error": f"Suggestions failed: {str(e)}"
+                    })
             
             elif message["type"] == "ping":
                 await websocket.send_json({"type": "pong"})
@@ -1021,25 +1290,65 @@ async def process_document_background(
     force_type,
     validate: bool
 ):
-    """Process document in background"""
+    """Process document in background with REAL status tracking"""
+    
+    def status_callback(task_id: str, status: str, progress: float, metadata: Dict = {}):
+        """Callback function to update task status during processing"""
+        update_task_status(task_id, status, progress, metadata)
+    
     try:
+        # Initialize task
+        update_task_status(task_id, "loading", 0.0, {
+            "step": "initializing",
+            "filename": filename,
+            "processing_started": datetime.utcnow().isoformat()
+        })
+        
+        # Process document with status callbacks
         result = await document_processor.process_document(
             file_path,
             force_type=force_type,
-            validate=validate
+            validate=validate,
+            status_callback=status_callback,
+            task_id=task_id
         )
         
-        # Store result (in production, use proper task storage)
-        logger.info(f"Document {filename} processed successfully: "
+        # Final status update with results
+        update_task_status(task_id, "completed", 1.0, {
+            "step": "processing_completed",
+            "filename": filename,
+            "document_type": result.document_type.value,
+            "num_chunks": len(result.chunks),
+            "num_controls": len(result.controls),
+            "processing_completed": datetime.utcnow().isoformat(),
+            "file_hash": result.metadata.get("file_hash", ""),
+            "success": True
+        })
+        
+        logger.info(f"✅ Document {filename} processed successfully: "
                    f"{len(result.controls)} controls, {len(result.chunks)} chunks")
         
     except Exception as e:
-        logger.error(f"Error processing document {filename}: {e}")
+        # Update task status on failure
+        update_task_status(task_id, "failed", 0.0, {
+            "step": "processing_failed",
+            "filename": filename,
+            "error": str(e),
+            "error_traceback": traceback.format_exc(),
+            "processing_failed": datetime.utcnow().isoformat(),
+            "success": False
+        })
+        logger.error(f"❌ Error processing document {filename}: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
     finally:
         # Clean up temp file
         import os
         if os.path.exists(file_path):
-            os.unlink(file_path)
+            try:
+                os.unlink(file_path)
+                logger.debug(f"Cleaned up temp file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temp file {file_path}: {e}")
 
 async def process_batch_background(file_paths: List[str], task_id: str):
     """Process batch of documents"""
@@ -1066,6 +1375,60 @@ async def run_gardening_task(task_id: str, focus: str):
         logger.info(f"Gardening task {task_id} completed: {result}")
     except Exception as e:
         logger.error(f"Error in gardening task {task_id}: {e}")
+
+@app.get("/processing/tasks")
+async def get_all_processing_tasks():
+    """Get all active processing tasks"""
+    return {
+        "active_tasks": len(processing_tasks),
+        "tasks": {
+            task_id: {
+                "status": task_info["status"], 
+                "progress": task_info["progress"],
+                "timestamp": task_info["timestamp"],
+                "filename": task_info.get("filename", "Unknown")
+            }
+            for task_id, task_info in processing_tasks.items()
+        }
+    }
+
+@app.delete("/processing/tasks/{task_id}")
+async def cancel_processing_task(task_id: str):
+    """Cancel a processing task"""
+    if task_id not in processing_tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task_info = processing_tasks[task_id]
+    
+    # Mark as cancelled
+    processing_tasks[task_id] = {
+        **task_info,
+        "status": "cancelled",
+        "progress": 0.0,
+        "timestamp": datetime.utcnow().isoformat(),
+        "cancelled_at": datetime.utcnow().isoformat()
+    }
+    
+    return {"message": f"Task {task_id} cancelled", "task_id": task_id}
+
+@app.post("/processing/cleanup")
+async def cleanup_completed_tasks():
+    """Clean up completed processing tasks"""
+    completed_statuses = ["completed", "failed", "cancelled"]
+    
+    completed_tasks = [
+        task_id for task_id, task_info in processing_tasks.items()
+        if task_info["status"] in completed_statuses
+    ]
+    
+    for task_id in completed_tasks:
+        del processing_tasks[task_id]
+    
+    return {
+        "message": f"Cleaned up {len(completed_tasks)} completed tasks",
+        "cleaned_task_ids": completed_tasks,
+        "remaining_tasks": len(processing_tasks)
+    }
 
 if __name__ == "__main__":
     uvicorn.run(

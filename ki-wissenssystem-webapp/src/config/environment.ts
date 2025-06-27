@@ -54,8 +54,8 @@ const DEMO_CONFIG: AppConfig = {
 
 const PRODUCTION_CONFIG: AppConfig = {
   mode: 'production',
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  wsUrl: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  wsUrl: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080',
   features: {
     mockData: false,
     realTimeChat: true,
