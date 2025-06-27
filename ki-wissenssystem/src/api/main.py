@@ -694,6 +694,83 @@ async def get_graph_stats():
         logger.error(f"Error getting graph stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/knowledge-graph/data")
+async def get_graph_data(
+    limit: int = 100,
+    node_types: Optional[str] = None
+):
+    """Get graph data for visualization (nodes and edges)"""
+    try:
+        with neo4j_client.driver.session() as session:
+            # Build node filter
+            if node_types:
+                labels = [f":{label.strip()}" for label in node_types.split(",")]
+                node_match = f"MATCH (n{':'.join(labels)})"
+            else:
+                node_match = "MATCH (n)"
+            
+            # Get nodes
+            nodes_query = f"""
+                {node_match}
+                RETURN n, labels(n) as labels
+                LIMIT $limit
+            """
+            
+            nodes_result = session.run(nodes_query, {"limit": limit})
+            nodes = []
+            node_ids = set()
+            
+            for record in nodes_result:
+                node_data = dict(record["n"])
+                node_id = node_data.get("id", str(record["n"].element_id))
+                node_ids.add(node_id)
+                
+                # Transform for frontend
+                frontend_node = {
+                    "id": node_id,
+                    "label": node_data.get("title", node_data.get("text", "")[:50] + "..."),
+                    "type": record["labels"][0] if record["labels"] else "Unknown",
+                    "properties": node_data,
+                    "size": len(node_data.get("text", "")) / 100 + 10  # Size based on content
+                }
+                nodes.append(frontend_node)
+            
+            # Get relationships between the selected nodes
+            edges_query = """
+                MATCH (source)-[r]->(target)
+                WHERE source.id IN $node_ids AND target.id IN $node_ids
+                RETURN source.id as source_id, target.id as target_id, 
+                       type(r) as relationship_type, properties(r) as properties
+            """
+            
+            edges_result = session.run(edges_query, {"node_ids": list(node_ids)})
+            edges = []
+            
+            for record in edges_result:
+                edge = {
+                    "id": f"{record['source_id']}-{record['relationship_type']}-{record['target_id']}",
+                    "source": record["source_id"],
+                    "target": record["target_id"],
+                    "label": record["relationship_type"],
+                    "type": record["relationship_type"],
+                    "properties": dict(record["properties"]) if record["properties"] else {}
+                }
+                edges.append(edge)
+            
+            return {
+                "nodes": nodes,
+                "edges": edges,
+                "metadata": {
+                    "total_nodes": len(nodes),
+                    "total_edges": len(edges),
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            }
+            
+    except Exception as e:
+        logger.error(f"Error getting graph data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/knowledge-graph/search")
 async def search_graph(
     query: str,

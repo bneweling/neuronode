@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Container,
   Grid,
@@ -30,6 +31,12 @@ import { useAppConfig } from '@/hooks/useAppConfig'
 export default function HomePage() {
   const router = useRouter()
   const { isDemo } = useAppConfig()
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Verhindere Hydration-Fehler durch Warten auf Client-Side Mount
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleNavigation = (path: string) => {
     router.push(path)
@@ -70,19 +77,21 @@ export default function HomePage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      {/* Mode Indicator */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-        <Chip
-          icon={isDemo ? <DemoIcon /> : <ProductionIcon />}
-          label={isDemo ? 'Demo Modus' : 'Produktions Modus'}
-          color={isDemo ? 'warning' : 'primary'}
-          variant="filled"
-          onClick={() => handleNavigation('/settings')}
-          sx={{ cursor: 'pointer' }}
-        />
-      </Box>
+      {/* Mode Indicator - Nur nach Client Mount rendern */}
+      {isMounted && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <Chip
+            icon={isDemo ? <DemoIcon /> : <ProductionIcon />}
+            label={isDemo ? 'Demo Modus' : 'Produktions Modus'}
+            color={isDemo ? 'warning' : 'primary'}
+            variant="filled"
+            onClick={() => handleNavigation('/settings')}
+            sx={{ cursor: 'pointer' }}
+          />
+        </Box>
+      )}
 
-      {isDemo && (
+      {isMounted && isDemo && (
         <Alert 
           severity="info" 
           sx={{ mb: 4, maxWidth: 800, mx: 'auto' }}
@@ -140,7 +149,7 @@ export default function HomePage() {
         </Typography>
         
         <Grid container spacing={4} justifyContent="center">
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Grid item xs={12} sm={6} lg={3}>
             <FeatureCard
               title="KI-Chat"
               description="Stellen Sie intelligente Fragen und erhalten Sie präzise Antworten"
@@ -149,7 +158,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Grid item xs={12} sm={6} lg={3}>
             <FeatureCard
               title="Wissensgraph"
               description="Visualisieren Sie Verbindungen in Ihren Daten"
@@ -158,7 +167,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Grid item xs={12} sm={6} lg={3}>
             <FeatureCard
               title="Dokumente"
               description="Laden Sie Dateien hoch und verwalten Sie Ihr Wissen"
@@ -167,7 +176,7 @@ export default function HomePage() {
             />
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Grid item xs={12} sm={6} lg={3}>
             <FeatureCard
               title="System"
               description="Überwachen Sie Performance und Systemgesundheit"

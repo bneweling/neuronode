@@ -36,15 +36,6 @@ import {
 import { getAPIClient } from '@/lib/serviceFactory'
 import type { Core, NodeSingular, EventObject } from 'cytoscape'
 
-// Dynamic import for cytoscape to avoid SSR issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cytoscape: any = null
-if (typeof window !== 'undefined') {
-  import('cytoscape').then((cy) => {
-    cytoscape = cy.default
-  })
-}
-
 interface GraphNode {
   id: string
   label: string
@@ -75,11 +66,25 @@ export default function GraphVisualization() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
+  const [isMounted, setIsMounted] = useState(false)
+  const [cytoscapeLoaded, setCytoscapeLoaded] = useState(false)
   const graphRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
 
-  const initializeCytoscape = useCallback(() => {
-    if (!graphRef.current || !cytoscape || graphData.nodes.length === 0) return
+  // Verhindere Hydration-Fehler
+  useEffect(() => {
+    setIsMounted(true)
+    // Dynamisches Laden von Cytoscape nur im Browser
+    import('cytoscape').then((cy) => {
+      cyRef.current = null
+      setCytoscapeLoaded(true)
+    })
+  }, [])
+
+  const initializeCytoscape = useCallback(async () => {
+    if (!isMounted || !cytoscapeLoaded || !graphRef.current || graphData.nodes.length === 0) return
+
+    const cytoscape = (await import('cytoscape')).default
 
     // Clean up existing instance
     if (cyRef.current) {
@@ -138,24 +143,24 @@ export default function GraphVisualization() {
         {
           selector: 'node',
           style: {
-            'width': '65px',
-            'height': '65px',
+            'width': 65,
+            'height': 65,
             'label': 'data(label)',
             'text-valign': 'center',
             'text-halign': 'center',
             'color': nodeTextColor,
             'text-outline-width': nodeOutlineWidth,
             'text-outline-color': nodeOutlineColor,
-            'font-size': isDarkMode ? '13px' : '12px',
+            'font-size': isDarkMode ? 13 : 12,
             'font-weight': nodeFontWeight,
             'text-wrap': 'wrap',
-            'text-max-width': '80px',
-            'min-zoomed-font-size': '8px',
+            'text-max-width': 80,
+            'min-zoomed-font-size': 8,
             'text-opacity': isDarkMode ? 1 : 0.9,
             'border-width': isDarkMode ? 2 : 1,
             'border-style': 'solid',
             'border-opacity': 0.7
-          }
+          } as any
         },
         {
           selector: '.node-document',
@@ -249,20 +254,20 @@ export default function GraphVisualization() {
       ],
       layout: {
         name: 'cose',
-        idealEdgeLength: 100,
+        idealEdgeLength: () => 100,
         nodeOverlap: 20,
         refresh: 20,
         randomize: false,
         componentSpacing: 100,
-        nodeRepulsion: 400000,
-        edgeElasticity: 100,
+        nodeRepulsion: () => 400000,
+        edgeElasticity: () => 100,
         nestingFactor: 5,
         gravity: 80,
         numIter: 1000,
         initialTemp: 200,
         coolingFactor: 0.95,
         minTemp: 1.0
-      }
+      } as any
     })
 
     // Event handlers
@@ -293,7 +298,7 @@ export default function GraphVisualization() {
 
   // Initialize Cytoscape when graph data changes
   useEffect(() => {
-    if (graphRef.current && graphData.nodes.length > 0 && cytoscape) {
+    if (graphRef.current && graphData.nodes.length > 0 && cytoscapeLoaded) {
       initializeCytoscape()
     }
     return () => {
@@ -446,6 +451,22 @@ export default function GraphVisualization() {
 
   const stats = getGraphStats()
 
+  // Verhindere Hydration-Fehler durch Client-Only-Rendering
+  if (!isMounted) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box mb={4}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Wissensgraph
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Graph wird geladen...
+          </Typography>
+        </Box>
+      </Container>
+    )
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box mb={4}>
@@ -465,7 +486,7 @@ export default function GraphVisualization() {
 
       <Grid container spacing={3}>
         {/* Graph Controls */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <TextField
@@ -504,7 +525,7 @@ export default function GraphVisualization() {
         </Grid>
 
         {/* Main Graph Visualization */}
-        <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid item xs={12} lg={8}>
           <Paper 
             elevation={2} 
             sx={{ 
@@ -550,7 +571,7 @@ export default function GraphVisualization() {
                 backgroundColor: theme.palette.mode === 'dark' ? '#121212' : '#fafafa'
               }}
             />
-            {!cytoscape && (
+            {!cytoscapeLoaded && (
               <Box 
                 sx={{ 
                   position: 'absolute', 
@@ -575,7 +596,7 @@ export default function GraphVisualization() {
         </Grid>
 
         {/* Sidebar - Node Details and Statistics */}
-        <Grid size={{ xs: 12, lg: 4 }}>
+        <Grid item xs={12} lg={4}>
           {/* Selected Node Details */}
           {selectedNode && (
             <Card sx={{ mb: 2 }}>

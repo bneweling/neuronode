@@ -151,8 +151,8 @@ export class ProductionAPIService implements KIWissenssystemAPI {
 
   async getKnowledgeGraph(): Promise<{ nodes: GraphNodeData[]; edges: GraphEdgeData[] }> {
     try {
-      // Backend has different endpoint structure
-      const response = await fetch(`${this.baseUrl}/knowledge-graph/stats`)
+      // Use the new graph data endpoint
+      const response = await fetch(`${this.baseUrl}/knowledge-graph/data?limit=100`)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -161,21 +161,50 @@ export class ProductionAPIService implements KIWissenssystemAPI {
       const result = await response.json()
       
       // Transform backend response to frontend format
-      // Backend returns graph statistics, we need actual graph data
-      // For now, return empty graph and log the stats
-      console.log('Backend graph stats:', result)
+      const nodes = result.nodes.map((node: any) => ({
+        id: node.id,
+        label: node.label,
+        type: node.type.toLowerCase(),
+        size: node.size || 20,
+        color: this.getNodeColor(node.type),
+        ...node.properties
+      }))
+
+      const edges = result.edges.map((edge: any) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        type: edge.type.toLowerCase(),
+        ...edge.properties
+      }))
+
+      console.log(`Loaded ${nodes.length} nodes and ${edges.length} edges from backend`)
       
-      // TODO: Implement proper graph data endpoint in backend
-      // For now, return a minimal transformed version
       return {
-        nodes: [],
-        edges: []
+        nodes,
+        edges
       }
       
     } catch (error) {
       console.error('Graph API error:', error)
       throw new Error('Graph konnte nicht geladen werden')
     }
+  }
+
+  private getNodeColor(nodeType: string): string {
+    const colorMap: Record<string, string> = {
+      'controlitem': '#1976d2',
+      'control': '#1976d2',
+      'knowledgechunk': '#2e7d32',
+      'chunk': '#2e7d32',
+      'technology': '#ed6c02',
+      'tech': '#ed6c02',
+      'entity': '#9c27b0',
+      'document': '#d32f2f',
+      'concept': '#7b1fa2'
+    }
+    return colorMap[nodeType.toLowerCase()] || '#757575'
   }
 
   async getSystemStatus(): Promise<{
