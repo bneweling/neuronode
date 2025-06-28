@@ -36,6 +36,14 @@ from src.document_processing.document_processor import DocumentProcessor
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
 from src.config.settings import settings
+from src.config.exceptions import (
+    ErrorCode, DocumentProcessingError, LLMServiceError, 
+    DatabaseError, SystemError, QueryProcessingError
+)
+from src.utils.error_handler import (
+    error_handler, handle_exceptions, format_http_error_response,
+    retry_with_backoff
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -48,8 +56,9 @@ graph_gardener = None
 chroma_client = None
 neo4j_client = None
 
+@handle_exceptions(SystemError, ErrorCode.DEPENDENCY_ERROR)
 def initialize_components():
-    """Initialize all core components with error handling"""
+    """Initialize all core components with structured error handling"""
     global document_processor, query_orchestrator, graph_gardener, chroma_client, neo4j_client
     
     try:
@@ -57,45 +66,90 @@ def initialize_components():
         from src.document_processing.document_processor import DocumentProcessor
         document_processor = DocumentProcessor()
         logger.info("✅ DocumentProcessor initialized successfully")
+    except ImportError as e:
+        raise SystemError(
+            "Failed to import DocumentProcessor module",
+            ErrorCode.DEPENDENCY_ERROR,
+            {"module": "document_processing.document_processor", "cause": str(e)}
+        )
     except Exception as e:
-        logger.error(f"❌ Failed to initialize DocumentProcessor: {e}")
-        document_processor = None
+        raise SystemError(
+            "Failed to initialize DocumentProcessor",
+            ErrorCode.CONFIGURATION_ERROR,
+            {"component": "DocumentProcessor", "cause": str(e)}
+        )
     
     try:
         # Initialize ChromaDB client
         from src.storage.chroma_client import ChromaClient
         chroma_client = ChromaClient()
         logger.info("✅ ChromaDB client initialized successfully")
+    except ImportError as e:
+        raise SystemError(
+            "Failed to import ChromaDB client module",
+            ErrorCode.DEPENDENCY_ERROR,
+            {"module": "storage.chroma_client", "cause": str(e)}
+        )
     except Exception as e:
-        logger.error(f"❌ Failed to initialize ChromaDB client: {e}")
-        chroma_client = None
+        raise DatabaseError(
+            "Failed to initialize ChromaDB client",
+            ErrorCode.CHROMADB_CONNECTION_FAILED,
+            {"component": "ChromaClient", "cause": str(e)}
+        )
     
     try:
         # Initialize Neo4j client
         from src.storage.neo4j_client import Neo4jClient
         neo4j_client = Neo4jClient()
         logger.info("✅ Neo4j client initialized successfully")
+    except ImportError as e:
+        raise SystemError(
+            "Failed to import Neo4j client module",
+            ErrorCode.DEPENDENCY_ERROR,
+            {"module": "storage.neo4j_client", "cause": str(e)}
+        )
     except Exception as e:
-        logger.error(f"❌ Failed to initialize Neo4j client: {e}")
-        neo4j_client = None
+        raise DatabaseError(
+            "Failed to initialize Neo4j client",
+            ErrorCode.NEO4J_CONNECTION_FAILED,
+            {"component": "Neo4jClient", "cause": str(e)}
+        )
     
     try:
         # Initialize QueryOrchestrator
         from src.orchestration.query_orchestrator import QueryOrchestrator
         query_orchestrator = QueryOrchestrator()
         logger.info("✅ QueryOrchestrator initialized successfully")
+    except ImportError as e:
+        raise SystemError(
+            "Failed to import QueryOrchestrator module",
+            ErrorCode.DEPENDENCY_ERROR,
+            {"module": "orchestration.query_orchestrator", "cause": str(e)}
+        )
     except Exception as e:
-        logger.error(f"❌ Failed to initialize QueryOrchestrator: {e}")
-        query_orchestrator = None
+        raise SystemError(
+            "Failed to initialize QueryOrchestrator",
+            ErrorCode.CONFIGURATION_ERROR,
+            {"component": "QueryOrchestrator", "cause": str(e)}
+        )
     
     try:
         # Initialize GraphGardener
         from src.orchestration.graph_gardener import GraphGardener
         graph_gardener = GraphGardener()
         logger.info("✅ GraphGardener initialized successfully")
+    except ImportError as e:
+        raise SystemError(
+            "Failed to import GraphGardener module",
+            ErrorCode.DEPENDENCY_ERROR,
+            {"module": "orchestration.graph_gardener", "cause": str(e)}
+        )
     except Exception as e:
-        logger.error(f"❌ Failed to initialize GraphGardener: {e}")
-        graph_gardener = None
+        raise SystemError(
+            "Failed to initialize GraphGardener",
+            ErrorCode.CONFIGURATION_ERROR,
+            {"component": "GraphGardener", "cause": str(e)}
+        )
 
 # Global task storage for real processing status
 processing_tasks: Dict[str, Dict[str, Any]] = {}
@@ -363,25 +417,30 @@ async def detailed_health_check():
 # Query endpoints
 @app.post("/query", response_model=QueryResponse)
 async def process_query(request: QueryRequest):
-    """Process a user query with RAG pipeline"""
-    try:
-        # Check if query orchestrator is available
-        if not query_orchestrator:
-            logger.warning("QueryOrchestrator not available - using fallback")
-            
-            # Fallback: Simple response without RAG
+    """Process a user query with RAG pipeline and structured error handling"""
+    
+    if not query_orchestrator:
+        logger.warning("QueryOrchestrator not available - using fallback")
+        try:
+            search_results = await _fallback_chromadb_search(request.query)
             return QueryResponse(
                 query=request.query,
-                response="Entschuldigung, das Abfragesystem ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
-                sources=[],
-                confidence=0.0,
+                response="Das Abfragesystem ist eingeschränkt verfügbar. Hier sind einige relevante Ergebnisse:",
+                sources=search_results['sources'],
+                confidence=0.4,
                 metadata={
-                    "status": "fallback",
-                    "reason": "QueryOrchestrator not initialized",
+                    "status": "orchestrator_unavailable_fallback",
                     "timestamp": datetime.utcnow().isoformat()
                 }
             )
-        
+        except DatabaseError as e:
+            error_response = format_http_error_response(e)
+            raise HTTPException(
+                status_code=error_response["status_code"],
+                detail=error_response["error"]
+            )
+    
+    try:
         # Process with full RAG pipeline
         result = await query_orchestrator.process_query(
             query=request.query,
@@ -391,33 +450,56 @@ async def process_query(request: QueryRequest):
         
         return QueryResponse(**result)
         
+    except QueryProcessingError as e:
+        error_handler.log_error(e, {"query": request.query[:100]})
+        
+        # Try fallback
+        try:
+            search_results = await _fallback_chromadb_search(request.query)
+            return QueryResponse(
+                query=request.query,
+                response=f"Aufgrund eines Verarbeitungsfehlers nutze ich eine vereinfachte Suche: {search_results['summary']}",
+                sources=search_results['sources'],
+                confidence=0.6,
+                metadata={
+                    "status": "error_fallback",
+                    "error_code": e.error_code.value,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+        except DatabaseError:
+            error_response = format_http_error_response(e)
+            raise HTTPException(
+                status_code=error_response["status_code"],
+                detail=error_response["error"]
+            )
+    
     except Exception as e:
-        logger.error(f"Error processing query: {e}")
+        # Wrap unexpected errors
+        structured_error = QueryProcessingError(
+            f"Unexpected error during query processing: {str(e)}",
+            ErrorCode.QUERY_ANALYSIS_FAILED,
+            {"query": request.query[:100], "error_type": type(e).__name__},
+            cause=e
+        )
+        error_handler.log_error(structured_error)
         
-        # Enhanced fallback with ChromaDB direct access if available
-        if chroma_client:
-            try:
-                # Direct ChromaDB search as fallback
-                search_results = await _fallback_chromadb_search(request.query)
-                
-                return QueryResponse(
-                    query=request.query,
-                    response=f"Basierend auf den verfügbaren Dokumenten: {search_results['summary']}",
-                    sources=search_results['sources'],
-                    confidence=0.6,
-                    metadata={
-                        "status": "chromadb_fallback",
-                        "error": str(e),
-                        "timestamp": datetime.utcnow().isoformat()
-                    }
-                )
-            except Exception as fallback_error:
-                logger.error(f"Fallback search also failed: {fallback_error}")
-        
-        raise HTTPException(status_code=500, detail=f"Query processing failed: {str(e)}")
+        error_response = format_http_error_response(structured_error)
+        raise HTTPException(
+            status_code=error_response["status_code"],
+            detail=error_response["error"]
+        )
 
+@retry_with_backoff(max_retries=2, retryable_errors=(DatabaseError,))
 async def _fallback_chromadb_search(query: str, n_results: int = 3):
-    """Fallback search using ChromaDB directly"""
+    """Fallback search using ChromaDB directly with structured error handling"""
+    if not chroma_client:
+        raise DatabaseError(
+            "ChromaDB client not available for fallback search",
+            ErrorCode.CHROMADB_CONNECTION_FAILED,
+            {"operation": "fallback_search", "query": query[:50]}
+        )
+    
     try:
         # Search across all collections
         search_results = chroma_client.search_similar(
@@ -460,11 +542,12 @@ async def _fallback_chromadb_search(query: str, n_results: int = 3):
         }
         
     except Exception as e:
-        logger.error(f"Fallback ChromaDB search failed: {e}")
-        return {
-            "summary": f"Suche in der Dokumentenbasis ist derzeit nicht verfügbar. Fehler: {str(e)}",
-            "sources": []
-        }
+        raise DatabaseError(
+            f"ChromaDB fallback search failed: {str(e)}",
+            ErrorCode.CHROMADB_QUERY_FAILED,
+            {"operation": "fallback_search", "query": query[:50], "n_results": n_results},
+            cause=e
+        )
 
 @app.post("/query/stream")
 async def process_query_stream(request: QueryRequest):

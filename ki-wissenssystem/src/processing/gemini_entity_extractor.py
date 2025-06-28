@@ -49,8 +49,8 @@ except ImportError:
     def wait_exponential(multiplier=1, min=4, max=10):
         return None
 
-from config.prompt_loader import get_prompt
-from config.ai_services_loader import get_config
+from src.config.prompt_loader import get_prompt
+from src.config.ai_services_loader import get_config
 
 logger = logging.getLogger(__name__)
 
