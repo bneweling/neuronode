@@ -179,6 +179,20 @@ class LLMRouter:
                 max_output_tokens=8192,
                 top_p=0.95
             ),
+            "gemini-1.5-flash-latest": ChatGoogleGenerativeAI(
+                google_api_key=settings.google_api_key,
+                model="gemini-1.5-flash-latest",
+                temperature=0.1,  # Optimiert für Extraktion - deterministisch
+                max_output_tokens=8192,
+                top_p=0.95
+            ),
+            "gemini-1.5-pro-latest": ChatGoogleGenerativeAI(
+                google_api_key=settings.google_api_key,
+                model="gemini-1.5-pro-latest",
+                temperature=0.4,  # Optimiert für Synthese - kreativ aber strukturiert
+                max_output_tokens=8192,
+                top_p=0.95
+            ),
             # Legacy fallback
             "gemini-pro": ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,

@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material'
 import { getAPIClient } from '@/lib/serviceFactory'
 import GraphVisualization from '@/components/graph/GraphVisualization'
+import { ExplanationGraph } from '@/components/chat/ExplanationGraph'
 import { useChatManager, type Message } from '@/hooks/useChatManager'
 
 export default function ChatInterface() {
@@ -112,7 +113,8 @@ export default function ChatInterface() {
         content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
         role: 'assistant',
         timestamp: new Date(),
-        hasGraphData
+        hasGraphData,
+        explanationGraph: response.metadata?.explanation_graph as any
       }
 
       // Add assistant message to current chat
@@ -417,10 +419,25 @@ export default function ChatInterface() {
                 color: graphViewOpen ? 'primary.contrastText' : 'inherit',
                 '&:hover': {
                   bgcolor: graphViewOpen ? 'primary.dark' : 'action.hover',
-                }
+                },
+                position: 'relative'
               }}
+              title={graphViewOpen ? "Graph-Ansicht schließen" : "Vollständige Graph-Ansicht öffnen"}
             >
               <GraphIcon />
+              {/* Indikator für verfügbare Graph-Daten */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: 'success.main',
+                  animation: graphViewOpen ? 'none' : 'pulse 2s infinite'
+                }}
+              />
             </IconButton>
           )}
         </Box>
@@ -520,6 +537,36 @@ export default function ChatInterface() {
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                     {message.content}
                   </Typography>
+                  
+                  {/* Explanation Graph für Assistant-Nachrichten mit Graph-Daten */}
+                  {message.role === 'assistant' && message.explanationGraph && (
+                    <ExplanationGraph 
+                      graphData={message.explanationGraph}
+                      height={300}
+                      title="📊 Antwort-Erklärung"
+                    />
+                  )}
+                  
+                  {/* Graph-Hinweis für weitere Exploration */}
+                  {message.role === 'assistant' && message.hasGraphData && !message.explanationGraph && (
+                    <Box sx={{ 
+                      mt: 2, 
+                      p: 2, 
+                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                      borderRadius: 1,
+                      border: '1px solid rgba(25, 118, 210, 0.2)'
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        color: 'primary.main'
+                      }}>
+                        <GraphIcon sx={{ mr: 1, fontSize: '1.2em' }} />
+                        💡 Diese Antwort enthält Graph-Daten. Öffnen Sie die Graph-Ansicht für eine detaillierte Visualisierung.
+                      </Typography>
+                    </Box>
+                  )}
+                  
                   <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
                     <Typography
                       variant="caption"

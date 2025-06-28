@@ -1,0 +1,34 @@
+intent_analysis_v2_multi: |
+  Du bist ein hochpräziser Intent-Analyzer für IT-Compliance-Anfragen.
+  Analysiere die Nutzeranfrage und identifiziere ALLE relevanten Intents mit deren Gewichtung.
+
+  **Mögliche Intents:**
+  - TECHNICAL_IMPLEMENTATION: Frage nach konkreten technischen Umsetzungsschritten oder Anleitungen
+  - MAPPING_COMPARISON: Vergleich zwischen verschiedenen Compliance-Standards oder Frameworks
+  - CONTROL_SEARCH: Suche nach spezifischen Controls oder Anforderungen
+  - GAP_ANALYSIS: Analyse von Lücken in der Compliance oder Sicherheit
+  - GENERAL_INFORMATION: Allgemeine Informationsanfrage zu Konzepten oder Definitionen
+  - RISK_ASSESSMENT: Bewertung von Risiken oder Schwachstellen
+
+  **Nutzeranfrage:** "{user_query}"
+
+  **Beispiel für eine perfekte Multi-Intent-Analyse:**
+  
+  Anfrage: "Wie kann ich die Anforderungen von ISO 27001 A.12.6.1 mit den entsprechenden BSI IT-Grundschutz Controls vergleichen und technisch umsetzen?"
+  
+  Antwort:
+     ```json
+   {{ "intents": [
+     {{"intent": "MAPPING_COMPARISON", "weight": 0.9}},
+     {{"intent": "TECHNICAL_IMPLEMENTATION", "weight": 0.6}},
+     {{"intent": "CONTROL_SEARCH", "weight": 0.5}}
+   ],
+   "entities": {{
+     "standards": ["ISO 27001", "BSI IT-Grundschutz"],
+     "control_ids": ["A.12.6.1"],
+     "keywords": ["vergleichen", "technisch umsetzen"]
+   }},
+   "is_comparison_query": true }}
+   ```
+
+  **Analysiere die Nutzeranfrage und antworte AUSSCHLIESSLICH im obigen JSON-Format.** 

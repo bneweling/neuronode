@@ -7,6 +7,8 @@ from src.retrievers.intent_analyzer import QueryAnalysis, QueryIntent
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
 from src.config.settings import settings
+from src.retrievers.query_expander import QueryExpander, ExpandedQuery
+from src.models.llm_models import SmartRetrievalStrategy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,7 @@ class HybridRetriever:
         self.neo4j = Neo4jClient()
         self.chroma = ChromaClient()
         self.executor = ThreadPoolExecutor(max_workers=4)
+        self.query_expander = QueryExpander()
     
     async def retrieve(
         self, 
@@ -35,17 +38,25 @@ class HybridRetriever:
     ) -> List[RetrievalResult]:
         """Perform hybrid retrieval based on query analysis"""
         
-        # Determine retrieval strategy based on intent
-        strategy = self._determine_strategy(analysis)
+        # 1. Query Expansion für bessere Abdeckung
+        expanded_query = await self.query_expander.expand_query(query)
+        logger.info(f"Query expanded: {len(expanded_query.expanded_terms)} additional terms")
         
-        # Execute parallel retrieval
+        # 2. Intelligente Retrieval-Strategie bestimmen
+        strategy = await self._determine_smart_strategy(analysis, expanded_query)
+        
+        # 3. Parallel retrieval mit erweiterten Begriffen
         tasks = []
         
-        if strategy["use_graph"]:
-            tasks.append(self._graph_retrieval(analysis, strategy["graph_config"]))
+        if strategy.get("use_graph", True):
+            tasks.append(self._enhanced_graph_retrieval(
+                analysis, expanded_query, strategy.get("graph_config", {})
+            ))
         
-        if strategy["use_vector"]:
-            tasks.append(self._vector_retrieval(query, analysis, strategy["vector_config"]))
+        if strategy.get("use_vector", True):
+            tasks.append(self._enhanced_vector_retrieval(
+                query, expanded_query, analysis, strategy.get("vector_config", {})
+            ))
         
         # Wait for all retrievals
         results = await asyncio.gather(*tasks)
@@ -55,8 +66,8 @@ class HybridRetriever:
         for result_set in results:
             all_results.extend(result_set)
         
-        # Rank and filter results
-        ranked_results = self._rank_results(all_results, analysis)
+        # Enhanced ranking mit Query-Expansion-Kontext
+        ranked_results = self._rank_results_with_expansion(all_results, analysis, expanded_query)
         
         return ranked_results[:max_results]
     
@@ -103,6 +114,144 @@ class HybridRetriever:
         }
         
         return strategies.get(analysis.primary_intent, strategies[QueryIntent.GENERAL_INFORMATION])
+
+    async def _determine_smart_strategy(self, analysis: QueryAnalysis, expanded_query: ExpandedQuery) -> Dict[str, Any]:
+        """Bestimmt intelligente Retrieval-Strategie basierend auf erweiterten Query-Informationen"""
+        
+        base_strategy = self._determine_strategy(analysis)
+        
+        # Strategieanpassung basierend auf Query-Expansion
+        if len(expanded_query.expanded_terms) > 10:
+            # Viele erweiterte Begriffe -> mehr Fokus auf Graph-Traversierung
+            base_strategy["graph_config"]["depth"] = min(3, base_strategy["graph_config"].get("depth", 2) + 1)
+        
+        if any("control" in term.lower() for term in expanded_query.context_terms):
+            # Control-Kontext erkannt -> Graph-Gewichtung erhöhen
+            base_strategy["use_graph"] = True
+            base_strategy["graph_config"]["focus"] = "control_lookup"
+        
+        if any("technical" in term.lower() for term in expanded_query.context_terms):
+            # Technischer Kontext -> Vector-Suche in technischen Collections priorisieren
+            base_strategy["vector_config"]["collections"] = ["technical", "compliance"]
+        
+        return base_strategy
+
+    async def _enhanced_graph_retrieval(
+        self, 
+        analysis: QueryAnalysis,
+        expanded_query: ExpandedQuery,
+        config: Dict[str, Any]
+    ) -> List[RetrievalResult]:
+        """Erweiterte Graph-Retrieval mit Query-Expansion"""
+        
+        results = []
+        
+        # Original Graph-Retrieval
+        original_results = await self._graph_retrieval(analysis, config)
+        results.extend(original_results)
+        
+        # Zusätzliche Suche mit erweiterten Begriffen
+        loop = asyncio.get_event_loop()
+        
+        for term in expanded_query.expanded_terms[:5]:  # Limit für Performance
+            try:
+                expanded_results = await loop.run_in_executor(
+                    self.executor,
+                    self.neo4j.search_controls,
+                    term
+                )
+                
+                for node in expanded_results:
+                    # Konfidenz basierend auf Query-Expansion-Score anpassen
+                    confidence = expanded_query.confidence_scores.get(term, 0.5)
+                    
+                    results.append(RetrievalResult(
+                        source="graph_expanded",
+                        content=node.get("text", ""),
+                        metadata={**node, "expansion_term": term},
+                        relevance_score=0.6 * confidence,  # Leicht reduziert für erweiterte Begriffe
+                        node_type="ControlItem"
+                    ))
+            except Exception as e:
+                logger.error(f"Error in expanded graph search for {term}: {e}")
+        
+        return results
+
+    async def _enhanced_vector_retrieval(
+        self,
+        original_query: str,
+        expanded_query: ExpandedQuery,
+        analysis: QueryAnalysis,
+        config: Dict[str, Any]
+    ) -> List[RetrievalResult]:
+        """Erweiterte Vector-Retrieval mit Query-Expansion"""
+        
+        results = []
+        
+        # Original Vector-Retrieval
+        original_results = await self._vector_retrieval(original_query, analysis, config)
+        results.extend(original_results)
+        
+        # Zusätzliche Suche mit alternativen Formulierungen
+        for alternative in expanded_query.alternative_phrasings[:3]:  # Max 3 Alternativen
+            try:
+                alt_results = await self._vector_retrieval(alternative, analysis, config)
+                
+                # Markiere als alternative Formulierung und reduziere Score leicht
+                for result in alt_results:
+                    result.metadata["from_alternative"] = alternative
+                    result.relevance_score *= 0.9  # Leichte Reduzierung
+                    results.append(result)
+                    
+            except Exception as e:
+                logger.error(f"Error in alternative query retrieval: {e}")
+        
+        return results
+
+    def _rank_results_with_expansion(
+        self,
+        results: List[RetrievalResult],
+        analysis: QueryAnalysis,
+        expanded_query: ExpandedQuery
+    ) -> List[RetrievalResult]:
+        """Ranking mit Berücksichtigung der Query-Expansion"""
+        
+        scored_results = []
+        
+        for result in results:
+            base_score = result.relevance_score
+            
+            # Bonus für Original-Begriffe vs. erweiterte Begriffe
+            content_lower = result.content.lower()
+            
+            # Bonus für Original-Query-Begriffe
+            original_bonus = 0.0
+            for keyword in analysis.search_keywords:
+                if keyword.lower() in content_lower:
+                    original_bonus += 0.2
+            
+            # Bonus für hochkonfidente erweiterte Begriffe
+            expansion_bonus = 0.0
+            for term, confidence in expanded_query.confidence_scores.items():
+                if term.lower() in content_lower and confidence > 0.7:
+                    expansion_bonus += 0.1 * confidence
+            
+            # Penalty für sehr niedrigkonfidente Erweiterungen
+            if hasattr(result, 'metadata') and result.metadata.get("expansion_term"):
+                expansion_term = result.metadata["expansion_term"]
+                confidence = expanded_query.confidence_scores.get(expansion_term, 0.5)
+                if confidence < 0.4:
+                    base_score *= 0.8  # 20% Penalty
+            
+            final_score = base_score + original_bonus + expansion_bonus
+            
+            result.relevance_score = final_score
+            scored_results.append(result)
+        
+        # Sortieren nach finaler Relevanz
+        scored_results.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        return scored_results
     
     async def _graph_retrieval(
         self, 

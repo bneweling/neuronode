@@ -6,6 +6,30 @@ export interface Message {
   role: 'user' | 'assistant' | 'system'
   timestamp: Date
   hasGraphData?: boolean
+  explanationGraph?: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: string;
+      size: number;
+      color: string;
+      metadata: {
+        title: string;
+        source: string;
+        relevance: number;
+        content_preview: string;
+      };
+    }>;
+    edges: Array<{
+      source: string;
+      target: string;
+      label: string;
+      weight: number;
+      color: string;
+    }>;
+    layout?: string;
+    interactive?: boolean;
+  }
 }
 
 export interface ChatSession {

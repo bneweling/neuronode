@@ -1,0 +1,74 @@
+ner_extraction_v1_few_shot: |
+  Du bist ein hochpräziser Named Entity Recognition (NER) Bot für IT-Compliance-Dokumente.
+  Deine Aufgabe ist es, aus dem gegebenen Textabschnitt ALLE relevanten Entitäten zu extrahieren.
+
+  **Entitäts-Kategorien:**
+  - TECHNOLOGY: Konkrete Technologien, Software, Protokolle (z.B. "Active Directory", "TLS 1.3", "BitLocker")
+  - ORGANIZATION: Unternehmen, Institutionen, Abteilungen (z.B. "Microsoft", "BSI", "IT-Abteilung")
+  - STANDARD: Compliance-Standards und Frameworks (z.B. "ISO 27001", "BSI IT-Grundschutz", "NIST CSF")
+  - CONTROL_ID: Spezifische Control-Identifikatoren (z.B. "A.5.1.1", "SYS.1.1.A12", "SC-7")
+  - ROLE: Rollen und Verantwortlichkeiten (z.B. "IT-Administrator", "CISO", "Systemverantwortlicher")
+  - PROCESS: Geschäftsprozesse und Workflows (z.B. "Patch-Management", "Incident Response", "Backup-Verfahren")
+
+  **Beispiele für perfekte Extraktion:**
+  --- BEISPIEL 1 ---
+  Text: "Der IT-Administrator muss sicherstellen, dass alle Windows Server 2019 Systeme mit der neuesten Version von BitLocker verschlüsselt sind, um die Anforderungen von ISO 27001 Control A.10.1.1 zu erfüllen."
+  Antwort:
+   ```json
+   {{ "entities": [
+     {{"text": "IT-Administrator", "category": "ROLE", "confidence": 0.95}},
+     {{"text": "Windows Server 2019", "category": "TECHNOLOGY", "confidence": 0.98}},
+     {{"text": "BitLocker", "category": "TECHNOLOGY", "confidence": 0.97}},
+     {{"text": "ISO 27001", "category": "STANDARD", "confidence": 0.99}},
+     {{"text": "A.10.1.1", "category": "CONTROL_ID", "confidence": 0.96}}
+   ] }}
+   ```
+  --- BEISPIEL 2 ---
+  Text: "Die Firma Contoso implementiert ein SIEM-System zur Überwachung ihrer kritischen Infrastruktur und folgt dabei den Empfehlungen des NIST Cybersecurity Framework."
+  Antwort:
+   ```json
+   {{ "entities": [
+     {{"text": "Contoso", "category": "ORGANIZATION", "confidence": 0.92}},
+     {{"text": "SIEM-System", "category": "TECHNOLOGY", "confidence": 0.94}},
+     {{"text": "NIST Cybersecurity Framework", "category": "STANDARD", "confidence": 0.98}}
+   ] }}
+   ```
+
+  **Text zur Analyse:**
+  --- TEXT ---
+  {text_block}
+  ---
+
+  **Antworte IMMER und AUSSCHLIESSLICH im JSON-Format wie in den Beispielen gezeigt.**
+
+structured_control_extraction_v1: |
+  Du bist ein hochpräziser Extraktions-Bot für Compliance-Dokumente.
+  Deine Aufgabe ist es, aus dem gegebenen Textabschnitt ALLE Compliance-Controls zu extrahieren, die dem Standard **{standard_name}** entsprechen.
+
+  **Extraktions-Schema (achte auf jeden Schlüssel):**
+  {extraction_schema_json}
+
+  **Anweisungen:**
+  - Extrahiere JEDES Control, das du im Text findest.
+  - Fülle alle Felder des Schemas so präzise wie möglich aus.
+  - Wenn ein optionales Feld nicht im Text vorhanden ist, lasse es aus dem JSON-Objekt weg.
+  - Der 'text' des Controls sollte die vollständige Beschreibung der Anforderung enthalten.
+
+  **Text zur Analyse:**
+  --- TEXT ---
+  {text_block}
+  ---
+
+  **Antworte IMMER und AUSSCHLIESSLICH mit einem JSON-Objekt, das eine Liste von Controls enthält. Hier ist ein Beispiel für ein perfekt formatiertes Ergebnis:**
+  
+  ```json
+  {{ "extracted_controls": [
+    {{
+      "id": "OPS.1.1.5.A14",
+      "title": "Regelung für den Umgang mit Datenträgern",
+      "text": "Für alle Arten von Datenträgern muss es eine Regelung für den Umgang damit geben...",
+      "level": "Standard",
+      "domain": "OPS"
+    }}
+  ] }}
+  ``` 

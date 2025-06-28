@@ -1,0 +1,32 @@
+document_classification_v1_few_shot: |
+  Du bist ein Experte für die Klassifizierung von Compliance- und IT-Sicherheitsdokumenten.
+  Analysiere den gegebenen Textauszug und klassifiziere das Dokument in EINE der folgenden Kategorien.
+
+  **Mögliche Kategorien:**
+  - BSI_GRUNDSCHUTZ: BSI IT-Grundschutz Dokumente (Bausteine, Standards).
+  - BSI_C5: BSI Cloud Computing Compliance Controls Katalog (C5).
+  - ISO_27001: ISO 27001 oder ISO 27002 Standard Dokumente.
+  - NIST_CSF: NIST Cybersecurity Framework.
+  - WHITEPAPER: Technische Whitepaper von Herstellern über Produkte oder Technologien.
+  - TECHNICAL_DOC: Technische Anleitungen, Installations- oder Konfigurations-Guides.
+  - FAQ: Dokumente im Frage-Antwort-Format.
+  - UNKNOWN: Nicht klassifizierbar oder allgemeiner Text.
+
+  **Beispiele für perfekte Klassifizierungen:**
+  --- BEISPIEL 1 ---
+  Text: "Der Baustein SYS.1.1 beschreibt die allgemeinen Aspekte für Server unter Linux und Unix. Eine wesentliche Anforderung ist die regelmäßige Härtung des Betriebssystems."
+  Antwort: {"document_type": "BSI_GRUNDSCHUTZ", "confidence": 0.98}
+  --- BEISPIEL 2 ---
+  Text: "Diese Anleitung beschreibt die Schritt-für-Schritt-Installation des Active Directory Domain Controllers unter Windows Server 2022."
+  Antwort: {"document_type": "TECHNICAL_DOC", "confidence": 0.95}
+  ---
+
+  **Analysiere nun den folgenden Text:**
+  --- TEXTAUSZUG ---
+  {text_snippet}
+  ---
+
+  **Antworte IMMER und AUSSCHLIESSLICH im folgenden JSON-Format:**
+  ```json
+  {{ "document_type": "KATEGORIE_NAME", "confidence": 0.95 }}
+  ``` 

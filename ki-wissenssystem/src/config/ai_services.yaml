@@ -1,0 +1,64 @@
+# Finale Konfiguration für Phase 2 und darüber hinaus
+
+# Konfiguration für die Anbindung der Gemini API
+gemini:
+  # API-Key wird über Umgebungsvariable geladen (Sicherheit)
+  api_key: "${GEMINI_API_KEY}" 
+  
+  # Basis-Konfiguration für API-Calls
+  rate_limit_per_minute: 60  # Entspricht dem Standard-Limit von Gemini Flash
+  timeout_seconds: 45
+  default_batch_size: 10     # Anzahl Chunks für NER-Extraktion pro API-Call
+  
+  # HINWEIS: Modellauswahl erfolgt über LLM-Config (ModelPurpose.EXTRACTION/SYNTHESIS)
+
+# Konfiguration für den Redis Caching Layer
+redis:
+  host: "${REDIS_HOST}"
+  port: 6379
+  db: 0
+  
+  # Strategische TTL-Werte
+  ttl_for_documents_seconds: 2592000 # 30 Tage für unveränderliche Dokument-Chunks
+  ttl_for_queries_seconds: 3600      # 1 Stunde für Nutzer-Anfragen
+  
+  # Speicher-Management
+  max_memory: "1GB"
+  eviction_policy: "allkeys-lru" # Entferne die am längsten ungenutzten Keys
+
+# Konfiguration für Fallback-Mechanismen während der Migration
+fallbacks:
+  # Ermöglicht den alten Regex-Extraktor bei permanentem API-Fehler
+  enable_regex_fallback_on_error: true 
+  # Ermöglicht die alte Klassifizierung bei permanentem API-Fehler
+  enable_rule_based_classification_on_error: true
+
+# Konfiguration für die Qualitätssicherung
+validation:
+  # Ziel-F1-Score für die wöchentliche NER-Validierung
+  ner_f1_target: 0.90
+
+# Monitoring und Logging
+monitoring:
+  # API-Kosten-Tracking
+  track_api_costs: true
+  cost_alert_threshold_per_day: 50.0  # USD
+  
+  # Performance-Metriken
+  track_response_times: true
+  slow_query_threshold_seconds: 5.0
+  
+  # Cache-Performance
+  track_cache_hit_rates: true
+  cache_miss_alert_threshold: 0.2  # Alert bei < 80% Hit-Rate
+
+# Entwicklungs- und Debug-Einstellungen
+development:
+  # Enables ausführliches Logging für Entwicklung
+  verbose_logging: false
+  
+  # Speichere alle API-Calls für Debugging (nur Development)
+  log_api_requests: false
+  
+  # Verwende Mock-Services für Tests
+  use_mock_services: false 

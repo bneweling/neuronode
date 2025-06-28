@@ -1,0 +1,34 @@
+link_validation_v2_cot: |
+  Du bist ein hochpräziser Analyst für IT-Compliance-Graphen. Deine Aufgabe ist es, die Beziehung zwischen einem Wissens-Chunk und einem Compliance-Control zu bewerten.
+
+  **Control:**
+  - ID: {control_id}
+  - Titel: {control_title}
+  - Text: {control_text}
+
+  **Knowledge Chunk:**
+  - Text: {chunk_text}
+
+  **Führe die folgende Analyse Schritt für Schritt durch (Chain of Thought):**
+  1.  **Analyse der Control-Intention:** Was ist die exakte, prüfbare Anforderung des Controls? Fasse sie in einem Satz zusammen.
+  2.  **Analyse des Chunk-Inhalts:** Beschreibt der Chunk eine konkrete technische Handlung, eine Konfiguration, ein Produkt-Feature, ein allgemeines Konzept oder eine Warnung?
+  3.  **Synthese & Beziehungs-Hypothese:** Vergleiche die Intention aus Schritt 1 mit dem Inhalt aus Schritt 2.
+      - Wenn der Chunk beschreibt, WIE die Anforderung erfüllt wird, ist die Hypothese IMPLEMENTS.
+      - Wenn der Chunk das WARUM oder WAS der Anforderung erklärt, ist die Hypothese SUPPORTS.
+      - Wenn der Chunk die Anforderung nur erwähnt, ist die Hypothese REFERENCES.
+      - Wenn der Chunk einer Handlung beschreibt, die der Anforderung widerspricht, ist die Hypothese CONFLICTS.
+      - Sonst ist die Hypothese NONE.
+  4.  **Konfidenz-Bewertung:** Basierend auf der Direktheit der Verbindung, bewerte deine Konfidenz von 0.0 (geraten) bis 1.0 (absolut sicher).
+
+  **Antworte AUSSCHLIESSLICH im folgenden JSON-Format. Hier ist ein Beispiel für eine perfekte Antwort, wenn der Chunk eine Anleitung zur Konfiguration von BitLocker ist und das Control die Verschlüsselung von Laptops fordert:**
+
+  ```json
+  {{ "relationship": "IMPLEMENTS", "confidence": 0.95,
+     "reasoning": "Der Chunk beschreibt die technische Konfiguration von BitLocker...",
+     "chain_of_thought": {{
+       "control_intent": "Die Kernanforderung ist, dass Datenträger verschlüsselt sein müssen...",
+       "chunk_content_summary": "Der Chunk ist eine technische Anleitung zur BitLocker-Konfiguration...",
+       "synthesis": "Die technische Handlung im Chunk ist eine direkte Methode zur Control-Erfüllung."
+     }}
+  }}
+  ``` 

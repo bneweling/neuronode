@@ -54,9 +54,9 @@ class Settings(BaseSettings):
                 "validator_model_2": "claude-sonnet-4-20250514"
             },
             "balanced": {
-                "classifier_model": "gemini-2.5-flash",
-                "extractor_model": "gpt-4.1",
-                "synthesizer_model": "gemini-2.5-pro",
+                "classifier_model": "gemini-1.5-flash-latest",
+                "extractor_model": "gemini-1.5-flash-latest",
+                "synthesizer_model": "gemini-1.5-pro-latest",
                 "validator_model_1": "o4-mini",
                 "validator_model_2": "claude-3-7-sonnet-20250219"
             },
@@ -68,11 +68,11 @@ class Settings(BaseSettings):
                 "validator_model_2": "claude-3-5-haiku-20241022"
             },
             "gemini_only": {
-                "classifier_model": "gemini-2.5-flash",
-                "extractor_model": "gemini-2.5-pro",
-                "synthesizer_model": "gemini-2.5-pro",
-                "validator_model_1": "gemini-2.0-flash",
-                "validator_model_2": "gemini-2.5-flash"
+                "classifier_model": "gemini-1.5-flash-latest",
+                "extractor_model": "gemini-1.5-flash-latest",
+                "synthesizer_model": "gemini-1.5-pro-latest",
+                "validator_model_1": "gemini-1.5-pro",
+                "validator_model_2": "gemini-1.5-flash"
             },
             "openai_only": {
                 "classifier_model": "gpt-4o-mini",

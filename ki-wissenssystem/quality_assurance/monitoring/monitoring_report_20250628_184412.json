@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-06-28T18:44:12.851675",
+  "system_health": {
+    "timestamp": "2025-06-28T18:44:12.851678",
+    "active_services": 2,
+    "total_calls_last_hour": 5,
+    "avg_response_time_ms": 129.78,
+    "error_rate_last_hour": 0.2,
+    "estimated_hourly_cost_cents": 0.970925,
+    "cache_efficiency": 0.2
+  },
+  "service_stats": {
+    "GeminiEntityExtractor": {
+      "service_name": "GeminiEntityExtractor",
+      "total_calls": 3,
+      "successful_calls": 2,
+      "failed_calls": 1,
+      "total_duration_ms": 239.7,
+      "total_tokens": 379,
+      "total_cost_cents": 0.028425,
+      "avg_duration_ms": 79.89999999999999,
+      "cache_hit_rate": 0.3333333333333333,
+      "error_rate": 0.3333333333333333,
+      "last_updated": "2025-06-28T18:44:12.851615"
+    },
+    "DocumentClassifier": {
+      "service_name": "DocumentClassifier",
+      "total_calls": 2,
+      "successful_calls": 2,
+      "failed_calls": 0,
+      "total_duration_ms": 409.20000000000005,
+      "total_tokens": 754,
+      "total_cost_cents": 0.9425000000000001,
+      "avg_duration_ms": 204.60000000000002,
+      "cache_hit_rate": 0.0,
+      "error_rate": 0.0,
+      "last_updated": "2025-06-28T18:44:12.851620"
+    }
+  },
+  "recent_calls": [
+    {
+      "service_name": "DocumentClassifier",
+      "timestamp": "2025-06-28T18:44:12.851617",
+      "duration_ms": 178.4,
+      "tokens_used": 298,
+      "cost_cents": 0.3725,
+      "success": true,
+      "error_message": null,
+      "cache_hit": false
+    },
+    {
+      "service_name": "GeminiEntityExtractor",
+      "timestamp": "2025-06-28T18:44:12.851612",
+      "duration_ms": 0,
+      "tokens_used": 0,
+      "cost_cents": 0.0,
+      "success": false,
+      "error_message": "Simulated error",
+      "cache_hit": false
+    },
+    {
+      "service_name": "DocumentClassifier",
+      "timestamp": "2025-06-28T18:44:12.851606",
+      "duration_ms": 230.8,
+      "tokens_used": 456,
+      "cost_cents": 0.5700000000000001,
+      "success": true,
+      "error_message": null,
+      "cache_hit": false
+    },
+    {
+      "service_name": "GeminiEntityExtractor",
+      "timestamp": "2025-06-28T18:44:12.851598",
+      "duration_ms": 89.2,
+      "tokens_used": 134,
+      "cost_cents": 0.01005,
+      "success": true,
+      "error_message": null,
+      "cache_hit": true
+    },
+    {
+      "service_name": "GeminiEntityExtractor",
+      "timestamp": "2025-06-28T18:44:12.851572",
+      "duration_ms": 150.5,
+      "tokens_used": 245,
+      "cost_cents": 0.018375,
+      "success": true,
+      "error_message": null,
+      "cache_hit": false
+    }
+  ],
+  "cost_breakdown_24h": {
+    "GeminiEntityExtractor": 0.028425,
+    "DocumentClassifier": 0.9425000000000001
+  },
+  "cost_breakdown_1h": {
+    "GeminiEntityExtractor": 0.028425,
+    "DocumentClassifier": 0.9425000000000001
+  }
+}

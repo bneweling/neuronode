@@ -19,6 +19,7 @@ from src.extractors.unstructured_processor import UnstructuredProcessor
 from src.extractors.quality_validator import QualityValidator
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
+from src.document_processing.metadata_extractor import DocumentMetadataExtractor
 
 import logging
 
@@ -43,6 +44,7 @@ class DocumentProcessor:
         self.structured_extractor = StructuredExtractor()
         self.unstructured_processor = UnstructuredProcessor()
         self.validator = QualityValidator()
+        self.metadata_extractor = DocumentMetadataExtractor()
         
         # Initialize storage
         self.neo4j = Neo4jClient()
@@ -374,6 +376,70 @@ class DocumentProcessor:
         # Filter out failed processes
         return [r for r in results if r is not None]
     
+    async def process_document_with_metadata(self, file_path: str) -> Dict[str, Any]:
+        """Erweiterte Dokumentverarbeitung mit Document-Knoten"""
+        
+        # 1. Metadaten extrahieren
+        print(f"📋 Extrahiere Metadaten für {Path(file_path).name}")
+        metadata = self.metadata_extractor.extract_metadata(file_path)
+        
+        # 2. Duplikat-Prüfung
+        existing_doc = self.neo4j.find_document_by_hash(metadata['hash'])
+        if existing_doc:
+            print(f"⚠️  Dokument bereits verarbeitet: {existing_doc['filename']}")
+            return {
+                'status': 'duplicate',
+                'document_id': existing_doc['id'],
+                'message': f"Dokument bereits verarbeitet am {existing_doc['processed_at']}"
+            }
+        
+        # 3. Document-Knoten erstellen
+        print(f"📄 Erstelle Document-Knoten")
+        document_id = self.neo4j.create_document_node(metadata)
+        
+        # 4. Inhalt verarbeiten (bestehende Logik)
+        processed_doc = await self.process_document(file_path)
+        
+        # 5. Inhalt mit Document verknüpfen
+        for control in processed_doc.controls:
+            self.neo4j.link_document_to_content(document_id, control.id, "ControlItem")
+        
+        for chunk in processed_doc.chunks:
+            self.neo4j.link_document_to_content(document_id, chunk.id, "KnowledgeChunk")
+        
+        # 6. Versionierung prüfen
+        await self._check_and_link_versions(document_id, metadata)
+        
+        return {
+            'status': 'success',
+            'document_id': document_id,
+            'metadata': metadata,
+            'controls_count': len(processed_doc.controls),
+            'chunks_count': len(processed_doc.chunks)
+        }
+    
+    async def _check_and_link_versions(self, document_id: str, metadata: Dict[str, Any]):
+        """Prüft und verknüpft Document-Versionen"""
+        # Suche nach älteren Versionen desselben Standards
+        with self.neo4j.driver.session() as session:
+            result = session.run("""
+                MATCH (d:Document)
+                WHERE d.standard_name = $standard_name 
+                  AND d.standard_version < $current_version
+                  AND d.id <> $current_doc_id
+                RETURN d.id as old_doc_id
+                ORDER BY d.standard_version DESC
+                LIMIT 1
+            """, 
+            standard_name=metadata['standard_name'],
+            current_version=metadata['standard_version'],
+            current_doc_id=document_id)
+            
+            old_doc = result.single()
+            if old_doc:
+                self.neo4j.link_document_versions(document_id, old_doc['old_doc_id'])
+                print(f"🔄 Verknüpft mit Vorgängerversion")
+
     def close(self):
         """Clean up resources"""
         self.neo4j.close()

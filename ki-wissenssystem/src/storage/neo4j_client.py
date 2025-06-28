@@ -166,5 +166,106 @@ class Neo4jClient:
             return [{"node": dict(record["n"]), "connections": record["connections"]} 
                     for record in result]
     
+    def create_document_node(self, document_metadata: Dict[str, Any]) -> str:
+        """Erstellt oder findet Document-Knoten anhand Hash (verhindert echte Duplikate)"""
+        with self.driver.session() as session:
+            result = session.run("""
+                // KRITISCH: MERGE auf hash, nicht auf randomUUID()!
+                // Dies verhindert echte Duplikate auf Datenbankebene
+                MERGE (d:Document {hash: $hash})
+                ON CREATE SET
+                    d.id = randomUUID(),
+                    d.filename = $filename,
+                    d.document_type = $document_type,
+                    d.standard_name = $standard_name,
+                    d.standard_version = $standard_version,
+                    d.processed_at = datetime(),
+                    d.source_url = $source_url,
+                    d.author = $author,
+                    d.file_size = $file_size,
+                    d.page_count = $page_count,
+                    d.created_at = datetime()
+                ON MATCH SET
+                    d.last_seen = datetime(),
+                    d.access_count = coalesce(d.access_count, 0) + 1
+                RETURN d.id as document_id, 
+                       (CASE WHEN d.created_at = d.last_seen THEN 'created' ELSE 'found' END) as status
+            """, **document_metadata)
+            record = result.single()
+            
+            # Log für Debugging
+            if record["status"] == "found":
+                logger.info(f"Document with hash {document_metadata['hash'][:8]}... already exists")
+            else:
+                logger.info(f"Created new document: {record['document_id']}")
+                
+            return record["document_id"]
+
+    def link_document_to_content(self, document_id: str, content_id: str, content_type: str):
+        """Verknüpft Document mit seinem Inhalt"""
+        with self.driver.session() as session:
+            session.run(f"""
+                MATCH (d:Document {{id: $document_id}})
+                MATCH (c:{content_type} {{id: $content_id}})
+                MERGE (d)-[:CONTAINS]->(c)
+                SET c.document_source = d.filename
+            """, document_id=document_id, content_id=content_id)
+
+    def find_document_by_hash(self, file_hash: str) -> Optional[Dict[str, Any]]:
+        """Sucht Document anhand Hash (Duplikat-Prüfung)"""
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH (d:Document {hash: $hash})
+                RETURN d.id as id, d.filename as filename, d.processed_at as processed_at
+            """, hash=file_hash)
+            record = result.single()
+            return dict(record) if record else None
+
+    def link_document_versions(self, new_doc_id: str, old_doc_id: str):
+        """Verknüpft Document-Versionen"""
+        with self.driver.session() as session:
+            session.run("""
+                MATCH (new:Document {id: $new_doc_id})
+                MATCH (old:Document {id: $old_doc_id})
+                MERGE (new)-[:SUPERSEDES]->(old)
+            """, new_doc_id=new_doc_id, old_doc_id=old_doc_id)
+
+    def create_contextual_relationship(
+        self, 
+        source_id: str, 
+        target_id: str, 
+        relationship_type: str,
+        context_data: Dict[str, Any]
+    ) -> str:
+        """Erstellt kontextuelle Beziehung mit Intermediate-Knoten"""
+        
+        context_node_type = f"{relationship_type}Context"
+        
+        with self.driver.session() as session:
+            # Context-Knoten erstellen
+            result = session.run(f"""
+                CREATE (ctx:{context_node_type} {{
+                    id: randomUUID(),
+                    context: $context,
+                    confidence: $confidence,
+                    evidence_source: $evidence_source,
+                    status: $status,
+                    created_at: datetime(),
+                    reasoning: $reasoning
+                }})
+                RETURN ctx.id as context_id
+            """, **context_data)
+            
+            context_id = result.single()["context_id"]
+            
+            # Quelle -> Kontext -> Ziel verknüpfen
+            session.run(f"""
+                MATCH (s {{id: $source_id}}), (ctx {{id: $context_id}}), (t {{id: $target_id}})
+                CREATE (s)-[:HAS_{relationship_type.upper()}]->(ctx)
+                CREATE (ctx)-[:{relationship_type.upper()}_TARGET]->(t)
+            """, source_id=source_id, context_id=context_id, target_id=target_id)
+            
+            return context_id
+
     def close(self):
         self.driver.close()

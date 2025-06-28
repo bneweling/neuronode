@@ -71,251 +71,28 @@ export default function GraphVisualization() {
   const graphRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
 
-  // Verhindere Hydration-Fehler
   useEffect(() => {
     setIsMounted(true)
-    // Dynamisches Laden von Cytoscape nur im Browser
-    import('cytoscape').then((cy) => {
-      cyRef.current = null
-      setCytoscapeLoaded(true)
-    })
-  }, [])
-
-  const initializeCytoscape = useCallback(async () => {
-    if (!isMounted || !cytoscapeLoaded || !graphRef.current || graphData.nodes.length === 0) return
-
-    const cytoscape = (await import('cytoscape')).default
-
-    // Clean up existing instance
-    if (cyRef.current) {
-      cyRef.current.destroy()
-    }
-
-    // Convert data to Cytoscape format
-    const elements = [
-      // Nodes
-      ...graphData.nodes.map(node => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          type: node.type,
-          ...node.properties
-        },
-        classes: `node-${node.type}`
-      })),
-      // Edges
-      ...graphData.edges.map(edge => ({
-        data: {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          label: edge.label,
-          weight: edge.weight
-        },
-        classes: 'edge'
-      }))
-    ]
-
-    // Dark/Light mode colors with enhanced visibility
-    const isDarkMode = theme.palette.mode === 'dark'
-    const edgeColor = isDarkMode ? '#b0b0b0' : '#666'
-    const edgeLabelColor = isDarkMode ? '#ffffff' : '#333'
-    const nodeTextColor = isDarkMode ? '#ffffff' : '#333333'
-    const nodeOutlineColor = isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)'
-    const nodeOutlineWidth = isDarkMode ? 3 : 2
-    const nodeFontWeight = isDarkMode ? 'bold' : 'normal'
+    const timer = setTimeout(() => {
+             // Dynamisches Laden von Cytoscape nur im Browser
+       import('cytoscape').then(() => {
+         setCytoscapeLoaded(true)
+      }).catch((error) => {
+        console.error('Fehler beim Laden von Cytoscape:', error)
+        setError('Graph-Bibliothek konnte nicht geladen werden')
+      })
+    }, 100)
     
-    // Enhanced color palette for better dark mode contrast
-    const nodeColors = {
-      document: isDarkMode ? '#4fc3f7' : '#1976d2',    // Lighter blue for dark mode
-      concept: isDarkMode ? '#ba68c8' : '#9c27b0',     // Lighter purple for dark mode
-      entity: isDarkMode ? '#81c784' : '#388e3c',      // Lighter green for dark mode
-      relationship: isDarkMode ? '#ffb74d' : '#f57c00', // Lighter orange for dark mode
-      default: isDarkMode ? '#90a4ae' : '#616161'      // Lighter grey for dark mode
-    }
-
-    // Initialize Cytoscape
-    cyRef.current = cytoscape({
-      container: graphRef.current,
-      elements,
-      style: [
-        // Enhanced Node styles with dark mode optimizations
-        {
-          selector: 'node',
-          style: {
-            'width': 65,
-            'height': 65,
-            'label': 'data(label)',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'color': nodeTextColor,
-            'text-outline-width': nodeOutlineWidth,
-            'text-outline-color': nodeOutlineColor,
-            'font-size': isDarkMode ? 13 : 12,
-            'font-weight': nodeFontWeight,
-            'text-wrap': 'wrap',
-            'text-max-width': 80,
-            'min-zoomed-font-size': 8,
-            'text-opacity': isDarkMode ? 1 : 0.9,
-            'border-width': isDarkMode ? 2 : 1,
-            'border-style': 'solid',
-            'border-opacity': 0.7
-          } as any
-        },
-        {
-          selector: '.node-document',
-          style: {
-            'background-color': nodeColors.document,
-            'shape': 'rectangle',
-            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
-          }
-        },
-        {
-          selector: '.node-concept',
-          style: {
-            'background-color': nodeColors.concept,
-            'shape': 'ellipse',
-            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
-          }
-        },
-        {
-          selector: '.node-entity',
-          style: {
-            'background-color': nodeColors.entity,
-            'shape': 'diamond',
-            'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
-          }
-        },
-        // Enhanced Edge styles with improved dark mode visibility
-        {
-          selector: 'edge',
-          style: {
-            'width': isDarkMode ? 3 : 2,
-            'line-color': edgeColor,
-            'target-arrow-color': edgeColor,
-            'target-arrow-shape': 'triangle',
-            'target-arrow-size': isDarkMode ? 12 : 10,
-            'curve-style': 'bezier',
-            'label': 'data(label)',
-            'font-size': isDarkMode ? '11px' : '10px',
-            'font-weight': isDarkMode ? '600' : 'normal',
-            'color': edgeLabelColor,
-            'text-rotation': 'autorotate',
-            'text-margin-y': -12,
-            'text-outline-width': isDarkMode ? 2 : 1,
-            'text-outline-color': isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
-            'text-opacity': 1,
-            'line-opacity': isDarkMode ? 0.8 : 0.7,
-            'arrow-opacity': isDarkMode ? 0.8 : 0.7
-          }
-        },
-        // Enhanced Hover and Selection effects
-        {
-          selector: 'node:hover',
-          style: {
-            'border-width': isDarkMode ? 3 : 2,
-            'border-color': isDarkMode ? '#4fc3f7' : '#1976d2',
-            'border-opacity': 1,
-            'font-size': isDarkMode ? '14px' : '13px'
-          }
-        },
-        {
-          selector: 'node:selected',
-          style: {
-            'border-width': isDarkMode ? 4 : 3,
-            'border-color': isDarkMode ? '#ff6b35' : '#ff5722',
-            'border-opacity': 1,
-            'text-outline-width': isDarkMode ? 4 : 3,
-            'box-shadow': isDarkMode ? '0 0 20px rgba(255, 107, 53, 0.6)' : '0 0 15px rgba(255, 87, 34, 0.4)'
-          }
-        },
-        {
-          selector: 'edge:hover',
-          style: {
-            'line-color': isDarkMode ? '#4fc3f7' : '#1976d2',
-            'target-arrow-color': isDarkMode ? '#4fc3f7' : '#1976d2',
-            'width': isDarkMode ? 4 : 3,
-            'font-size': isDarkMode ? '12px' : '11px',
-            'text-outline-width': isDarkMode ? 3 : 2
-          }
-        },
-        {
-          selector: 'edge:selected',
-          style: {
-            'line-color': isDarkMode ? '#ff6b35' : '#ff5722',
-            'target-arrow-color': isDarkMode ? '#ff6b35' : '#ff5722',
-            'width': isDarkMode ? 5 : 4,
-            'color': isDarkMode ? '#ff6b35' : '#ff5722',
-            'font-size': isDarkMode ? '13px' : '12px',
-            'text-outline-width': isDarkMode ? 3 : 2,
-            'font-weight': 'bold'
-          }
-        }
-      ],
-      layout: {
-        name: 'cose',
-        idealEdgeLength: () => 100,
-        nodeOverlap: 20,
-        refresh: 20,
-        randomize: false,
-        componentSpacing: 100,
-        nodeRepulsion: () => 400000,
-        edgeElasticity: () => 100,
-        nestingFactor: 5,
-        gravity: 80,
-        numIter: 1000,
-        initialTemp: 200,
-        coolingFactor: 0.95,
-        minTemp: 1.0
-      } as any
-    })
-
-    // Event handlers
-    if (cyRef.current) {
-      cyRef.current.on('tap', 'node', (evt: EventObject) => {
-        const node = evt.target as NodeSingular
-        const nodeData = node.data()
-        const graphNode: GraphNode = {
-          id: nodeData.id,
-          label: nodeData.label,
-          type: nodeData.type,
-          properties: nodeData
-        }
-        setSelectedNode(graphNode)
-      })
-
-      cyRef.current.on('zoom', () => {
-        if (cyRef.current) {
-          setZoomLevel(cyRef.current.zoom())
-        }
-      })
-    }
-  }, [graphData, theme.palette.mode])
-
-  useEffect(() => {
-    loadGraphData()
+    return () => clearTimeout(timer)
   }, [])
 
-  // Initialize Cytoscape when graph data changes
-  useEffect(() => {
-    if (graphRef.current && graphData.nodes.length > 0 && cytoscapeLoaded) {
-      initializeCytoscape()
-    }
-    return () => {
-      if (cyRef.current) {
-        cyRef.current.destroy()
-      }
-    }
-  }, [graphData, initializeCytoscape])
-
-  const loadGraphData = async () => {
+  const loadGraphData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     
     try {
       const apiClient = getAPIClient()
       const response = await apiClient.getKnowledgeGraph()
-      // Transform API response to match component types
       const transformedData: GraphData = {
         nodes: response.nodes.map(node => ({
           id: node.id,
@@ -329,8 +106,6 @@ export default function GraphVisualization() {
     } catch (error) {
       console.error('Fehler beim Laden des Graphen:', error)
       setError('Fehler beim Laden des Wissensgraphen. Bitte versuchen Sie es erneut.')
-      
-      // Enhanced mock data for better testing
       setGraphData({
         nodes: [
           { id: '1', label: 'Künstliche Intelligenz', type: 'concept', properties: { description: 'Hauptkonzept der KI' } },
@@ -359,7 +134,263 @@ export default function GraphVisualization() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadGraphData()
+  }, [loadGraphData])
+
+  useEffect(() => {
+    const initializeCytoscape = async () => {
+        // Umfassende Checks für sichere Initialisierung
+        if (!isMounted || !cytoscapeLoaded || !graphRef.current) {
+          console.log('Cytoscape-Initialisierung übersprungen: Komponente nicht bereit')
+          return
+        }
+    
+        if (graphData.nodes.length === 0) {
+          console.log('Cytoscape-Initialisierung übersprungen: Keine Daten')
+            if (cyRef.current) {
+                cyRef.current.destroy();
+                cyRef.current = null;
+            }
+          return
+        }
+    
+        // Sicherstellen, dass Container korrekte Dimensionen hat
+        const containerRect = graphRef.current.getBoundingClientRect()
+        if (containerRect.width === 0 || containerRect.height === 0) {
+          console.log('Cytoscape-Initialisierung übersprungen: Container hat keine Dimensionen')
+          setTimeout(initializeCytoscape, 100) // retry
+          return
+        }
+    
+        try {
+          const cytoscape = (await import('cytoscape')).default;
+    
+          // Clean up existing instance
+          if (cyRef.current) {
+            cyRef.current.destroy()
+          }
+        
+            // ... (rest of the function, exactly as it was in useCallback)
+            const elements = [
+                // Nodes
+                ...graphData.nodes.map(node => ({
+                  data: {
+                    id: node.id,
+                    label: node.label,
+                    type: node.type,
+                    ...node.properties
+                  },
+                  classes: `node-${node.type}`
+                })),
+                // Edges
+                ...graphData.edges.map(edge => ({
+                  data: {
+                    id: edge.id,
+                    source: edge.source,
+                    target: edge.target,
+                    label: edge.label,
+                    weight: edge.weight
+                  },
+                  classes: 'edge'
+                }))
+              ]
+          
+              // Dark/Light mode colors with enhanced visibility
+              const isDarkMode = theme.palette.mode === 'dark'
+              const edgeColor = isDarkMode ? '#b0b0b0' : '#666'
+              const edgeLabelColor = isDarkMode ? '#ffffff' : '#333'
+              const nodeTextColor = isDarkMode ? '#ffffff' : '#333333'
+              const nodeOutlineColor = isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)'
+              const nodeOutlineWidth = isDarkMode ? 3 : 2
+              const nodeFontWeight = isDarkMode ? 'bold' : 'normal'
+              
+              // Enhanced color palette for better dark mode contrast
+              const nodeColors = {
+                document: isDarkMode ? '#4fc3f7' : '#1976d2',    // Lighter blue for dark mode
+                concept: isDarkMode ? '#ba68c8' : '#9c27b0',     // Lighter purple for dark mode
+                entity: isDarkMode ? '#81c784' : '#388e3c',      // Lighter green for dark mode
+                relationship: isDarkMode ? '#ffb74d' : '#f57c00', // Lighter orange for dark mode
+                default: isDarkMode ? '#90a4ae' : '#616161'      // Lighter grey for dark mode
+              }
+          
+              // Initialize Cytoscape mit Error Handling
+              cyRef.current = cytoscape({
+                container: graphRef.current,
+                elements,
+                style: [
+                // Enhanced Node styles with dark mode optimizations
+                {
+                  selector: 'node',
+                  style: {
+                    'width': 65,
+                    'height': 65,
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'color': nodeTextColor,
+                    'text-outline-width': nodeOutlineWidth,
+                    'text-outline-color': nodeOutlineColor,
+                    'font-size': isDarkMode ? 13 : 12,
+                    'font-weight': nodeFontWeight,
+                    'text-wrap': 'wrap',
+                    'text-max-width': 80,
+                    'min-zoomed-font-size': 8,
+                    'text-opacity': isDarkMode ? 1 : 0.9,
+                    'border-width': isDarkMode ? 2 : 1,
+                    'border-style': 'solid',
+                    'border-opacity': 0.7
+                  } as any
+                },
+                {
+                  selector: '.node-document',
+                  style: {
+                    'background-color': nodeColors.document,
+                    'shape': 'rectangle',
+                    'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
+                  }
+                },
+                {
+                  selector: '.node-concept',
+                  style: {
+                    'background-color': nodeColors.concept,
+                    'shape': 'ellipse',
+                    'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
+                  }
+                },
+                {
+                  selector: '.node-entity',
+                  style: {
+                    'background-color': nodeColors.entity,
+                    'shape': 'diamond',
+                    'border-color': isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
+                  }
+                },
+                // Enhanced Edge styles with improved dark mode visibility
+                {
+                  selector: 'edge',
+                  style: {
+                    'width': isDarkMode ? 3 : 2,
+                    'line-color': edgeColor,
+                    'target-arrow-color': edgeColor,
+                    'target-arrow-shape': 'triangle',
+                    'target-arrow-size': isDarkMode ? 12 : 10,
+                    'curve-style': 'bezier',
+                    'label': 'data(label)',
+                    'font-size': isDarkMode ? '11px' : '10px',
+                    'font-weight': isDarkMode ? '600' : 'normal',
+                    'color': edgeLabelColor,
+                    'text-rotation': 'autorotate',
+                    'text-margin-y': -12,
+                    'text-outline-width': isDarkMode ? 2 : 1,
+                    'text-outline-color': isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
+                    'text-opacity': 1,
+                    'line-opacity': isDarkMode ? 0.8 : 0.7,
+                    'arrow-opacity': isDarkMode ? 0.8 : 0.7
+                  }
+                },
+                // Enhanced Hover and Selection effects
+                {
+                  selector: 'node:hover',
+                  style: {
+                    'border-width': isDarkMode ? 3 : 2,
+                    'border-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+                    'border-opacity': 1,
+                    'font-size': isDarkMode ? '14px' : '13px'
+                  }
+                },
+                {
+                  selector: 'node:selected',
+                  style: {
+                    'border-width': isDarkMode ? 4 : 3,
+                    'border-color': isDarkMode ? '#ff6b35' : '#ff5722',
+                    'border-opacity': 1,
+                    'text-outline-width': isDarkMode ? 4 : 3,
+                    'box-shadow': isDarkMode ? '0 0 20px rgba(255, 107, 53, 0.6)' : '0 0 15px rgba(255, 87, 34, 0.4)'
+                  }
+                },
+                {
+                  selector: 'edge:hover',
+                  style: {
+                    'line-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+                    'target-arrow-color': isDarkMode ? '#4fc3f7' : '#1976d2',
+                    'width': isDarkMode ? 4 : 3,
+                    'font-size': isDarkMode ? '12px' : '11px',
+                    'text-outline-width': isDarkMode ? 3 : 2
+                  }
+                },
+                {
+                  selector: 'edge:selected',
+                  style: {
+                    'line-color': isDarkMode ? '#ff6b35' : '#ff5722',
+                    'target-arrow-color': isDarkMode ? '#ff6b35' : '#ff5722',
+                    'width': isDarkMode ? 5 : 4,
+                    'color': isDarkMode ? '#ff6b35' : '#ff5722',
+                    'font-size': isDarkMode ? '13px' : '12px',
+                    'text-outline-width': isDarkMode ? 3 : 2,
+                    'font-weight': 'bold'
+                  }
+                }
+              ],
+              layout: {
+                name: 'cose',
+                idealEdgeLength: () => 100,
+                nodeOverlap: 20,
+                refresh: 20,
+                randomize: false,
+                componentSpacing: 100,
+                nodeRepulsion: () => 400000,
+                edgeElasticity: () => 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0
+              } as any
+            })
+        
+            // Event handlers
+            if (cyRef.current) {
+              cyRef.current.on('tap', 'node', (evt: EventObject) => {
+                const node = evt.target as NodeSingular
+                const nodeData = node.data()
+                const graphNode: GraphNode = {
+                  id: nodeData.id,
+                  label: nodeData.label,
+                  type: nodeData.type,
+                  properties: nodeData
+                }
+                setSelectedNode(graphNode)
+              })
+        
+              cyRef.current.on('zoom', () => {
+                if (cyRef.current) {
+                  setZoomLevel(cyRef.current.zoom())
+                }
+              })
+            }
+        } catch (error) {
+            console.error('Fehler bei der Cytoscape-Initialisierung:', error);
+            setError('Graph-Visualisierung konnte nicht initialisiert werden');
+        }
+    }
+    
+    initializeCytoscape()
+
+    return () => {
+      if (cyRef.current) {
+        try {
+          cyRef.current.destroy()
+        } catch (error) {
+          console.error('Fehler beim Cytoscape Cleanup:', error)
+        }
+        cyRef.current = null
+      }
+    }
+  }, [graphData, cytoscapeLoaded, isMounted, theme.palette.mode]);
 
   const handleSearch = () => {
     if (!searchQuery.trim() || !cyRef.current) return
@@ -451,7 +482,6 @@ export default function GraphVisualization() {
 
   const stats = getGraphStats()
 
-  // Verhindere Hydration-Fehler durch Client-Only-Rendering
   if (!isMounted) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -485,7 +515,6 @@ export default function GraphVisualization() {
       )}
 
       <Grid container spacing={3}>
-        {/* Graph Controls */}
         <Grid item xs={12}>
           <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -524,7 +553,6 @@ export default function GraphVisualization() {
           </Paper>
         </Grid>
 
-        {/* Main Graph Visualization */}
         <Grid item xs={12} lg={8}>
           <Paper 
             elevation={2} 
@@ -595,9 +623,7 @@ export default function GraphVisualization() {
           </Paper>
         </Grid>
 
-        {/* Sidebar - Node Details and Statistics */}
         <Grid item xs={12} lg={4}>
-          {/* Selected Node Details */}
           {selectedNode && (
             <Card sx={{ mb: 2 }}>
               <CardContent>
@@ -657,7 +683,6 @@ export default function GraphVisualization() {
             </Card>
           )}
 
-          {/* Graph Statistics */}
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>

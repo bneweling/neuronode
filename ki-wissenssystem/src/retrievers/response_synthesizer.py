@@ -5,6 +5,7 @@ import json
 from src.retrievers.hybrid_retriever import RetrievalResult
 from src.retrievers.intent_analyzer import QueryAnalysis, QueryIntent
 from src.config.llm_config import llm_router, ModelPurpose
+from src.orchestration.auto_relationship_discovery import AutoRelationshipDiscovery
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseMessage
 import logging
@@ -23,6 +24,7 @@ class SynthesizedResponse:
 class ResponseSynthesizer:
     def __init__(self):
         self.llm = llm_router.get_model(ModelPurpose.SYNTHESIS)
+        self.relationship_discovery = AutoRelationshipDiscovery()
         
         # Intent-specific prompts
         self.synthesis_prompts = {
@@ -70,10 +72,16 @@ class ResponseSynthesizer:
                 query, response, analysis
             )
             
+            # Extract explanation graph for visualization
+            explanation_graph = self._extract_explanation_graph(retrieval_results)
+            
             # Determine if graph visualization would be helpful
             graph_metadata = self._analyze_graph_relevance(
                 analysis, retrieval_results, response
             )
+            
+            # Phase 3: Auto-Relationship Discovery on synthesis
+            await self._discover_and_create_relationships(query, response, retrieval_results)
             
             return SynthesizedResponse(
                 answer=response,
@@ -83,7 +91,10 @@ class ResponseSynthesizer:
                     "intent": analysis.primary_intent.value,
                     "entities": analysis.entities,
                     "num_sources": len(sources),
-                    **graph_metadata  # Include graph-related metadata
+                    "explanation_graph": explanation_graph,
+                    "graph_relevant": len(explanation_graph["nodes"]) > 2,
+                    "visualization_type": self._determine_visualization_type(analysis, explanation_graph),
+                    **graph_metadata
                 },
                 follow_up_questions=follow_ups
             )
@@ -607,3 +618,137 @@ Falls das Problem weiterhin besteht, wenden Sie sich bitte an den Support.
                    f"nodes={len(graph_metadata['graph_nodes'])}")
         
         return graph_metadata
+
+    def _extract_explanation_graph(
+        self, 
+        retrieval_results: List[RetrievalResult]
+    ) -> Dict[str, Any]:
+        """Extract graph data for explanation visualization"""
+        
+        explanation_nodes = []
+        explanation_edges = []
+        node_ids = set()
+        
+        for result in retrieval_results[:8]:  # Top 8 für Visualisierung
+            # Node-Daten extrahieren
+            node_id = result.metadata.get("id", f"node_{len(explanation_nodes)}")
+            
+            if node_id not in node_ids:
+                node_ids.add(node_id)
+                
+                explanation_nodes.append({
+                    "id": node_id,
+                    "label": self._create_node_label(result),
+                    "type": result.node_type or "Unknown",
+                    "size": min(max(result.relevance_score * 50, 20), 80),
+                    "color": self._get_node_color(result.node_type),
+                    "metadata": {
+                        "title": result.metadata.get("title", ""),
+                        "source": result.metadata.get("source", ""),
+                        "relevance": round(result.relevance_score, 2),
+                        "content_preview": result.content[:200] + "..." if len(result.content) > 200 else result.content
+                    }
+                })
+            
+            # Relationships extrahieren (falls vorhanden)
+            if hasattr(result, 'relationships') and result.relationships:
+                for rel in result.relationships:
+                    if rel.get("source") in node_ids and rel.get("target") in node_ids:
+                        explanation_edges.append({
+                            "source": rel["source"],
+                            "target": rel["target"],
+                            "label": rel.get("type", "RELATES_TO"),
+                            "weight": rel.get("confidence", 0.5),
+                            "color": self._get_edge_color(rel.get("type", "RELATES_TO"))
+                        })
+        
+        return {
+            "nodes": explanation_nodes,
+            "edges": explanation_edges,
+            "layout": "force-directed",
+            "interactive": True
+        }
+
+    def _create_node_label(self, result: RetrievalResult) -> str:
+        """Create readable node label"""
+        if result.node_type == "ControlItem":
+            return f"{result.metadata.get('id', 'Control')}"
+        elif result.node_type == "Technology":
+            return result.metadata.get('name', 'Tech')
+        elif result.node_type == "KnowledgeChunk":
+            return f"Chunk ({result.metadata.get('source', 'Doc')})"
+        elif result.node_type == "Document":
+            return f"Doc: {result.metadata.get('filename', 'Unknown')}"
+        else:
+            return result.metadata.get('title', 'Node')[:20]
+
+    def _get_node_color(self, node_type: str) -> str:
+        """Get color for node type"""
+        color_map = {
+            "ControlItem": "#FF6B6B",     # Red
+            "Technology": "#4ECDC4",      # Teal
+            "KnowledgeChunk": "#45B7D1",  # Blue
+            "Document": "#96CEB4",        # Green
+            "Entity": "#FECA57"           # Yellow
+        }
+        return color_map.get(node_type, "#BDC3C7")  # Gray default
+
+    def _get_edge_color(self, edge_type: str) -> str:
+        """Get color for edge type"""
+        color_map = {
+            "IMPLEMENTS": "#E74C3C",      # Red
+            "SUPPORTS": "#3498DB",        # Blue
+            "REFERENCES": "#9B59B6",      # Purple
+            "CONTAINS": "#27AE60",        # Green
+            "RELATES_TO": "#95A5A6"       # Gray
+        }
+        return color_map.get(edge_type, "#95A5A6")
+
+    def _determine_visualization_type(self, analysis: QueryAnalysis, explanation_graph: Dict[str, Any]) -> str:
+        """Determine best visualization type"""
+        
+        node_count = len(explanation_graph["nodes"])
+        edge_count = len(explanation_graph["edges"])
+        
+        if node_count <= 3:
+            return "simple"
+        elif edge_count > node_count * 1.5:
+            return "network"
+        elif analysis.primary_intent == QueryIntent.MAPPING_COMPARISON:
+            return "comparison"
+        else:
+            return "standard"
+
+    async def _discover_and_create_relationships(
+        self,
+        query: str,
+        response: str,
+        retrieval_results: List[RetrievalResult]
+    ) -> None:
+        """
+        Phase 3: Automatische Beziehungserkennung während der Response-Synthese
+        Analysiert Query und Response um neue Beziehungen zu entdecken
+        """
+        
+        try:
+            # Kombiniere Query und Response für umfassende Analyse
+            combined_text = f"{query}\n\n{response}"
+            
+            # Entdecke potenzielle Beziehungen
+            relationship_candidates = await self.relationship_discovery.discover_relationships_in_text(combined_text)
+            
+            if relationship_candidates:
+                logger.info(f"Discovered {len(relationship_candidates)} potential relationships")
+                
+                # Erstelle hochvertrauenswürdige Beziehungen automatisch (ab 75% Konfidenz)
+                created_relationships = await self.relationship_discovery.auto_create_relationships(
+                    relationship_candidates, 
+                    min_confidence=0.75
+                )
+                
+                if created_relationships:
+                    logger.info(f"Auto-created {len(created_relationships)} new relationships")
+            
+        except Exception as e:
+            logger.error(f"Auto-relationship discovery failed: {e}")
+            # Nicht kritisch - System funktioniert weiter ohne neue Beziehungen
