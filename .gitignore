@@ -94,9 +94,6 @@ obsidian-ki-plugin/main.js.map
 .setup-config
 
 # Windows-spezifische Dateien
-*.bat
-*.ps1
-!ki-wissenssystem/setup.ps1
-!ki-wissenssystem/setup-obsidian.ps1
+# Windows scripts no longer supported
 !ki-wissenssystem/README-Windows.md
 setup.log 

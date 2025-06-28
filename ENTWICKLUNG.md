@@ -51,21 +51,15 @@ npm run dev                # Automatisches Bauen bei Änderungen
 ```bash
 # Vollständige Installation
 ./setup.sh                 # macOS/Linux
-# oder
-.\setup.ps1                # Windows
 
 # Plugin installieren  
-./setup-obsidian.sh        # macOS
-# oder
-.\setup-obsidian.ps1       # Windows
+./setup-obsidian.sh        # macOS/Linux
 ```
 
 ### **2. Entwicklungs-Modus starten:**
 ```bash
 cd ki-wissenssystem
 ./dev-mode.sh              # macOS/Linux - Interaktives Entwicklungs-Menü
-# oder
-.\dev-mode.ps1             # Windows - Interaktives Entwicklungs-Menü
 ```
 
 ### **3. Entwicklungs-Optionen:**
@@ -73,32 +67,27 @@ cd ki-wissenssystem
 #### **Option A: Nur Backend-Entwicklung**
 ```bash
 ./dev-mode.sh → Option 1   # API mit Hot Reload (macOS/Linux)
-.\dev-mode.ps1 → Option 1  # API mit Hot Reload (Windows)
 # Code ändern → Automatisch übernommen! 🔥
 ```
 
 #### **Option B: Nur Plugin-Entwicklung**
 ```bash
 ./dev-mode.sh → Option 2   # Plugin Watch-Modus (macOS/Linux)
-.\dev-mode.ps1 → Option 2  # Plugin Watch-Modus (Windows)
-# Code ändern → Automatisch gebaut → Cmd+R/Ctrl+R in Obsidian
+# Code ändern → Automatisch gebaut → Cmd+R in Obsidian
 ```
 
 #### **Option C: Full-Stack-Entwicklung**
 ```bash
 # Terminal 1:
 ./dev-mode.sh → Option 1   # API Server (macOS/Linux)
-.\dev-mode.ps1 → Option 1  # API Server (Windows)
 
 # Terminal 2:  
 ./dev-mode.sh → Option 2   # Plugin Watch (macOS/Linux)
-.\dev-mode.ps1 → Option 2  # Plugin Watch (Windows)
 ```
 
 #### **Option D: Plugin-Features testen (NEU)**
 ```bash
 ./dev-mode.sh → Option 4   # Plugin-Features testen (macOS/Linux)
-.\dev-mode.ps1 → Option 4  # Plugin-Features testen (Windows)
 ```
 
 **Neue Plugin-Features verfügbar:**
@@ -177,13 +166,13 @@ import pdb; pdb.set_trace()  # In Code einfügen
 ### **Plugin-Debugging:**
 ```bash
 # Obsidian Developer Console
-Cmd+Shift+I (macOS) / Ctrl+Shift+I (Windows)
+Cmd+Shift+I (macOS)
 
 # Plugin-spezifische Logs
 console.log("Debug:", data);  # In TypeScript-Code
 
 # Hot Reload in Obsidian
-Cmd+R (macOS) / Ctrl+R (Windows)
+Cmd+R (macOS)
 ```
 
 ## 🌐 **Entwicklungs-URLs**
