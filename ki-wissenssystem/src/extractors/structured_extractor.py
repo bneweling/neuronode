@@ -8,6 +8,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import re
 import logging
 
+from src.config.exceptions import (
+    ErrorCode, ProcessingPipelineError, LLMServiceError
+)
+from src.utils.error_handler import error_handler, handle_exceptions
+
 logger = logging.getLogger(__name__)
 
 class ExtractedControl(BaseModel):
@@ -202,9 +207,18 @@ class StructuredExtractor:
                 for control in result.controls:
                     all_controls.append(control.dict())
                     
+            except LLMServiceError as e:
+                error_handler.log_error(e, {"chunk_length": len(chunk), "document_type": document_type.value})
+                continue  # Skip this chunk but continue processing
             except Exception as e:
-                logger.error(f"Error extracting controls from chunk: {e}")
-                continue
+                structured_error = ProcessingPipelineError(
+                    f"Failed to extract controls from text chunk: {str(e)}",
+                    ErrorCode.EXTRACTION_FAILED,
+                    {"chunk_length": len(chunk), "document_type": document_type.value},
+                    cause=e
+                )
+                error_handler.log_error(structured_error)
+                continue  # Skip this chunk but continue processing
         
         return all_controls
     

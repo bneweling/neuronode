@@ -9,7 +9,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.markdown import Markdown
-from rich.syntax import Syntax
 
 from src.orchestration.query_orchestrator import QueryOrchestrator
 from src.document_processing.document_processor import DocumentProcessor

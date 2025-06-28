@@ -6,6 +6,10 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 
+from src.config.exceptions import (
+    ErrorCode, ProcessingPipelineError, LLMServiceError
+)
+
 logger = logging.getLogger(__name__)
 
 class QualityValidator:

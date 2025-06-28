@@ -6,7 +6,6 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 from dataclasses import dataclass
 import re
 import logging
-from collections import Counter
 
 from src.config.llm_config import llm_router, ModelPurpose
 from src.storage.neo4j_client import Neo4jClient

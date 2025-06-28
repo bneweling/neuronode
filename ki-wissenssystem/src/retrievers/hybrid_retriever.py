@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 import asyncio
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
@@ -6,9 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from src.retrievers.intent_analyzer import QueryAnalysis, QueryIntent
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
-from src.config.settings import settings
 from src.retrievers.query_expander import QueryExpander, ExpandedQuery
-from src.models.llm_models import SmartRetrievalStrategy
 import logging
 
 logger = logging.getLogger(__name__)

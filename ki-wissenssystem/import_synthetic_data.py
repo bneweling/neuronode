@@ -7,7 +7,6 @@ Importiert die JSON-Dateien in Neo4j und ChromaDB
 import json
 import sys
 import os
-from pathlib import Path
 
 # Add src to path
 sys.path.append('src')

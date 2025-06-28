@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
 class QueryRequest(BaseModel):
     """Request model for query processing"""

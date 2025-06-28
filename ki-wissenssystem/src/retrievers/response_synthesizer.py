@@ -7,7 +7,6 @@ from src.retrievers.intent_analyzer import QueryAnalysis, QueryIntent
 from src.config.llm_config import llm_router, ModelPurpose
 from src.orchestration.auto_relationship_discovery import AutoRelationshipDiscovery
 from langchain.prompts import ChatPromptTemplate
-from langchain.schema import BaseMessage
 import logging
 
 logger = logging.getLogger(__name__)

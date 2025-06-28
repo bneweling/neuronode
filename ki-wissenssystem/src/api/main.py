@@ -16,7 +16,6 @@ sys.path.insert(0, str(project_root))
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from contextlib import asynccontextmanager
 import uvicorn
 from typing import Optional, List, Dict, Any
 import asyncio
@@ -35,7 +34,6 @@ from src.orchestration.graph_gardener import GraphGardener
 from src.document_processing.document_processor import DocumentProcessor
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
-from src.config.settings import settings
 from src.config.exceptions import (
     ErrorCode, DocumentProcessingError, LLMServiceError, 
     DatabaseError, SystemError, QueryProcessingError

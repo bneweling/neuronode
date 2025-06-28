@@ -18,7 +18,6 @@ sys.path.append(str(Path(__file__).parent))
 try:
     from src.config.settings import settings
     import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
     import requests
 except ImportError as e:
     print(f"❌ Import Error: {e}")

@@ -21,7 +21,6 @@ try:
     from retrievers.query_expander import QueryExpander
     from orchestration.auto_relationship_discovery import AutoRelationshipDiscovery
     from storage.neo4j_client import Neo4jClient
-    from config.settings import get_settings
     REAL_IMPORTS_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Import Warning: {e}")

@@ -9,6 +9,10 @@ import uuid
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from src.config.exceptions import (
+    ErrorCode, ProcessingPipelineError, LLMServiceError
+)
+
 logger = logging.getLogger(__name__)
 
 class ChunkAnalysis(BaseModel):
