@@ -8,6 +8,11 @@ from src.retrievers.hybrid_retriever import HybridRetriever
 from src.retrievers.response_synthesizer import ResponseSynthesizer, SynthesizedResponse
 import logging
 
+from src.config.exceptions import (
+    ErrorCode, QueryProcessingError, LLMServiceError, DatabaseError
+)
+from src.utils.error_handler import error_handler, handle_exceptions, retry_with_backoff
+
 logger = logging.getLogger(__name__)
 
 class QueryOrchestrator:
@@ -94,19 +99,44 @@ class QueryOrchestrator:
             logger.info(f"Query processed successfully in {processing_time:.2f}s")
             return result
             
-        except Exception as e:
-            logger.error(f"Error processing query: {e}", exc_info=True)
+        except QueryProcessingError as e:
+            processing_time = time.time() - start_time
+            error_handler.log_error(e, {"query": query[:100], "processing_time": processing_time})
             
-            # Return error response
             return {
                 "query": query,
-                "response": f"Entschuldigung, bei der Verarbeitung Ihrer Anfrage ist ein Fehler aufgetreten: {str(e)}",
+                "response": f"Ihre Anfrage konnte nicht vollständig verarbeitet werden (Fehlercode: {e.error_code.value}). Bitte versuchen Sie es erneut.",
                 "sources": [],
                 "confidence": 0.0,
                 "metadata": {
                     "error": True,
-                    "error_message": str(e),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "error_code": e.error_code.value,
+                    "error_message": e.message,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "processing_time": round(processing_time, 2)
+                }
+            }
+        except Exception as e:
+            processing_time = time.time() - start_time
+            # Wrap unexpected errors in structured exception
+            structured_error = QueryProcessingError(
+                f"Unexpected error in query processing: {str(e)}",
+                ErrorCode.QUERY_ANALYSIS_FAILED,
+                {"query": query[:100], "processing_time": processing_time},
+                cause=e
+            )
+            error_handler.log_error(structured_error)
+            
+            return {
+                "query": query,
+                "response": "Es ist ein unerwarteter Systemfehler aufgetreten. Bitte kontaktieren Sie den Support.",
+                "sources": [],
+                "confidence": 0.0,
+                "metadata": {
+                    "error": True,
+                    "error_code": structured_error.error_code.value,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "processing_time": round(processing_time, 2)
                 }
             }
     

@@ -4,6 +4,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 from datetime import datetime
+import aiofiles
 
 from src.models.document_types import (
     DocumentType, FileType, ProcessedDocument, 
@@ -122,7 +123,7 @@ class DocumentProcessor:
             chunks=chunks,
             controls=controls,
             metadata={
-                "file_hash": self._calculate_file_hash(file_path),
+                "file_hash": await self._calculate_file_hash(file_path),
                 "processing_timestamp": datetime.utcnow().isoformat(),
                 "raw_metadata": raw_content.get("metadata", {})
             }
@@ -345,11 +346,14 @@ class DocumentProcessor:
                 collection_name
             )
     
-    def _calculate_file_hash(self, file_path: Path) -> str:
+    async def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of file"""
         sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
+        async with aiofiles.open(file_path, "rb") as f:
+            while True:
+                byte_block = await f.read(4096)
+                if not byte_block:
+                    break
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     
@@ -380,13 +384,13 @@ class DocumentProcessor:
         """Erweiterte Dokumentverarbeitung mit Document-Knoten"""
         
         # 1. Metadaten extrahieren
-        print(f"📋 Extrahiere Metadaten für {Path(file_path).name}")
-        metadata = self.metadata_extractor.extract_metadata(file_path)
+        logger.info(f"Extracting metadata for document: {Path(file_path).name}")
+        metadata = await self.metadata_extractor.extract_metadata(file_path)
         
         # 2. Duplikat-Prüfung
         existing_doc = self.neo4j.find_document_by_hash(metadata['hash'])
         if existing_doc:
-            print(f"⚠️  Dokument bereits verarbeitet: {existing_doc['filename']}")
+            logger.info(f"Document already processed: {existing_doc['filename']}")
             return {
                 'status': 'duplicate',
                 'document_id': existing_doc['id'],
@@ -394,7 +398,7 @@ class DocumentProcessor:
             }
         
         # 3. Document-Knoten erstellen
-        print(f"📄 Erstelle Document-Knoten")
+        logger.info("Creating document node in graph database")
         document_id = self.neo4j.create_document_node(metadata)
         
         # 4. Inhalt verarbeiten (bestehende Logik)
@@ -438,7 +442,7 @@ class DocumentProcessor:
             old_doc = result.single()
             if old_doc:
                 self.neo4j.link_document_versions(document_id, old_doc['old_doc_id'])
-                print(f"🔄 Verknüpft mit Vorgängerversion")
+                logger.info("Linking document with previous version")
 
     def close(self):
         """Clean up resources"""

@@ -6,6 +6,11 @@ import uuid
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import logging
 
+from src.config.exceptions import (
+    ErrorCode, DatabaseError, SystemError
+)
+from src.utils.error_handler import error_handler, handle_exceptions, retry_with_backoff
+
 logger = logging.getLogger(__name__)
 
 class ChromaClient:
@@ -19,8 +24,14 @@ class ChromaClient:
             # Test connection
             self.client.heartbeat()
         except Exception as e:
-            logger.error(f"Failed to connect to ChromaDB: {e}")
-            raise
+            db_error = DatabaseError(
+                f"Failed to connect to ChromaDB: {str(e)}",
+                ErrorCode.DB_CONNECTION_FAILED,
+                {"host": settings.chroma_host, "port": settings.chroma_port},
+                cause=e
+            )
+            error_handler.log_error(db_error)
+            raise db_error
         
         # Configure Gemini embeddings via LangChain
         self.embeddings = GoogleGenerativeAIEmbeddings(
@@ -35,8 +46,14 @@ class ChromaClient:
             embedding = self.embeddings.embed_query(text)
             return embedding
         except Exception as e:
-            logger.error(f"Error generating embedding: {e}")
-            raise
+            db_error = DatabaseError(
+                f"Error generating embedding with Gemini: {str(e)}",
+                ErrorCode.DB_EMBEDDING_FAILED,
+                {"text_length": len(text)},
+                cause=e
+            )
+            error_handler.log_error(db_error)
+            raise db_error
     
     def _init_collections(self):
         """Initialize collections for different document types"""

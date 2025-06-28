@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
+import aiofiles
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +37,14 @@ class DocumentMetadataExtractor:
             'CIS': r'CIS.*Controls.*v?(\d+\.?\d*)'
         }
     
-    def extract_metadata(self, file_path: str) -> Dict[str, Any]:
+    async def extract_metadata(self, file_path: str) -> Dict[str, Any]:
         """Hauptmethode: Extrahiert alle Metadaten"""
         file_path = Path(file_path)
         
         # Basis-Metadaten
         metadata = {
             'filename': file_path.name,
-            'hash': self._calculate_hash(file_path),
+            'hash': await self._calculate_hash(file_path),
             'file_size': file_path.stat().st_size,
             'document_type': self._detect_document_type(file_path),
             'source_url': None,
@@ -57,19 +58,20 @@ class DocumentMetadataExtractor:
         
         # Format-spezifische Metadaten
         if file_path.suffix.lower() == '.pdf' and PDF_SUPPORT:
-            pdf_metadata = self._extract_pdf_metadata(file_path)
+            pdf_metadata = await self._extract_pdf_metadata(file_path)
             metadata.update(pdf_metadata)
         elif file_path.suffix.lower() in ['.docx', '.doc'] and DOCX_SUPPORT:
-            doc_metadata = self._extract_docx_metadata(file_path)
+            doc_metadata = await self._extract_docx_metadata(file_path)
             metadata.update(doc_metadata)
         
         return metadata
     
-    def _calculate_hash(self, file_path: Path) -> str:
+    async def _calculate_hash(self, file_path: Path) -> str:
         """SHA-256 Hash des Dokuments"""
         try:
-            with open(file_path, 'rb') as f:
-                return hashlib.sha256(f.read()).hexdigest()
+            async with aiofiles.open(file_path, 'rb') as f:
+                content = await f.read()
+                return hashlib.sha256(content).hexdigest()
         except Exception as e:
             logger.error(f"Hash-Berechnung fehlgeschlagen für {file_path}: {e}")
             return hashlib.sha256(str(file_path).encode()).hexdigest()  # Fallback
@@ -108,13 +110,16 @@ class DocumentMetadataExtractor:
         
         return result
     
-    def _extract_pdf_metadata(self, file_path: Path) -> Dict[str, Any]:
+    async def _extract_pdf_metadata(self, file_path: Path) -> Dict[str, Any]:
         """PDF-spezifische Metadaten"""
         metadata = {'page_count': 0, 'author': None}
         
         try:
-            with open(file_path, 'rb') as f:
-                pdf_reader = PyPDF2.PdfReader(f)
+            async with aiofiles.open(file_path, 'rb') as f:
+                content = await f.read()
+                # PyPDF2 requires a file-like object, so we use BytesIO
+                from io import BytesIO
+                pdf_reader = PyPDF2.PdfReader(BytesIO(content))
                 metadata['page_count'] = len(pdf_reader.pages)
                 
                 if pdf_reader.metadata:
@@ -124,7 +129,7 @@ class DocumentMetadataExtractor:
         
         return metadata
     
-    def _extract_docx_metadata(self, file_path: Path) -> Dict[str, Any]:
+    async def _extract_docx_metadata(self, file_path: Path) -> Dict[str, Any]:
         """DOCX-spezifische Metadaten"""
         metadata = {'page_count': 0, 'author': None}
         

@@ -224,7 +224,7 @@ class LLMRouter:
                 if name in self.models:
                     models.append(self.models[name])
                 else:
-                    print(f"Warning: Model {name} not found, using fallback")
+                    logger.warning(f"Model {name} not found, using fallback")
                     # Fallback to available models
                     fallback = self._get_fallback_model(name)
                     if fallback and fallback in self.models:
@@ -235,7 +235,7 @@ class LLMRouter:
             if model_name in self.models:
                 return self.models[model_name]
             else:
-                print(f"Warning: Model {model_name} not found, using fallback")
+                logger.warning(f"Model {model_name} not found, using fallback")
                 fallback = self._get_fallback_model(model_name)
                 return self.models.get(fallback, self.models["gpt-4o"])
     
@@ -277,7 +277,7 @@ class LLMRouter:
             raise ValueError(f"Invalid profile. Must be one of: {valid_profiles}")
         
         # This would require updating the .env file or environment variable
-        print(f"To switch to '{profile}' profile, set MODEL_PROFILE={profile} in your .env file and restart the application")
+        logger.info(f"To switch to '{profile}' profile, set MODEL_PROFILE={profile} in your .env file and restart the application")
         return f"Profile switch to '{profile}' prepared. Restart required."
 
 llm_router = LLMRouter()
