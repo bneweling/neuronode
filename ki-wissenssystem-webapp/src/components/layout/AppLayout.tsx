@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import {
+  Home as HomeIcon,
+  Chat as ChatIcon,
+  AccountTree as GraphIcon,
+  CloudUpload as UploadIcon,
+  Menu as MenuIcon,
+  AutoAwesome as AIIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material'
 import {
   AppBar,
   Toolbar,
@@ -18,15 +25,8 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import {
-  Home as HomeIcon,
-  Chat as ChatIcon,
-  AccountTree as GraphIcon,
-  CloudUpload as UploadIcon,
-  Menu as MenuIcon,
-  AutoAwesome as AIIcon,
-  Settings as SettingsIcon,
-} from '@mui/icons-material'
+import { useRouter, usePathname } from 'next/navigation'
+import { useState } from 'react'
 
 interface NavigationItem {
   id: string
@@ -106,6 +106,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               edge="start"
               color="inherit"
               aria-label="menu"
+              data-testid="mobile-menu-button"
               onClick={() => setDrawerOpen(true)}
               sx={{ mr: 2 }}
             >
@@ -127,6 +128,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   key={item.id}
                   color="inherit"
                   startIcon={<item.icon />}
+                  data-testid={`${item.id}-nav`}
                   onClick={() => handleNavigation(item.path)}
                   sx={{
                     textTransform: 'none',
@@ -145,6 +147,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {/* Settings Icon - Always visible */}
           <IconButton
             color="inherit"
+            data-testid="settings-nav"
             onClick={() => handleNavigation('/settings')}
             sx={{
               backgroundColor: pathname === '/settings' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
@@ -176,6 +179,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <ListItemButton 
                   onClick={() => handleNavigation(item.path)}
                   selected={pathname === item.path}
+                  data-testid={`mobile-${item.id}-nav`}
                 >
                   <ListItemIcon>
                     <item.icon />

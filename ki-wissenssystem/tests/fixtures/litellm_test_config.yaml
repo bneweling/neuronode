@@ -1,0 +1,98 @@
+model_list:
+  # ===================================================================
+  # ENTERPRISE TEST CONFIGURATION - LITELLM PROXY
+  # ===================================================================
+  
+  # Smart Alias Models for Testing (with Mock Support)
+  - model_name: synthesis_premium
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: test-openai-key
+      mock_response: "This is a premium synthesis response for testing"
+      
+  - model_name: synthesis_balanced
+    litellm_params:
+      model: anthropic/claude-3-haiku
+      api_key: test-anthropic-key
+      mock_response: "This is a balanced synthesis response for testing"
+      
+  - model_name: classification_premium
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: test-openai-key
+      mock_response: "Premium classification result: HIGH_CONFIDENCE"
+      
+  - model_name: classification_balanced
+    litellm_params:
+      model: google/gemini-pro
+      api_key: test-google-key
+      mock_response: "Balanced classification result: MEDIUM_CONFIDENCE"
+      
+  - model_name: extraction_premium
+    litellm_params:
+      model: anthropic/claude-3-sonnet
+      api_key: test-anthropic-key
+      mock_response: "Premium extraction: [Entity1, Entity2, Entity3]"
+
+# LiteLLM Configuration
+litellm_settings:
+  # Test Environment
+  drop_params: true
+  set_verbose: false
+  
+  # Test Database (separate from production)
+  database_url: postgresql://test_user:test_pass@test-postgres:5432/test_litellm_db
+  
+  # Test Rate Limits
+  rpm: 10000
+  tpm: 1000000
+  
+  # Test Caching (disabled for deterministic tests)
+  cache: false
+  
+  # Test Logging
+  success_callback: ["database", "prometheus"]
+  failure_callback: ["database"]
+  
+  # Test Budget (unlimited for tests)
+  max_budget: 0
+  budget_duration: null
+
+# Enterprise Test Features
+general_settings:
+  master_key: test-master-key-2025
+  
+  # Test Authentication
+  ui_username: test-admin
+  ui_password: test-admin-2025
+  
+  # Test Environment Flags
+  database_type: postgresql
+  disable_spend_logs: false
+  store_model_in_db: true
+  
+  # Test Proxy Settings
+  num_workers: 1
+  test_mode: true
+  
+  # Test Security
+  allowed_origins: ["http://localhost:3001", "http://test-frontend:3000"]
+  
+# Test Router Configuration
+router_settings:
+  routing_strategy: simple-shuffle
+  redis_host: test-redis
+  redis_port: 6379
+  redis_password: null
+  
+  # Test Fallbacks
+  fallbacks: []
+  
+  # Test Timeouts
+  timeout: 30
+  stream_timeout: 60
+
+# Test Prometheus Metrics
+prometheus_settings:
+  enable_prometheus_metrics: true
+  prometheus_port: 4001 

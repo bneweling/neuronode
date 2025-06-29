@@ -3,9 +3,11 @@ import asyncio
 import time
 from datetime import datetime
 
-from src.retrievers.intent_analyzer import IntentAnalyzer
+# Updated imports for migrated services
+from src.retrievers.intent_analyzer import EnhancedIntentAnalyzer
 from src.retrievers.hybrid_retriever import HybridRetriever
-from src.retrievers.response_synthesizer import ResponseSynthesizer, SynthesizedResponse
+from src.retrievers.response_synthesizer import EnhancedResponseSynthesizer
+from src.models.llm_models import QueryAnalysis, SynthesizedResponse
 import logging
 
 from src.config.exceptions import (
@@ -15,182 +17,357 @@ from src.utils.error_handler import error_handler, handle_exceptions, retry_with
 
 logger = logging.getLogger(__name__)
 
-class QueryOrchestrator:
-    """Main orchestrator for handling user queries"""
+class EnhancedQueryOrchestrator:
+    """
+    Enterprise-grade Query Orchestrator with LiteLLM v1.72.6 Integration
     
-    def __init__(self):
-        self.intent_analyzer = IntentAnalyzer()
-        self.retriever = HybridRetriever()
-        self.synthesizer = ResponseSynthesizer()
+    Coordinates the complete RAG pipeline using migrated LiteLLM-based services:
+    - EnhancedIntentAnalyzer (CRITICAL priority, sub-200ms performance)
+    - HybridRetriever (graph + vector search coordination)
+    - EnhancedResponseSynthesizer (LOW priority, quality-focused)
+    
+    Features:
+    - Strategic request prioritization
+    - End-to-end performance monitoring
+    - Enterprise error handling with fallbacks
+    - Conversation context management
+    - Intelligent caching with TTL
+    """
+    
+    def __init__(self, 
+                 intent_analyzer: Optional[EnhancedIntentAnalyzer] = None,
+                 hybrid_retriever: Optional[HybridRetriever] = None,
+                 response_synthesizer: Optional[EnhancedResponseSynthesizer] = None):
+        """
+        Initialize with dependency injection for enterprise-grade testing and flexibility
         
-        # Cache for frequent queries
+        Args:
+            intent_analyzer: Enhanced intent analyzer with LiteLLM integration
+            hybrid_retriever: Hybrid retrieval system (graph + vector)
+            response_synthesizer: Enhanced response synthesizer with LiteLLM integration
+        """
+        # Dependency injection with fallback initialization
+        self.intent_analyzer = intent_analyzer or EnhancedIntentAnalyzer()
+        self.retriever = hybrid_retriever or HybridRetriever()
+        self.synthesizer = response_synthesizer or EnhancedResponseSynthesizer()
+        
+        # Enterprise caching with performance optimization
         self.query_cache = {}
         self.cache_ttl = 3600  # 1 hour
+        
+        # Performance tracking
+        self.performance_stats = {
+            "total_queries": 0,
+            "cache_hits": 0,
+            "avg_processing_time": 0.0,
+            "error_rate": 0.0
+        }
+        
+        logger.info("EnhancedQueryOrchestrator initialized with LiteLLM v1.72.6 services")
     
-    async def process_query(
+    async def orchestrate_query(
         self,
-        query: str,
+        user_query: str,
         user_context: Optional[Dict[str, Any]] = None,
-        use_cache: bool = True
+        use_cache: bool = True,
+        conversation_context: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Any]:
-        """Process a user query end-to-end"""
+        """
+        Complete end-to-end query orchestration with strategic service coordination
+        
+        Pipeline:
+        1. Intent Analysis (CRITICAL priority, pattern-based + LLM hybrid)
+        2. Retrieval Coordination (graph + vector search optimization)
+        3. Response Synthesis (LOW priority, quality-over-speed)
+        4. Performance tracking and caching
+        
+        Args:
+            user_query: User's natural language query
+            user_context: Additional context metadata
+            use_cache: Enable intelligent caching
+            conversation_context: Previous conversation messages for context
+            
+        Returns:
+            Complete response with sources, metadata, and performance metrics
+        """
         
         start_time = time.time()
+        self.performance_stats["total_queries"] += 1
         
-        # Check cache
+        # Enhanced query with conversation context if available
+        if conversation_context:
+            enhanced_query = self._build_conversation_enhanced_query(user_query, conversation_context)
+        else:
+            enhanced_query = user_query
+        
+        # Check intelligent cache first
         if use_cache:
-            cached_response = self._get_cached_response(query)
+            cached_response = self._get_cached_response(enhanced_query)
             if cached_response:
-                logger.info(f"Returning cached response for query: {query[:50]}...")
-                return cached_response
+                self.performance_stats["cache_hits"] += 1
+                logger.info(f"Cache hit for query: {user_query[:50]}...")
+                return self._add_performance_metadata(cached_response, time.time() - start_time, cached=True)
         
         try:
-            # Step 1: Analyze query intent
-            logger.info(f"Analyzing query: {query[:100]}...")
-            analysis = await self.intent_analyzer.analyze_query(query)
+            # STEP 1: Intent Analysis (CRITICAL Priority - Sub-200ms target)
+            logger.info(f"🔍 Analyzing query intent (CRITICAL priority): {user_query[:100]}...")
+            analysis_start = time.time()
             
-            # Enhance with synonyms
-            analysis = self.intent_analyzer.enhance_query_with_synonyms(analysis)
+            query_analysis = await self.intent_analyzer.analyze_query(enhanced_query)
             
-            # Step 2: Retrieve relevant information
-            logger.info(f"Retrieving information for intent: {analysis.primary_intent}")
+            analysis_time = time.time() - analysis_start
+            logger.info(f"✅ Intent analysis completed in {analysis_time*1000:.1f}ms (target: <200ms)")
+            
+            # STEP 2: Hybrid Retrieval (Coordinated graph + vector search)
+            logger.info(f"📚 Retrieving information for intent: {query_analysis.primary_intent}")
+            retrieval_start = time.time()
+            
             retrieval_results = await self.retriever.retrieve(
-                query, 
-                analysis,
+                enhanced_query, 
+                query_analysis,
                 max_results=20
             )
             
-            logger.info(f"Retrieved {len(retrieval_results)} results")
+            retrieval_time = time.time() - retrieval_start
+            logger.info(f"✅ Retrieved {len(retrieval_results)} results in {retrieval_time*1000:.1f}ms")
             
-            # Step 3: Synthesize response
-            logger.info("Synthesizing response...")
-            response = await self.synthesizer.synthesize_response(
-                query,
-                analysis,
-                retrieval_results
+            # STEP 3: Response Synthesis (LOW Priority - Quality focused)
+            logger.info("🎯 Synthesizing response (LOW priority for quality)...")
+            synthesis_start = time.time()
+            
+            synthesized_response = await self.synthesizer.synthesize_response(
+                enhanced_query,
+                query_analysis,
+                retrieval_results,
+                user_context=user_context
             )
             
-            # Prepare final response
-            processing_time = time.time() - start_time
+            synthesis_time = time.time() - synthesis_start
+            logger.info(f"✅ Response synthesized in {synthesis_time*1000:.1f}ms")
             
-            result = {
-                "query": query,
-                "response": response.answer,
-                "sources": response.sources,
-                "confidence": response.confidence,
-                "follow_up_questions": response.follow_up_questions,
-                "metadata": {
-                    **response.metadata,
-                    "processing_time": round(processing_time, 2),
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "user_context": user_context
-                },
-                "analysis": {
-                    "intent": analysis.primary_intent.value,
-                    "entities": analysis.entities,
-                    "keywords": analysis.search_keywords
+            # STEP 4: Build final enterprise response
+            total_processing_time = time.time() - start_time
+            
+            final_response = self._build_final_response(
+                user_query,
+                query_analysis,
+                synthesized_response,
+                total_processing_time,
+                user_context,
+                performance_breakdown={
+                    "intent_analysis_ms": round(analysis_time * 1000, 1),
+                    "retrieval_ms": round(retrieval_time * 1000, 1),
+                    "synthesis_ms": round(synthesis_time * 1000, 1),
+                    "total_ms": round(total_processing_time * 1000, 1)
                 }
-            }
+            )
             
-            # Cache successful responses
-            if use_cache and response.confidence > 0.7:
-                self._cache_response(query, result)
+            # Cache high-confidence responses
+            if use_cache and synthesized_response.confidence > 0.7:
+                self._cache_response(enhanced_query, final_response)
             
-            logger.info(f"Query processed successfully in {processing_time:.2f}s")
-            return result
+            # Update performance statistics
+            self._update_performance_stats(total_processing_time, success=True)
+            
+            logger.info(f"🚀 Query orchestration completed successfully in {total_processing_time:.2f}s")
+            return final_response
             
         except QueryProcessingError as e:
-            processing_time = time.time() - start_time
-            error_handler.log_error(e, {"query": query[:100], "processing_time": processing_time})
-            
-            return {
-                "query": query,
-                "response": f"Ihre Anfrage konnte nicht vollständig verarbeitet werden (Fehlercode: {e.error_code.value}). Bitte versuchen Sie es erneut.",
-                "sources": [],
-                "confidence": 0.0,
-                "metadata": {
-                    "error": True,
-                    "error_code": e.error_code.value,
-                    "error_message": e.message,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "processing_time": round(processing_time, 2)
-                }
-            }
+            return await self._handle_processing_error(e, user_query, start_time)
         except Exception as e:
-            processing_time = time.time() - start_time
-            # Wrap unexpected errors in structured exception
-            structured_error = QueryProcessingError(
-                f"Unexpected error in query processing: {str(e)}",
-                ErrorCode.QUERY_ANALYSIS_FAILED,
-                {"query": query[:100], "processing_time": processing_time},
-                cause=e
-            )
-            error_handler.log_error(structured_error)
-            
-            return {
-                "query": query,
-                "response": "Es ist ein unerwarteter Systemfehler aufgetreten. Bitte kontaktieren Sie den Support.",
-                "sources": [],
-                "confidence": 0.0,
-                "metadata": {
-                    "error": True,
-                    "error_code": structured_error.error_code.value,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "processing_time": round(processing_time, 2)
-                }
-            }
+            return await self._handle_unexpected_error(e, user_query, start_time)
+    
+    # Legacy compatibility wrapper
+    async def process_query(self, *args, **kwargs) -> Dict[str, Any]:
+        """Legacy compatibility wrapper for existing API calls"""
+        return await self.orchestrate_query(*args, **kwargs)
     
     async def process_conversation(
         self,
         messages: List[Dict[str, str]],
         conversation_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Process a query in conversation context"""
+        """Process a query with full conversation context"""
+        
+        if not messages:
+            raise QueryProcessingError("No messages provided", ErrorCode.QUERY_ANALYSIS_FAILED)
         
         # Extract current query and history
         current_query = messages[-1]["content"]
-        history = messages[:-1]
+        conversation_history = messages[:-1]
         
-        # Build context from history
-        context = self._build_conversation_context(history)
-        
-        # Add context to query if relevant
-        if context:
-            enhanced_query = f"{context}\n\nAktuelle Frage: {current_query}"
-        else:
-            enhanced_query = current_query
-        
-        # Process with context
-        result = await self.process_query(
-            enhanced_query,
+        # Use the enhanced orchestration with conversation context
+        result = await self.orchestrate_query(
+            user_query=current_query,
             user_context={
                 "conversation_id": conversation_id,
                 "message_count": len(messages),
-                "has_history": len(history) > 0
-            }
+                "has_history": len(conversation_history) > 0
+            },
+            conversation_context=conversation_history
         )
         
         return result
     
-    def _build_conversation_context(self, history: List[Dict[str, str]]) -> str:
-        """Build context from conversation history"""
+    def _build_conversation_enhanced_query(self, current_query: str, history: List[Dict[str, str]]) -> str:
+        """Build enhanced query with conversation context"""
         if not history:
-            return ""
+            return current_query
         
-        # Take last 2 exchanges for context
+        # Take last 2 exchanges for context (4 messages max)
         recent_history = history[-4:] if len(history) >= 4 else history
         
         context_parts = ["Kontext aus vorherigem Gespräch:"]
         for msg in recent_history:
             role = "Nutzer" if msg["role"] == "user" else "Assistent"
-            # Truncate long messages
+            # Truncate long messages for efficiency
             content = msg["content"][:200] + "..." if len(msg["content"]) > 200 else msg["content"]
             context_parts.append(f"{role}: {content}")
         
-        return "\n".join(context_parts)
+        context = "\n".join(context_parts)
+        return f"{context}\n\nAktuelle Frage: {current_query}"
+    
+    def _build_final_response(
+        self,
+        original_query: str,
+        analysis: QueryAnalysis,
+        response: SynthesizedResponse,
+        processing_time: float,
+        user_context: Optional[Dict[str, Any]],
+        performance_breakdown: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """Build the final enterprise-grade response with comprehensive metadata"""
+        
+        return {
+            "query": original_query,
+            "response": response.answer,
+            "sources": response.sources,
+            "confidence": response.confidence,
+            "follow_up_questions": response.follow_up_questions,
+            "metadata": {
+                **response.metadata,
+                "processing_time": round(processing_time, 2),
+                "timestamp": datetime.utcnow().isoformat(),
+                "user_context": user_context,
+                "performance_breakdown": performance_breakdown,
+                "orchestrator_version": "EnhancedQueryOrchestrator_v1.72.6",
+                "litellm_integration": True
+            },
+            "analysis": {
+                "intent": analysis.primary_intent.value,
+                "entities": [
+                    {
+                        "text": entity.text,
+                        "type": entity.entity_type,
+                        "confidence": entity.confidence
+                    }
+                    for entity in analysis.entities
+                ],
+                "keywords": analysis.search_keywords,
+                "complexity": analysis.complexity_score,
+                "confidence": analysis.confidence
+            }
+        }
+    
+    async def _handle_processing_error(self, error: QueryProcessingError, query: str, start_time: float) -> Dict[str, Any]:
+        """Handle structured processing errors with fallback strategies"""
+        processing_time = time.time() - start_time
+        error_handler.log_error(error, {"query": query[:100], "processing_time": processing_time})
+        
+        self._update_performance_stats(processing_time, success=False)
+        
+        return {
+            "query": query,
+            "response": f"Ihre Anfrage konnte nicht vollständig verarbeitet werden (Fehlercode: {error.error_code.value}). Bitte versuchen Sie es erneut oder formulieren Sie Ihre Frage anders.",
+            "sources": [],
+            "confidence": 0.0,
+            "follow_up_questions": [
+                "Können Sie Ihre Frage anders formulieren?",
+                "Suchen Sie nach einem spezifischen Standard oder Control?",
+                "Benötigen Sie Implementierungsdetails oder allgemeine Informationen?"
+            ],
+            "metadata": {
+                "error": True,
+                "error_code": error.error_code.value,
+                "error_message": error.message,
+                "timestamp": datetime.utcnow().isoformat(),
+                "processing_time": round(processing_time, 2),
+                "orchestrator_version": "EnhancedQueryOrchestrator_v1.72.6"
+            }
+        }
+    
+    async def _handle_unexpected_error(self, error: Exception, query: str, start_time: float) -> Dict[str, Any]:
+        """Handle unexpected errors with comprehensive logging and user-friendly response"""
+        processing_time = time.time() - start_time
+        
+        # Wrap unexpected errors in structured exception
+        structured_error = QueryProcessingError(
+            f"Unexpected error in query orchestration: {str(error)}",
+            ErrorCode.QUERY_ANALYSIS_FAILED,
+            {"query": query[:100], "processing_time": processing_time, "error_type": type(error).__name__},
+            cause=error
+        )
+        error_handler.log_error(structured_error)
+        
+        self._update_performance_stats(processing_time, success=False)
+        
+        return {
+            "query": query,
+            "response": "Es ist ein unerwarteter Systemfehler aufgetreten. Das Entwicklungsteam wurde benachrichtigt. Bitte versuchen Sie es in wenigen Minuten erneut.",
+            "sources": [],
+            "confidence": 0.0,
+            "follow_up_questions": [
+                "Versuchen Sie es mit einer einfacheren Frage",
+                "Kontaktieren Sie den Support falls das Problem weiterhin besteht"
+            ],
+            "metadata": {
+                "error": True,
+                "error_code": structured_error.error_code.value,
+                "error_type": "unexpected_error",
+                "timestamp": datetime.utcnow().isoformat(),
+                "processing_time": round(processing_time, 2),
+                "orchestrator_version": "EnhancedQueryOrchestrator_v1.72.6"
+            }
+        }
+    
+    def _add_performance_metadata(self, response: Dict[str, Any], processing_time: float, cached: bool = False) -> Dict[str, Any]:
+        """Add performance metadata to cached responses"""
+        if "metadata" not in response:
+            response["metadata"] = {}
+        
+        response["metadata"].update({
+            "processing_time": round(processing_time, 2),
+            "timestamp": datetime.utcnow().isoformat(),
+            "cached": cached,
+            "orchestrator_version": "EnhancedQueryOrchestrator_v1.72.6"
+        })
+        
+        return response
+    
+    def _update_performance_stats(self, processing_time: float, success: bool):
+        """Update internal performance statistics"""
+        # Update average processing time
+        total_queries = self.performance_stats["total_queries"]
+        current_avg = self.performance_stats["avg_processing_time"]
+        self.performance_stats["avg_processing_time"] = (
+            (current_avg * (total_queries - 1) + processing_time) / total_queries
+        )
+        
+        # Update error rate
+        if not success:
+            errors = total_queries * self.performance_stats["error_rate"] + 1
+            self.performance_stats["error_rate"] = errors / total_queries
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Get current performance statistics"""
+        return {
+            **self.performance_stats,
+            "cache_hit_rate": self.performance_stats["cache_hits"] / max(self.performance_stats["total_queries"], 1),
+            "timestamp": datetime.utcnow().isoformat()
+        }
     
     def _get_cached_response(self, query: str) -> Optional[Dict[str, Any]]:
-        """Get response from cache"""
+        """Get response from intelligent cache"""
         cache_key = self._get_cache_key(query)
         
         if cache_key in self.query_cache:
@@ -205,7 +382,7 @@ class QueryOrchestrator:
         return None
     
     def _cache_response(self, query: str, response: Dict[str, Any]):
-        """Cache a response"""
+        """Cache a high-quality response"""
         cache_key = self._get_cache_key(query)
         
         self.query_cache[cache_key] = {
@@ -213,7 +390,7 @@ class QueryOrchestrator:
             "timestamp": time.time()
         }
         
-        # Limit cache size
+        # Limit cache size for memory efficiency
         if len(self.query_cache) > 1000:
             # Remove oldest entries
             sorted_cache = sorted(
@@ -224,7 +401,7 @@ class QueryOrchestrator:
                 del self.query_cache[key]
     
     def _get_cache_key(self, query: str) -> str:
-        """Generate cache key for query"""
+        """Generate normalized cache key for query"""
         # Normalize query for caching
         normalized = query.lower().strip()
         # Remove extra whitespace
@@ -232,22 +409,19 @@ class QueryOrchestrator:
         return normalized
     
     async def get_query_suggestions(self, partial_query: str) -> List[str]:
-        """Get query suggestions based on partial input"""
-        # This could be enhanced with:
-        # - Common query patterns
-        # - Previous successful queries
-        # - Entity-based suggestions
-        
+        """Get intelligent query suggestions based on partial input"""
         suggestions = []
         
-        # Common query starters
+        # Common query starters for compliance and security domain
         starters = [
             "Was fordert BSI C5 zu",
             "Wie implementiere ich",
             "Was ist der Unterschied zwischen",
             "Zeige mir alle Controls für",
             "Best Practices für",
-            "Wie erfülle ich"
+            "Wie erfülle ich",
+            "Welche Anforderungen gibt es für",
+            "Wie kann ich nachweisen dass"
         ]
         
         for starter in starters:
@@ -255,3 +429,6 @@ class QueryOrchestrator:
                 suggestions.append(starter)
         
         return suggestions[:5]
+
+# Legacy compatibility alias
+QueryOrchestrator = EnhancedQueryOrchestrator

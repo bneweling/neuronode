@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+
 import { configManager, type AppConfig, type AppMode } from '@/config/environment'
 
 export interface UseAppConfigReturn {

@@ -161,9 +161,9 @@ export class MockAPIService implements KIWissenssystemAPI {
     const elapsedSeconds = Math.floor((now - taskStartTime) / 1000)
     
     let status = 'processing'
-    let progress = Math.min(100, Math.floor(elapsedSeconds * 10))
+    const progress = Math.min(100, Math.floor(elapsedSeconds * 10))
     let currentStep = 'loading'
-    let stepsCompleted: string[] = []
+    const stepsCompleted: string[] = []
     
     if (progress >= 20) {
       stepsCompleted.push('loading')
@@ -205,6 +205,7 @@ export class MockAPIService implements KIWissenssystemAPI {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async uploadDocument(formData: FormData): Promise<{ success: boolean; id?: string; status?: string; task_id?: string; filename?: string; document_type?: string; num_chunks?: number; num_controls?: number; metadata?: any; processing_duration?: number; quality_score?: number; extracted_entities?: string[]; graph_nodes_created?: number; graph_relationships_created?: number }> {
     await this.simulateDelay(2000)
     

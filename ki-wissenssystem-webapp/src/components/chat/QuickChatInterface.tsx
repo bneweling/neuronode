@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import {
+  Send as SendIcon,
+  Chat as ChatIcon,
+} from '@mui/icons-material'
 import {
   Box,
   Paper,
@@ -12,10 +14,8 @@ import {
   Fade,
   Grow,
 } from '@mui/material'
-import {
-  Send as SendIcon,
-  Chat as ChatIcon,
-} from '@mui/icons-material'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 
 interface QuickChatInterfaceProps {

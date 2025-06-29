@@ -1,0 +1,231 @@
+version: '3.8'
+
+services:
+  # ===================================================================
+  # ENTERPRISE TEST ENVIRONMENT - ISOLATED & DETERMINISTIC
+  # ===================================================================
+  
+  test-backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: test-ki-backend
+    environment:
+      # Test Database Configuration
+      - DATABASE_URL=postgresql://test_user:test_pass@test-postgres:5432/test_ki_db
+      - REDIS_URL=redis://test-redis:6379/0
+      
+      # Test LiteLLM Configuration
+      - LITELLM_PROXY_URL=http://test-litellm:4000
+      - LITELLM_MASTER_KEY=test-master-key-2025
+      
+      # Test Neo4j Configuration
+      - NEO4J_URI=bolt://test-neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=testpassword
+      
+      # Test ChromaDB Configuration
+      - CHROMADB_URL=http://test-chromadb:8000
+      
+      # Test Environment Settings
+      - ENVIRONMENT=test
+      - LOG_LEVEL=DEBUG
+      - JWT_SECRET_KEY=test-jwt-secret-key-enterprise
+      - JWT_REFRESH_SECRET_KEY=test-jwt-refresh-secret-key
+      
+      # Test-specific Features
+      - ENABLE_AUDIT_LOGGING=true
+      - ENABLE_PERFORMANCE_MONITORING=true
+      - ENABLE_RBAC_TESTING=true
+    ports:
+      - "8003:8000"  # Backend API
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+      test-litellm:
+        condition: service_started
+      test-neo4j:
+        condition: service_healthy
+      test-chromadb:
+        condition: service_started
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # LiteLLM Proxy for Testing
+  test-litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: test-litellm-proxy
+    environment:
+      - LITELLM_MASTER_KEY=test-master-key-2025
+      - DATABASE_URL=postgresql://test_user:test_pass@test-postgres:5432/test_litellm_db
+      - STORE_MODEL_IN_DB=True
+      - LITELLM_MODE=TEST
+      # Test API Keys (Mock/Demo Keys)
+      - OPENAI_API_KEY=test-openai-key
+      - ANTHROPIC_API_KEY=test-anthropic-key
+      - GOOGLE_API_KEY=test-google-key
+    ports:
+      - "4002:4000"
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+    networks:
+      - test-network
+    command: [
+      "--config", "/app/test_config.yaml",
+      "--port", "4000",
+      "--num_workers", "1"
+    ]
+    volumes:
+      - ./tests/fixtures/litellm_test_config.yaml:/app/test_config.yaml
+
+  # PostgreSQL for Testing
+  test-postgres:
+    image: postgres:15-alpine
+    container_name: test-postgres
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_pass
+      - POSTGRES_DB=postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ./tests/fixtures/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Testing
+  test-redis:
+    image: redis:7-alpine
+    container_name: test-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - test_redis_data:/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Neo4j for Testing
+  test-neo4j:
+    image: neo4j:5-community
+    container_name: test-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/testpassword
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    ports:
+      - "7688:7687"  # Bolt
+      - "7475:7474"  # HTTP
+    volumes:
+      - test_neo4j_data:/data
+      - test_neo4j_logs:/logs
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "testpassword", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ChromaDB for Testing
+  test-chromadb:
+    image: chromadb/chroma:latest
+    container_name: test-chromadb
+    environment:
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER=chromadb.auth.token.TokenAuthCredentialsProvider
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=X-Chroma-Token
+      - CHROMA_SERVER_AUTH_CREDENTIALS=test-token
+    ports:
+      - "8002:8000"
+    volumes:
+      - test_chromadb_data:/chroma/chroma
+    networks:
+      - test-network
+
+  # Frontend for E2E Testing
+  test-frontend:
+    build:
+      context: ../ki-wissenssystem-webapp
+      dockerfile: Dockerfile.production
+    container_name: test-frontend
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://test-backend:8000
+      - NEXT_PUBLIC_WS_URL=ws://test-backend:8000
+      - NODE_ENV=test
+    ports:
+      - "3001:3000"
+    depends_on:
+      test-backend:
+        condition: service_healthy
+    networks:
+      - test-network
+
+  # Test Runner Container
+  test-runner:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.test
+    container_name: test-runner
+    environment:
+      - TEST_BACKEND_URL=http://test-backend:8000
+      - TEST_FRONTEND_URL=http://test-frontend:3000
+      - TEST_LITELLM_URL=http://test-litellm:4000
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    volumes:
+      - ./tests:/app/tests
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    depends_on:
+      test-backend:
+        condition: service_healthy
+      test-frontend:
+        condition: service_started
+    networks:
+      - test-network
+    profiles:
+      - test-execution
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  test_postgres_data:
+  test_redis_data:
+  test_neo4j_data:
+  test_neo4j_logs:
+  test_chromadb_data:
+
+# ===================================================================
+# USAGE COMMANDS
+# ===================================================================
+# Start Test Environment:     docker-compose -f docker-compose.test.yml up -d
+# Run Tests:                   docker-compose -f docker-compose.test.yml --profile test-execution up test-runner
+# View Logs:                   docker-compose -f docker-compose.test.yml logs -f test-backend
+# Clean Test Environment:      docker-compose -f docker-compose.test.yml down -v
+# =================================================================== 

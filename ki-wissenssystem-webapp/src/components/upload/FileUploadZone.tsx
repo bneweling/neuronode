@@ -1,46 +1,55 @@
 'use client'
 
-import { useState, useRef, useCallback, useMemo } from 'react'
+import {
+  CloudUpload as CloudUploadIcon,
+  Description as DocumentIcon,
+  Delete as DeleteIcon,
+  Folder as FolderIcon,
+  AccountTree as GraphIcon,
+} from '@mui/icons-material'
 import {
   Box,
   Paper,
   Typography,
   Button,
   List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   LinearProgress,
   Alert,
   Chip,
-  Container,
+
   IconButton,
   Card,
   CardContent,
   Divider,
 } from '@mui/material'
-import {
-  CloudUpload as CloudUploadIcon,
-  Description as DocumentIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Folder as FolderIcon,
-  Analytics as AnalyticsIcon,
-  AccountTree as GraphIcon,
-} from '@mui/icons-material'
+import { useState, useRef, useCallback, useMemo } from 'react'
+
+import InlineErrorDisplay from '@/components/error/InlineErrorDisplay'
+import { useDocumentApiError } from '@/hooks/useDocumentApi'
 import { getAPIClient } from '@/lib/serviceFactory'
+
+// K3.1.3 BackendError interface for compatibility
+interface BackendError {
+  error_code: string
+  message: string
+  details?: string
+  status_code: number
+  retryable?: boolean
+}
 
 interface UploadFile {
   id: string
   file: File
   status: 'pending' | 'analyzing' | 'uploading' | 'processing' | 'success' | 'error'
   progress: number
-  error?: string
+  error?: string // Legacy support for display
+  backendError?: BackendError // K3.1 Enhanced error handling
   analysis?: DocumentAnalysis
   result?: ProcessingResult
   taskId?: string
   currentStep?: string
+  canRetry?: boolean // K3.1 Intelligent retry capability
+  retryCount?: number // K3.1 Retry tracking
 }
 
 interface DocumentAnalysis {
@@ -69,6 +78,7 @@ interface DocumentAnalysis {
 interface DocumentAnalysisResponse extends DocumentAnalysis {
   status?: string
   message?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -81,6 +91,7 @@ interface UploadResponse {
   document_type?: string
   num_chunks?: number
   num_controls?: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: any
   processing_duration?: number
   quality_score?: number
@@ -95,6 +106,7 @@ interface ProcessingResult {
   document_type?: string
   num_chunks?: number
   num_controls?: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: any
   processing_duration?: number
   quality_score?: number
@@ -120,16 +132,39 @@ interface ProcessingStatus {
   processing_end_time?: string
 }
 
-export default function FileUploadZone() {
+function FileUploadZoneCore() {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // K3.1 Enhanced Error Handling for Document Processing
+  const {
+    executeWithErrorHandling
+  } = useDocumentApiError({
+    onError: (backendError) => {
+      console.error('Document Processing Error:', {
+        error_code: backendError.error_code,
+        message: backendError.message,
+        retryable: backendError.retryable
+      })
+    },
+    onRetry: (retryCount) => {
+      console.log(`Document processing retry attempt #${retryCount}`)
+    },
+    onSuccess: () => {
+      console.log('Document processing operation successful')
+    }
+  })
+
   const acceptedTypes = useMemo(() => [
     '.pdf', '.doc', '.docx', '.txt', '.md', '.rtf',
     '.xlsx', '.xls', '.csv', '.pptx', '.ppt'
   ], [])
+
+
+
+
 
   const addFiles = useCallback(async (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
@@ -150,29 +185,39 @@ export default function FileUploadZone() {
     for (const uploadFile of uploadFiles) {
       await analyzeFile(uploadFile)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedTypes])
 
-  const analyzeFile = async (uploadFile: UploadFile) => {
+  const analyzeFile = useCallback(async (uploadFile: UploadFile) => {
     setFiles(prev => prev.map(f => 
       f.id === uploadFile.id 
-        ? { ...f, status: 'analyzing', progress: 10 }
+        ? { ...f, status: 'analyzing', progress: 10, error: undefined, backendError: undefined }
         : f
     ))
 
-    try {
-      const apiClient = getAPIClient()
-      const formData = new FormData()
-      formData.append('file', uploadFile.file)
+    // K3.1 Enhanced analysis with intelligent error handling
+    const analysis = await executeWithErrorHandling(
+      async () => {
+        const apiClient = getAPIClient()
+        const formData = new FormData()
+        formData.append('file', uploadFile.file)
+        return await apiClient.analyzeDocumentPreview(formData) as DocumentAnalysisResponse
+      },
+      {
+        retryable: true, // Document analysis can be retried
+        context: `document-analysis-${uploadFile.file.name}`
+      }
+    )
 
-      const analysis = await apiClient.analyzeDocumentPreview(formData) as DocumentAnalysisResponse
-      
-      // Erfolgreiche Analyse - verwende die Daten direkt
+    if (analysis) {
+      // Successful analysis - use the data directly
       setFiles(prev => prev.map(f => 
         f.id === uploadFile.id 
           ? { 
               ...f, 
               status: 'pending',
               progress: 0,
+              error: (analysis.warnings && analysis.warnings.length > 0) ? `Warnung: ${analysis.warnings[0]}` : undefined,
               analysis: {
                 predicted_document_type: analysis.predicted_document_type || 'unknown',
                 file_type: analysis.file_type || 'unknown', 
@@ -194,186 +239,180 @@ export default function FileUploadZone() {
                 file_size_mb: analysis.file_size_mb,
                 complexity_score: analysis.complexity_score,
                 warnings: analysis.warnings
-              },
-              error: (analysis.warnings && analysis.warnings.length > 0) ? `Warnung: ${analysis.warnings[0]}` : undefined
+              }
             }
           : f
       ))
-      
-    } catch (error) {
-      console.error('Analyse-Fehler:', error)
-      
-      // Enhanced error handling with user-friendly messages
-      let errorMessage = 'Analyse fehlgeschlagen'
-      let allowUpload = true
-      
-      if (error instanceof Error) {
-        if (error.message?.includes('quota') || error.message?.includes('429')) {
-          errorMessage = 'API-Limit erreicht - Upload trotzdem möglich'
-          allowUpload = true
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-          errorMessage = 'Netzwerkfehler - Upload trotzdem möglich'
-          allowUpload = true
-        }
-      }
-      
+    } else {
+      // Analysis failed - provide fallback analysis for graceful degradation
       setFiles(prev => prev.map(f => 
         f.id === uploadFile.id 
           ? { 
               ...f, 
-              status: allowUpload ? 'pending' : 'error',
+              status: 'pending',
               progress: 0,
-              error: errorMessage,
-              analysis: allowUpload ? {
+              error: 'Analyse fehlgeschlagen. Datei wird mit Standardeinstellungen verarbeitet.',
+              analysis: {
                 predicted_document_type: 'unknown',
                 file_type: uploadFile.file.name.split('.').pop()?.toLowerCase() || 'unknown',
-                preview_text: 'Vorschau aufgrund von API-Problemen nicht verfügbar',
+                preview_text: 'Vorschau nicht verfügbar aufgrund von Analyse-Fehler',
                 processing_estimate: {
                   estimated_duration_seconds: 60,
                   estimated_chunks: Math.max(1, Math.floor(uploadFile.file.size / 10000)),
                   will_extract_controls: false,
-                  processing_steps: ['File upload', 'Basic processing', 'Content extraction']
+                  processing_steps: ['File upload', 'Fallback processing', 'Content extraction']
                 },
                 confidence_indicators: {
-                  type_detection: 'medium',
+                  type_detection: 'low',
                   classification: 'fallback'
                 },
-                estimated_processing_time: 'Nicht verfügbar',
+                estimated_processing_time: 'Unbekannt',
                 estimated_chunk_count: 0,
                 estimated_control_count: 0,
-                preview_image: 'Nicht verfügbar',
-                file_size_mb: 0,
+                preview_image: undefined,
+                file_size_mb: uploadFile.file.size / (1024 * 1024),
                 complexity_score: 0,
-                warnings: ['API-Fehler']
-              } : undefined
+                warnings: ['Analyse fehlgeschlagen - Fallback-Verarbeitung wird verwendet']
+              }
             }
           : f
       ))
     }
-  }
+  }, [executeWithErrorHandling])
 
-  const uploadSingleFile = async (uploadFile: UploadFile) => {
+  const uploadSingleFile = useCallback(async (uploadFile: UploadFile) => {
     setFiles(prev => prev.map(f => 
       f.id === uploadFile.id 
-        ? { ...f, status: 'uploading', progress: 0 }
+        ? { ...f, status: 'uploading', progress: 0, error: undefined, backendError: undefined }
         : f
     ))
 
-    try {
-      const apiClient = getAPIClient()
-      const formData = new FormData()
-      formData.append('file', uploadFile.file)
+    // Upload-Progress simulieren bis 30%
+    const uploadInterval = setInterval(() => {
+      setFiles(prev => prev.map(f => 
+        f.id === uploadFile.id && f.progress < 30
+          ? { ...f, progress: Math.min(f.progress + 5, 30) }
+          : f
+      ))
+    }, 100)
 
-      // Upload-Progress simulieren bis 30%
-      const uploadInterval = setInterval(() => {
+    // K3.1 Enhanced upload with intelligent error handling
+    const response = await executeWithErrorHandling(
+      async () => {
+        const apiClient = getAPIClient()
+        const formData = new FormData()
+        formData.append('file', uploadFile.file)
+        return await apiClient.uploadDocument(formData) as UploadResponse
+      },
+      {
+        retryable: true, // Document uploads can be retried
+        context: `document-upload-${uploadFile.file.name}`
+      }
+    )
+
+    clearInterval(uploadInterval)
+
+    if (response && response.success) {
+      if (response.status === 'processing' && response.task_id) {
+        // Background processing - Status überwachen
         setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id && f.progress < 30
-            ? { ...f, progress: Math.min(f.progress + 5, 30) }
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'processing',
+                progress: 40,
+                taskId: response.task_id
+              }
             : f
         ))
-      }, 100)
-
-      try {
-        const response = await apiClient.uploadDocument(formData) as UploadResponse
         
-        clearInterval(uploadInterval)
-        
-        if (response && response.success) {
-          if (response.status === 'processing' && response.task_id) {
-            // Background processing - Status überwachen
-            setFiles(prev => prev.map(f => 
-              f.id === uploadFile.id 
-                ? { 
-                    ...f, 
-                    status: 'processing',
-                    progress: 40,
-                    taskId: response.task_id
-                  }
-                : f
-            ))
-            
-            await monitorProcessing(uploadFile.id, response.task_id)
-          } else if (response.status === 'completed') {
-            // Sofort abgeschlossen - direkte Verarbeitung erfolgreich
-            setFiles(prev => prev.map(f => 
-              f.id === uploadFile.id 
-                ? { 
-                    ...f, 
-                    status: 'success' as const,
-                    progress: 100,
-                    result: {
-                      filename: response.filename || uploadFile.file.name,
-                      status: response.status || 'completed',
-                      document_type: response.document_type || 'unknown',
-                      num_chunks: response.num_chunks || 0,
-                      num_controls: response.num_controls || 0,
-                      metadata: response.metadata || {},
-                      processing_duration: response.processing_duration,
-                      quality_score: response.quality_score,
-                      extracted_entities: response.extracted_entities,
-                      graph_nodes_created: response.graph_nodes_created,
-                      graph_relationships_created: response.graph_relationships_created
-                    }
-                  }
-                : f
-            ))
-          } else if (response.status === 'upload_only' || response.status === 'processed_simple') {
-            // Teilweise erfolgreich - Upload OK, aber Processing eingeschränkt
-            setFiles(prev => prev.map(f => 
-              f.id === uploadFile.id 
-                ? { 
-                    ...f, 
-                    status: 'success' as const,
-                    progress: 100,
-                    result: {
-                      filename: response.filename || uploadFile.file.name,
-                      status: response.status || 'processed',
-                      document_type: response.document_type || 'unknown',
-                      num_chunks: response.num_chunks || 0,
-                      num_controls: response.num_controls || 0,
-                      metadata: response.metadata || {},
-                      processing_duration: response.processing_duration,
-                      quality_score: response.quality_score,
-                      extracted_entities: response.extracted_entities,
-                      graph_nodes_created: response.graph_nodes_created,
-                      graph_relationships_created: response.graph_relationships_created
-                    }
-                  }
-                : f
-            ))
-          }
-        } else {
-          throw new Error('Upload response indicates failure')
-        }
-      } catch (uploadError) {
-        clearInterval(uploadInterval)
-        throw uploadError
+        await monitorProcessing(uploadFile.id, response.task_id)
+      } else if (response.status === 'completed') {
+        // Sofort abgeschlossen - direkte Verarbeitung erfolgreich
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'success' as const,
+                progress: 100,
+                result: {
+                  filename: response.filename || uploadFile.file.name,
+                  status: response.status || 'completed',
+                  document_type: response.document_type || 'unknown',
+                  num_chunks: response.num_chunks || 0,
+                  num_controls: response.num_controls || 0,
+                  metadata: response.metadata || {},
+                  processing_duration: response.processing_duration,
+                  quality_score: response.quality_score,
+                  extracted_entities: response.extracted_entities,
+                  graph_nodes_created: response.graph_nodes_created,
+                  graph_relationships_created: response.graph_relationships_created
+                }
+              }
+            : f
+        ))
+      } else if (response.status === 'upload_only' || response.status === 'processed_simple') {
+        // Teilweise erfolgreich - Upload OK, aber Processing eingeschränkt
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'success' as const,
+                progress: 100,
+                result: {
+                  filename: response.filename || uploadFile.file.name,
+                  status: response.status || 'processed',
+                  document_type: response.document_type || 'unknown',
+                  num_chunks: response.num_chunks || 0,
+                  num_controls: response.num_controls || 0,
+                  metadata: response.metadata || {},
+                  processing_duration: response.processing_duration,
+                  quality_score: response.quality_score,
+                  extracted_entities: response.extracted_entities,
+                  graph_nodes_created: response.graph_nodes_created,
+                  graph_relationships_created: response.graph_relationships_created
+                }
+              }
+            : f
+        ))
       }
-    } catch (error) {
-      console.error('Upload-Fehler:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Upload fehlgeschlagen'
+    } else if (response && !response.success) {
+      // Handle non-success response
+      const errorMessage = 'Upload wurde vom Server abgelehnt.'
       setFiles(prev => prev.map(f => 
         f.id === uploadFile.id 
           ? { 
               ...f, 
               status: 'error', 
               progress: 0,
-              error: 'Upload fehlgeschlagen. Bitte versuchen Sie es erneut.'
+              error: errorMessage,
+              canRetry: true,
+              retryCount: (f.retryCount || 0)
             }
           : f
       ))
     }
-  }
+    // If response is null, the error is already handled by executeWithErrorHandling
+  }, [executeWithErrorHandling])
 
-  const monitorProcessing = async (fileId: string, taskId: string) => {
+  const monitorProcessing = useCallback(async (fileId: string, taskId: string) => {
     const maxAttempts = 60 // 5 Minuten
     let attempts = 0
 
     const checkStatus = async () => {
-      try {
-        const apiClient = getAPIClient()
-        const status: ProcessingStatus = await apiClient.getProcessingStatus(taskId)
-        
+      // K3.1 Enhanced status checking with intelligent error handling
+      const status = await executeWithErrorHandling(
+        async () => {
+          const apiClient = getAPIClient()
+          return await apiClient.getProcessingStatus(taskId) as ProcessingStatus
+        },
+        {
+          retryable: true, // Status checks can be retried
+          context: `processing-status-${taskId}`
+        }
+      )
+
+      if (status) {
         setFiles(prev => prev.map(f => 
           f.id === fileId 
             ? { 
@@ -413,24 +452,49 @@ export default function FileUploadZone() {
           ))
           return
         } else if (status.status === 'failed' || status.status === 'error') {
-          throw new Error('Verarbeitung fehlgeschlagen')
+          // Handle processing failure with proper error information
+          setFiles(prev => prev.map(f => 
+            f.id === fileId 
+              ? { 
+                  ...f, 
+                  status: 'error',
+                  error: 'Dokumentverarbeitung fehlgeschlagen. Überprüfen Sie das Dateiformat.',
+                  canRetry: false, // Processing failures are usually not retryable
+                  retryCount: (f.retryCount || 0)
+                }
+              : f
+          ))
+          return
         }
 
         attempts++
         if (attempts < maxAttempts) {
           setTimeout(checkStatus, 5000)
         } else {
-          throw new Error('Timeout bei der Verarbeitung')
+          // Timeout handling
+          setFiles(prev => prev.map(f => 
+            f.id === fileId 
+              ? { 
+                  ...f, 
+                  status: 'error',
+                  error: 'Verarbeitung dauerte zu lange. Bitte versuchen Sie es mit einer kleineren Datei.',
+                  canRetry: true, // Timeouts can be retried
+                  retryCount: (f.retryCount || 0)
+                }
+              : f
+          ))
         }
-
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      } else {
+        // Status check failed - already handled by executeWithErrorHandling
+        // But we need to stop the monitoring loop
         setFiles(prev => prev.map(f => 
           f.id === fileId 
             ? { 
                 ...f, 
                 status: 'error',
-                error: `Verarbeitung fehlgeschlagen: ${errorMessage}`
+                error: 'Status-Abfrage fehlgeschlagen. Verarbeitung möglicherweise unterbrochen.',
+                canRetry: true,
+                retryCount: (f.retryCount || 0)
               }
             : f
         ))
@@ -438,7 +502,7 @@ export default function FileUploadZone() {
     }
 
     checkStatus()
-  }
+  }, [executeWithErrorHandling])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -467,6 +531,38 @@ export default function FileUploadZone() {
     setFiles(prev => prev.filter(file => file.id !== id))
   }
 
+  // K3.1 Retry function for failed uploads
+  const retryFile = useCallback(async (uploadFile: UploadFile) => {
+    if (!uploadFile.canRetry || (uploadFile.retryCount || 0) >= 3) {
+      console.warn('File cannot be retried or max retries reached')
+      return
+    }
+
+    // Update retry count and clear error state
+    setFiles(prev => prev.map(f => 
+      f.id === uploadFile.id 
+        ? { 
+            ...f, 
+            status: 'pending',
+            progress: 0,
+            error: undefined,
+            backendError: undefined,
+            retryCount: (f.retryCount || 0) + 1
+          }
+        : f
+    ))
+
+    // Re-analyze the file if needed, then upload
+    if (!uploadFile.analysis) {
+      await analyzeFile(uploadFile)
+    }
+    
+    // Wait a bit for analysis to complete if it was needed
+    setTimeout(async () => {
+      await uploadSingleFile(uploadFile)
+    }, uploadFile.analysis ? 0 : 1000)
+  }, [analyzeFile, uploadSingleFile])
+
   const uploadAllFiles = async () => {
     setIsUploading(true)
     const pendingFiles = files.filter(f => f.status === 'pending')
@@ -478,47 +574,24 @@ export default function FileUploadZone() {
     setIsUploading(false)
   }
 
-  const getFileIcon = (filename: string) => {
-    const extension = filename.split('.').pop()?.toLowerCase()
-    switch (extension) {
-      case 'pdf':
-        return <DocumentIcon sx={{ color: '#d32f2f' }} />
-      case 'doc':
-      case 'docx':
-        return <DocumentIcon sx={{ color: '#1976d2' }} />
-      case 'xls':
-      case 'xlsx':
-        return <DocumentIcon sx={{ color: '#388e3c' }} />
-      case 'ppt':
-      case 'pptx':
-        return <DocumentIcon sx={{ color: '#f57c00' }} />
-      default:
-        return <DocumentIcon />
-    }
-  }
 
-  const getStatusIcon = (status: UploadFile['status']) => {
-    switch (status) {
-      case 'analyzing':
-        return <AnalyticsIcon sx={{ color: '#2196f3' }} />
-      case 'uploading':
-        return <CloudUploadIcon sx={{ color: '#ff9800' }} />
-      case 'processing':
-        return <CloudUploadIcon sx={{ color: '#ff9800' }} />
-      case 'success':
-        return <CheckCircleIcon sx={{ color: '#4caf50' }} />
-      case 'error':
-        return <ErrorIcon sx={{ color: '#f44336' }} />
-      default:
-        return <DocumentIcon />
-    }
-  }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Box sx={{ maxWidth: 'md', py: 4, mx: 'auto' }} data-testid="upload-container">
       <Typography variant="h4" component="h1" gutterBottom>
         📄 Dokumente hochladen
       </Typography>
+      
+      {/* K3.1.3 Global Error Display for File Upload */}
+      <InlineErrorDisplay 
+        source="fileUpload" 
+        variant="banner"
+        showRetryButton={true}
+        onRetry={() => {
+          // Retry logic handled by InlineErrorDisplay component
+          console.log('File upload error retry requested')
+        }}
+      />
       
       <Typography variant="body1" sx={{ mb: 4 }}>
         Laden Sie Ihre Dokumente hoch für automatische Analyse und Knowledge Graph Integration.
@@ -530,6 +603,7 @@ export default function FileUploadZone() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        data-testid="file-upload-zone"
         sx={{
           border: '2px dashed',
           borderColor: isDragOver ? 'primary.main' : 'grey.300',
@@ -573,6 +647,7 @@ export default function FileUploadZone() {
                 startIcon={<CloudUploadIcon />}
                 onClick={uploadAllFiles}
                 disabled={isUploading || files.filter(f => f.status === 'pending').length === 0}
+                data-testid="upload-all-button"
               >
                 Alle hochladen ({files.filter(f => f.status === 'pending').length})
               </Button>
@@ -593,6 +668,7 @@ export default function FileUploadZone() {
                 uploadFile={uploadFile} 
                 onRemove={removeFile}
                 onUpload={() => uploadSingleFile(uploadFile)}
+                onRetry={retryFile}
                 isUploading={isUploading}
               />
             ))}
@@ -608,7 +684,7 @@ export default function FileUploadZone() {
           Ergebnisse direkt im Knowledge Graph visualisieren oder per Chat abfragen.
         </Typography>
       </Alert>
-    </Container>
+          </Box>
   )
 }
 
@@ -616,10 +692,11 @@ interface FileCardProps {
   uploadFile: UploadFile
   onRemove: (id: string) => void
   onUpload: () => void
+  onRetry: (uploadFile: UploadFile) => void // K3.1 Retry functionality
   isUploading: boolean
 }
 
-const FileCard = ({ uploadFile, onRemove, onUpload, isUploading }: FileCardProps) => {
+const FileCard = ({ uploadFile, onRemove, onUpload, onRetry, isUploading }: FileCardProps) => {
   const getStatusText = () => {
     switch (uploadFile.status) {
       case 'analyzing': return 'Analysiere Dokument...'
@@ -709,9 +786,18 @@ const FileCard = ({ uploadFile, onRemove, onUpload, isUploading }: FileCardProps
           </Box>
         )}
 
+        {/* 🚀 TASK 1 FIX: Quick Success Indicator for E2E Tests */}
+        {uploadFile.status === 'success' && (
+          <Box mt={2} data-testid="upload-success-indicator">
+            <Typography variant="body2" color="success.main">
+              ✅ Upload erfolgreich abgeschlossen
+            </Typography>
+          </Box>
+        )}
+
         {/* Success Results */}
         {uploadFile.result && uploadFile.status === 'success' && (
-          <Box mt={2}>
+          <Box mt={2} data-testid="upload-success">
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" gutterBottom>
               🎉 Verarbeitungsergebnisse:
@@ -752,13 +838,49 @@ const FileCard = ({ uploadFile, onRemove, onUpload, isUploading }: FileCardProps
           </Box>
         )}
 
-        {/* Error Display */}
+        {/* Enhanced K3.1 Error Display with Retry Functionality */}
         {uploadFile.status === 'error' && uploadFile.error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {uploadFile.error}
-          </Alert>
+          <Box mt={2}>
+            <Alert 
+              severity={uploadFile.canRetry ? "warning" : "error"} 
+              sx={{ mb: 2 }}
+              action={
+                uploadFile.canRetry && (uploadFile.retryCount || 0) < 3 ? (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => onRetry(uploadFile)}
+                    disabled={isUploading}
+                  >
+                    Erneut versuchen ({3 - (uploadFile.retryCount || 0)} verbleibend)
+                  </Button>
+                ) : undefined
+              }
+            >
+              <Box>
+                <Typography variant="body2" component="div">
+                  {uploadFile.error}
+                </Typography>
+                {uploadFile.retryCount && uploadFile.retryCount > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    Bereits {uploadFile.retryCount} mal versucht
+                  </Typography>
+                )}
+                {uploadFile.backendError && (
+                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                    Fehlercode: {uploadFile.backendError.error_code}
+                  </Typography>
+                )}
+              </Box>
+            </Alert>
+          </Box>
         )}
       </CardContent>
     </Card>
   )
-} 
+}
+
+// K3.1.3 Export with Optimized Global Error Architecture
+export default function FileUploadZone() {
+  return <FileUploadZoneCore />
+}

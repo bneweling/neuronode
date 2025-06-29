@@ -1,6 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import {
+  Science as DemoIcon,
+  Cloud as ProductionIcon,
+  Refresh as RefreshIcon,
+  Save as SaveIcon,
+  RestartAlt as ResetIcon,
+  CheckCircle as HealthyIcon,
+  Error as ErrorIcon,
+  Settings as SettingsIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+  SettingsBrightness as SystemIcon,
+} from '@mui/icons-material'
 import {
   Container,
   Card,
@@ -20,21 +32,10 @@ import {
   Paper,
   Grid,
 } from '@mui/material'
-import {
-  Science as DemoIcon,
-  Cloud as ProductionIcon,
-  Refresh as RefreshIcon,
-  Save as SaveIcon,
-  RestartAlt as ResetIcon,
-  CheckCircle as HealthyIcon,
-  Error as ErrorIcon,
-  Settings as SettingsIcon,
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
-  SettingsBrightness as SystemIcon,
-} from '@mui/icons-material'
-import { useAppConfig } from '@/hooks/useAppConfig'
+import { useState, useEffect } from 'react'
+
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppConfig } from '@/hooks/useAppConfig'
 
 export default function SettingsPage() {
   const {

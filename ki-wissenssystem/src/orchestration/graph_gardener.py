@@ -1,11 +1,24 @@
-import asyncio
-from typing import List, Dict, Any, Tuple, Optional
-from datetime import datetime, timedelta
+# ===================================================================
+# GRAPH GARDENER - LEGACY WRAPPER FOR LITELLM MIGRATION
+# KI-Wissenssystem - LiteLLM v1.72.6 Migration
+# 
+# MIGRATION STATUS: Legacy wrapper for seamless transition
+# ===================================================================
+
+from typing import List, Dict, Any, Optional, Tuple
 import logging
+import asyncio
+from datetime import datetime
+
+# Legacy wrapper import - TODO: Migrate to EnhancedLiteLLMClient
+try:
+    from src.config.llm_config import llm_router, ModelPurpose
+except ImportError:
+    # Fallback for migration phase
+    from src.config.llm_config_legacy import legacy_llm_router as llm_router, ModelPurpose
 
 from src.storage.neo4j_client import Neo4jClient
 from src.storage.chroma_client import ChromaClient
-from src.config.llm_config import llm_router, ModelPurpose
 from langchain.prompts import ChatPromptTemplate
 
 logger = logging.getLogger(__name__)

@@ -1,15 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Card, CardContent, Typography, Box, Tooltip, IconButton, Collapse } from '@mui/material';
 import { ExpandMore, ExpandLess, Info } from '@mui/icons-material';
+import { Card, CardContent, Typography, Box, Tooltip, IconButton, Collapse } from '@mui/material';
+import React, { useEffect, useRef, useState } from 'react';
 
 // Fallback für Cytoscape.js (falls nicht verfügbar)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cytoscape: any = null;
 let cytoscapeAvailable = false;
 
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   cytoscape = require('cytoscape');
   cytoscapeAvailable = true;
-} catch (error) {
+} catch {
   console.warn('Cytoscape.js nicht verfügbar - Graph-Visualisierung wird als Netzwerk-Liste angezeigt');
 }
 
@@ -52,6 +54,7 @@ export const ExplanationGraph: React.FC<ExplanationGraphProps> = ({
   title = "Erklärung der Antwort" 
 }) => {
   const cyRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cyInstance = useRef<any>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [expanded, setExpanded] = useState(true);
@@ -142,6 +145,7 @@ export const ExplanationGraph: React.FC<ExplanationGraphProps> = ({
     });
 
     // Add interaction handlers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cyInstance.current.on('tap', 'node', (event: any) => {
       const node = event.target;
       const nodeData = node.data();
@@ -184,7 +188,7 @@ export const ExplanationGraph: React.FC<ExplanationGraphProps> = ({
         📊 Verwendete Wissensquellen
       </Typography>
       
-      {graphData.nodes.map((node, index) => (
+      {graphData.nodes.map((node) => (
         <Box 
           key={node.id}
           sx={{ 

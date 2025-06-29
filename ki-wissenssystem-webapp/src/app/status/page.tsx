@@ -1,6 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import {
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Speed as SpeedIcon,
+  Memory as MemoryIcon,
+  Storage as StorageIcon,
+  Computer as ComputerIcon,
+} from '@mui/icons-material'
 import {
   Container,
   Grid,
@@ -12,14 +19,8 @@ import {
   Paper,
   Divider,
 } from '@mui/material'
-import {
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Speed as SpeedIcon,
-  Memory as MemoryIcon,
-  Storage as StorageIcon,
-  Computer as ComputerIcon,
-} from '@mui/icons-material'
+import { useState, useEffect } from 'react'
+
 import { getAPIClient } from '@/lib/serviceFactory'
 
 interface SystemStatus {

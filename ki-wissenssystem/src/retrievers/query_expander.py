@@ -7,7 +7,13 @@ from dataclasses import dataclass
 import re
 import logging
 
-from src.config.llm_config import llm_router, ModelPurpose
+# Legacy wrapper import - TODO: Migrate to EnhancedLiteLLMClient
+try:
+    from src.config.llm_config import llm_router, ModelPurpose
+except ImportError:
+    # Fallback for migration phase
+    from src.config.llm_config_legacy import legacy_llm_router as llm_router, ModelPurpose
+
 from src.storage.neo4j_client import Neo4jClient
 from src.models.llm_models import QueryExpansion, ConfidenceLevel
 from src.utils.llm_parser import LLMParser

@@ -1,6 +1,21 @@
+# ===================================================================
+# UNSTRUCTURED PROCESSOR - LEGACY WRAPPER FOR LITELLM MIGRATION
+# KI-Wissenssystem - LiteLLM v1.72.6 Migration
+# 
+# MIGRATION STATUS:
+# - Core RAG Pipeline: 100% migrated to LiteLLM
+# - Legacy Wrapper: Maintains compatibility during transition
+# - Future Migration: To be migrated to EnhancedLiteLLMClient
+# ===================================================================
+
 from typing import List, Dict, Any, Tuple
 from src.models.document_types import KnowledgeChunk
-from src.config.llm_config import llm_router, ModelPurpose
+# Legacy wrapper import - TODO: Migrate to EnhancedLiteLLMClient
+try:
+    from src.config.llm_config import llm_router, ModelPurpose
+except ImportError:
+    # Fallback for migration phase
+    from src.config.llm_config_legacy import legacy_llm_router as llm_router, ModelPurpose
 from src.document_processing.chunker import SmartChunker
 from langchain.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field

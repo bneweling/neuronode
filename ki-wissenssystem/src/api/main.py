@@ -192,11 +192,82 @@ def _estimate_completion(progress: float) -> str:
     estimated_completion = datetime.utcnow() + timedelta(seconds=remaining_seconds)
     return estimated_completion.isoformat()
 
-# Initialize FastAPI app
+# Initialize FastAPI app with Enterprise Model Management
 app = FastAPI(
-    title="KI-Wissenssystem API",
-    description="API für intelligente Dokumentenverarbeitung und Wissensgraph-Management",
-    version="1.0.0"
+    title="KI-Wissenssystem Enterprise API",
+    description="""
+    ## 🚀 Enterprise Knowledge System API
+
+    **Comprehensive AI-powered document processing and knowledge graph management system with advanced LiteLLM integration.**
+
+    ### 🔧 Model Management Features
+    - **Dynamic Model Assignment**: 25 Task-Profile combinations for optimal performance
+    - **Smart Alias Resolution**: Direct LiteLLM proxy integration  
+    - **Real-time Performance Monitoring**: Enterprise-grade metrics and analytics
+    - **Cost & Usage Tracking**: Detailed per-model cost analysis
+    - **Security & Compliance**: JWT-based admin authentication with audit logging
+
+    ### 📊 Available Model Profiles
+    - **Premium**: Highest quality models (GPT-4o, Claude-3-Opus)
+    - **Balanced**: Optimal cost-performance ratio (Gemini-Pro)
+    - **Cost Effective**: Budget-optimized models (GPT-4o-mini, Claude-3-Haiku)
+    - **Specialized**: Task-specific optimized models
+    - **Ultra Fast**: Minimum latency models for real-time applications
+
+    ### 🎯 Task Types
+    - **Classification**: Document categorization and content classification
+    - **Extraction**: Entity recognition and structured data extraction
+    - **Synthesis**: Answer generation and content synthesis
+    - **Validation Primary**: Primary quality validation and fact-checking
+    - **Validation Secondary**: Secondary review and quality assurance
+
+    ### 🔐 Authentication
+    Use the **Authorization** header with `Bearer <LITELLM_MASTER_KEY>` for admin endpoints.
+
+    ### 📈 Enterprise Monitoring
+    Real-time performance dashboards, cost analytics, and comprehensive audit trails for full enterprise compliance.
+    """,
+    version="2.0.0",
+    contact={
+        "name": "KI-Wissenssystem Enterprise Support",
+        "email": "admin@ki-wissenssystem.com"
+    },
+    license_info={
+        "name": "Enterprise License",
+        "url": "https://ki-wissenssystem.com/license"
+    },
+    servers=[
+        {
+            "url": "http://localhost:8001",
+            "description": "Development server"
+        },
+        {
+            "url": "https://api.ki-wissenssystem.com",
+            "description": "Production server"
+        }
+    ],
+    openapi_tags=[
+        {
+            "name": "Model Management",
+            "description": "**Enterprise Model Management System** - Dynamic model assignment, performance monitoring, and cost analytics for 27 LiteLLM models."
+        },
+        {
+            "name": "Document Processing",
+            "description": "**Intelligent Document Processing** - Upload, analyze, and process documents with AI-powered extraction and classification."
+        },
+        {
+            "name": "Knowledge Graph",
+            "description": "**Advanced Knowledge Graph** - Neo4j-powered semantic relationships and intelligent information retrieval."
+        },
+        {
+            "name": "Query & Search",
+            "description": "**Intelligent Query System** - Natural language queries with context-aware responses and real-time streaming."
+        },
+        {
+            "name": "System Administration",
+            "description": "**System Management** - Health monitoring, indexing, graph gardening, and administrative functions."
+        }
+    ]
 )
 
 # CORS middleware
@@ -206,6 +277,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# ===================================================================
+# MODEL MANAGEMENT ROUTER INTEGRATION (Phase 1.1)
+# ===================================================================
+
+# Import and include model management router
+from src.api.endpoints.model_management import router as model_management_router
+
+app.include_router(
+    model_management_router,
+    tags=["Model Management"]
 )
 
 # Initialize components on startup

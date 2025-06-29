@@ -1,6 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import {
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  CenterFocusStrong as CenterIcon,
+  ExpandMore as ExpandMoreIcon,
+  AccountTree as GraphIcon,
+  Article as DocumentIcon,
+  Tag as TagIcon,
+} from '@mui/icons-material'
 import {
   Box,
   Paper,
@@ -21,20 +31,25 @@ import {
   AccordionSummary,
   AccordionDetails,
   useTheme,
+  Tooltip,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Step,
+  Stepper,
+  StepLabel,
+  StepContent,
 } from '@mui/material'
-import {
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-  ZoomIn as ZoomInIcon,
-  ZoomOut as ZoomOutIcon,
-  CenterFocusStrong as CenterIcon,
-  ExpandMore as ExpandMoreIcon,
-  AccountTree as GraphIcon,
-  Article as DocumentIcon,
-  Tag as TagIcon,
-} from '@mui/icons-material'
-import { getAPIClient } from '@/lib/serviceFactory'
 import type { Core, NodeSingular, EventObject } from 'cytoscape'
+import { useState, useEffect, useRef, useCallback } from 'react'
+
+import InlineErrorDisplay from '@/components/error/InlineErrorDisplay'
+import { useGraphApi } from '@/hooks/useGraphApi'
+import { useDebounce } from '@/hooks/useDebounce'
+
 
 interface GraphNode {
   id: string
@@ -60,85 +75,206 @@ type NodeColor = 'primary' | 'secondary' | 'success' | 'default'
 
 export default function GraphVisualization() {
   const theme = useTheme()
+  const { 
+    loadGraphData, 
+    isLoading, 
+    error, 
+    clearError, 
+    canRetry,
+    isRetryableError 
+  } = useGraphApi()
+  
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [isMounted, setIsMounted] = useState(false)
   const [cytoscapeLoaded, setCytoscapeLoaded] = useState(false)
+  const [cytoscapeError, setCytoscapeError] = useState<string | null>(null)
+  
+  // K3.2 Task 2: Advanced Interactivity State
+  const [hoveredElement, setHoveredElement] = useState<{
+    type: 'node' | 'edge'
+    data: any
+    position: { x: number; y: number }
+  } | null>(null)
+  const [highlightedElements, setHighlightedElements] = useState<Set<string>>(new Set())
+  
+  // K3.2 Task 3: KI-Transparenz & Real-Time State
+  const [selectedEdgeForCoT, setSelectedEdgeForCoT] = useState<{
+    edge: GraphEdge
+    cotData?: {
+      reasoning: string
+      chain_of_thought: string[]
+      confidence: number
+      ai_generated: boolean
+    }
+  } | null>(null)
+  const [wsConnected, setWsConnected] = useState(false)
+  const [liveUpdates, setLiveUpdates] = useState<{
+    type: 'node_added' | 'relationship_created' | 'graph_optimized'
+    data: any
+    timestamp: number
+  }[]>([])
+  
   const graphRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Core | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
     const timer = setTimeout(() => {
-             // Dynamisches Laden von Cytoscape nur im Browser
-       import('cytoscape').then(() => {
-         setCytoscapeLoaded(true)
-      }).catch((error) => {
-        console.error('Fehler beim Laden von Cytoscape:', error)
-        setError('Graph-Bibliothek konnte nicht geladen werden')
+      // Dynamisches Laden von Cytoscape nur im Browser
+      import('cytoscape').then(() => {
+        setCytoscapeLoaded(true)
+      }).catch((loadError) => {
+        console.error('Fehler beim Laden von Cytoscape:', loadError)
+        setCytoscapeError('Graph-Bibliothek konnte nicht geladen werden')
       })
     }, 100)
     
     return () => clearTimeout(timer)
   }, [])
 
-  const loadGraphData = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  // Load graph data on component mount
+  useEffect(() => {
+    const fetchGraphData = async () => {
+      const data = await loadGraphData()
+      if (data) {
+        setGraphData(data)
+      }
+    }
+    
+    fetchGraphData()
+  }, [loadGraphData])
+
+  // K3.2 Task 2: API Call Debouncing für Search und Node-Interaktionen
+  const debouncedSearch = useDebounce((query: string) => {
+    if (!query.trim() || !cyRef.current) return
+    
+    const matchingNodes = cyRef.current.nodes().filter((node: NodeSingular) => {
+      const label = node.data('label').toLowerCase()
+      return label.includes(query.toLowerCase())
+    })
+    
+    if (matchingNodes.length > 0) {
+      cyRef.current.fit(matchingNodes, 100)
+      const firstNode = matchingNodes[0]
+      const nodeData = firstNode.data()
+      setSelectedNode({
+        id: nodeData.id,
+        label: nodeData.label,
+        type: nodeData.type,
+        properties: nodeData
+      })
+    } else {
+      console.log('Keine Knoten gefunden, die der Suche entsprechen.')
+    }
+  }, 250) // 250ms delay as specified
+
+  const debouncedNodeClick = useDebounce(async (nodeId: string) => {
+    console.log(`Node clicked with debouncing: ${nodeId}`)
+    // Future: Load node details or expand node
+    // const details = await expandNode(nodeId)
+  }, 250)
+
+  // K3.2 Task 3: Real-Time Event Handlers
+  const handleLiveNodeAdded = useCallback((nodeData: GraphNode) => {
+    if (!cyRef.current) return
     
     try {
-      const apiClient = getAPIClient()
-      const response = await apiClient.getKnowledgeGraph()
-      const transformedData: GraphData = {
-        nodes: response.nodes.map(node => ({
-          id: node.id,
-          label: node.label,
-          type: (node.type as 'document' | 'concept' | 'entity') || 'concept',
-          properties: node.properties
-        })),
-        edges: response.edges
-      }
-      setGraphData(transformedData)
-    } catch (error) {
-      console.error('Fehler beim Laden des Graphen:', error)
-      setError('Fehler beim Laden des Wissensgraphen. Bitte versuchen Sie es erneut.')
-      setGraphData({
-        nodes: [
-          { id: '1', label: 'Künstliche Intelligenz', type: 'concept', properties: { description: 'Hauptkonzept der KI' } },
-          { id: '2', label: 'Machine Learning', type: 'concept', properties: { description: 'Teilbereich der KI' } },
-          { id: '3', label: 'Deep Learning', type: 'concept', properties: { description: 'Teilbereich des ML' } },
-          { id: '4', label: 'Neural Networks', type: 'concept', properties: { description: 'Netzwerkarchitektur' } },
-          { id: '5', label: 'Computer Vision', type: 'concept', properties: { description: 'Bilderkennung' } },
-          { id: '6', label: 'NLP', type: 'concept', properties: { description: 'Sprachverarbeitung' } },
-          { id: '7', label: 'Dokument_1.pdf', type: 'document', properties: { path: '/docs/doc1.pdf' } },
-          { id: '8', label: 'Dokument_2.pdf', type: 'document', properties: { path: '/docs/doc2.pdf' } },
-          { id: '9', label: 'Python', type: 'entity', properties: { type: 'programming_language' } },
-          { id: '10', label: 'TensorFlow', type: 'entity', properties: { type: 'framework' } },
-        ],
-        edges: [
-          { id: 'e1', source: '1', target: '2', label: 'enthält', weight: 0.8 },
-          { id: 'e2', source: '2', target: '3', label: 'enthält', weight: 0.9 },
-          { id: 'e3', source: '3', target: '4', label: 'verwendet', weight: 0.7 },
-          { id: 'e4', source: '2', target: '5', label: 'anwendung', weight: 0.6 },
-          { id: 'e5', source: '2', target: '6', label: 'anwendung', weight: 0.6 },
-          { id: 'e6', source: '7', target: '1', label: 'erwähnt', weight: 0.7 },
-          { id: 'e7', source: '8', target: '2', label: 'erwähnt', weight: 0.6 },
-          { id: 'e8', source: '9', target: '3', label: 'implementiert', weight: 0.8 },
-          { id: 'e9', source: '10', target: '3', label: 'framework', weight: 0.9 },
-        ]
+      // Add new node to Cytoscape with smooth animation
+      const newNode = cyRef.current.add({
+        data: {
+          id: nodeData.id,
+          label: nodeData.label,
+          type: nodeData.type,
+          ...nodeData.properties
+        },
+        classes: `node-${nodeData.type}`
       })
-    } finally {
-      setIsLoading(false)
+      
+      // Animate new node appearance
+      newNode.style('opacity', 0)
+      newNode.animate({
+        style: { opacity: 1 },
+        duration: 500,
+        easing: 'ease-out'
+      })
+      
+      // Update local state
+      setGraphData(prev => ({
+        ...prev,
+        nodes: [...prev.nodes, nodeData]
+      }))
+      
+      console.log(`Live node added: ${nodeData.label}`)
+    } catch (error) {
+      console.error('Error adding live node:', error)
     }
   }, [])
 
-  useEffect(() => {
-    loadGraphData()
-  }, [loadGraphData])
+  const handleLiveRelationshipCreated = useCallback((edgeData: GraphEdge) => {
+    if (!cyRef.current) return
+    
+    try {
+      // Add new edge to Cytoscape with smooth animation
+      const newEdge = cyRef.current.add({
+        data: {
+          id: edgeData.id,
+          source: edgeData.source,
+          target: edgeData.target,
+          label: edgeData.label,
+          weight: edgeData.weight
+        }
+      })
+      
+      // Animate new edge appearance
+      newEdge.style('opacity', 0)
+      newEdge.animate({
+        style: { opacity: 1 },
+        duration: 500,
+        easing: 'ease-out'
+      })
+      
+      // Update local state
+      setGraphData(prev => ({
+        ...prev,
+        edges: [...prev.edges, edgeData]
+      }))
+      
+      console.log(`Live relationship created: ${edgeData.label}`)
+    } catch (error) {
+      console.error('Error adding live relationship:', error)
+    }
+  }, [])
+
+  const handleLiveGraphOptimized = useCallback((optimizationData: { type: string, changes: number }) => {
+    if (!cyRef.current) return
+    
+    try {
+      // Re-run layout with optimization
+      const layout = cyRef.current.layout({
+        name: 'cose',
+        idealEdgeLength: () => 100,
+        nodeOverlap: 20,
+        refresh: 20,
+        randomize: false,
+        componentSpacing: 100,
+        nodeRepulsion: () => 400000,
+        edgeElasticity: () => 100,
+        animate: true,
+        animationDuration: 1000,
+        animationEasing: 'ease-out'
+      })
+      
+      layout.run()
+      
+      console.log(`Graph optimized: ${optimizationData.type}, ${optimizationData.changes} changes`)
+    } catch (error) {
+      console.error('Error optimizing graph:', error)
+    }
+  }, [])
 
   useEffect(() => {
     const initializeCytoscape = async () => {
@@ -242,6 +378,7 @@ export default function GraphVisualization() {
                     'border-width': isDarkMode ? 2 : 1,
                     'border-style': 'solid',
                     'border-opacity': 0.7
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   } as any
                 },
                 {
@@ -332,6 +469,39 @@ export default function GraphVisualization() {
                     'text-outline-width': isDarkMode ? 3 : 2,
                     'font-weight': 'bold'
                   }
+                },
+                // K3.2 Task 2: Focus & Highlight Styles
+                {
+                  selector: '.highlighted-node',
+                  style: {
+                    'border-width': 4,
+                    'border-color': theme.palette.primary.main,
+                    'border-opacity': 1,
+                    'opacity': 1,
+                    'text-opacity': 1,
+                    'font-weight': 'bold',
+                    'z-index': 999
+                  }
+                },
+                {
+                  selector: '.highlighted-neighbor',
+                  style: {
+                    'opacity': 1,
+                    'text-opacity': 1,
+                    'border-width': 2,
+                    'border-opacity': 0.8,
+                    'z-index': 998
+                  }
+                },
+                {
+                  selector: '.faded',
+                  style: {
+                    'opacity': 0.2,
+                    'text-opacity': 0.2,
+                    'line-opacity': 0.2,
+                    'arrow-opacity': 0.2,
+                    'z-index': 1
+                  }
                 }
               ],
               layout: {
@@ -349,14 +519,80 @@ export default function GraphVisualization() {
                 initialTemp: 200,
                 coolingFactor: 0.95,
                 minTemp: 1.0
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
               } as any
             })
         
-            // Event handlers
+            // K3.2 Task 2: Enhanced Event Handlers für Advanced Interactivity
             if (cyRef.current) {
+              
+              // K3.2 Task 2: Intelligent Hover Tooltips (300ms enterDelay anti-flicker)
+              let hoverTimeout: NodeJS.Timeout | null = null
+              
+              cyRef.current.on('mouseover', 'node', (evt: EventObject) => {
+                const node = evt.target as NodeSingular
+                const nodeData = node.data()
+                const renderedPosition = node.renderedPosition()
+                
+                // Clear existing timeout
+                if (hoverTimeout) {
+                  clearTimeout(hoverTimeout)
+                }
+                
+                // 300ms delay as specified for anti-flicker
+                hoverTimeout = setTimeout(() => {
+                  setHoveredElement({
+                    type: 'node',
+                    data: {
+                      id: nodeData.id,
+                      label: nodeData.label,
+                      type: nodeData.type,
+                      typeIcon: nodeData.type, // For icon display
+                    },
+                    position: { x: renderedPosition.x, y: renderedPosition.y }
+                  })
+                }, 300)
+              })
+              
+              cyRef.current.on('mouseover', 'edge', (evt: EventObject) => {
+                const edge = evt.target
+                const edgeData = edge.data()
+                const renderedMidpoint = edge.renderedMidpoint()
+                
+                if (hoverTimeout) {
+                  clearTimeout(hoverTimeout)
+                }
+                
+                hoverTimeout = setTimeout(() => {
+                  setHoveredElement({
+                    type: 'edge',
+                    data: {
+                      id: edgeData.id,
+                      label: edgeData.label,
+                      weight: edgeData.weight,
+                      source: edgeData.source,
+                      target: edgeData.target
+                    },
+                    position: { x: renderedMidpoint.x, y: renderedMidpoint.y }
+                  })
+                }, 300)
+              })
+              
+              cyRef.current.on('mouseout', 'node,edge', () => {
+                if (hoverTimeout) {
+                  clearTimeout(hoverTimeout)
+                  hoverTimeout = null
+                }
+                setHoveredElement(null)
+              })
+              
+              // K3.2 Task 2: Focus & Highlight mit Click-Interaktionen
               cyRef.current.on('tap', 'node', (evt: EventObject) => {
                 const node = evt.target as NodeSingular
                 const nodeData = node.data()
+                const nodeId = nodeData.id
+                
+                // Set selected node for sidebar
                 const graphNode: GraphNode = {
                   id: nodeData.id,
                   label: nodeData.label,
@@ -364,8 +600,88 @@ export default function GraphVisualization() {
                   properties: nodeData
                 }
                 setSelectedNode(graphNode)
+                
+                // K3.2 Task 2: Focus & Highlight Logic
+                if (cyRef.current) {
+                  // Get clicked node and its neighbors
+                  const clickedNode = cyRef.current.getElementById(nodeId)
+                  const neighbors = clickedNode.neighborhood().nodes()
+                  
+                  // Create highlighted set
+                  const highlightedIds = new Set<string>()
+                  highlightedIds.add(nodeId) // clicked node
+                  
+                  neighbors.forEach((neighbor: NodeSingular) => {
+                    highlightedIds.add(neighbor.data('id'))
+                  })
+                  
+                  setHighlightedElements(highlightedIds)
+                  
+                  // Apply visual styling: highlighted nodes = 100% opacity, others = 20%
+                  cyRef.current.elements().forEach((element) => {
+                    const elementId = element.data('id')
+                    if (highlightedIds.has(elementId) || 
+                        (element.isEdge() && 
+                         (highlightedIds.has(element.data('source')) || 
+                          highlightedIds.has(element.data('target'))))) {
+                      // Highlighted elements: full opacity
+                      element.removeClass('faded')
+                      element.addClass(elementId === nodeId ? 'highlighted-node' : 'highlighted-neighbor')
+                    } else {
+                      // Faded elements: 20% opacity
+                      element.removeClass('highlighted-node highlighted-neighbor')
+                      element.addClass('faded')
+                    }
+                  })
+                  
+                  // Enhanced border for clicked node with theme primary color
+                  clickedNode.addClass('highlighted-node')
+                }
+                
+                // K3.2 Task 2: Debounced API Call für Node-Details
+                debouncedNodeClick(nodeId)
+              })
+              
+              // K3.2 Task 3: Edge Click für Chain-of-Thought Transparenz
+              cyRef.current.on('tap', 'edge', (evt: EventObject) => {
+                const edge = evt.target
+                const edgeData = edge.data()
+                
+                // Find the edge in our graph data
+                const graphEdge = graphData.edges.find(e => e.id === edgeData.id)
+                if (graphEdge) {
+                  setSelectedEdgeForCoT({
+                    edge: graphEdge,
+                    cotData: {
+                      reasoning: 'Diese Beziehung wurde von der KI basierend auf semantischen Ähnlichkeiten zwischen den Konzepten erstellt.',
+                      chain_of_thought: [
+                        'Schritt 1: Textanalyse der beiden Konzepte durchgeführt',
+                        'Schritt 2: Semantische Ähnlichkeit mit NLP-Modell berechnet',
+                        'Schritt 3: Kontextuelle Relevanz geprüft',
+                        'Schritt 4: Gewichtung basierend auf Häufigkeit der Co-Occurrence'
+                      ],
+                      confidence: edgeData.weight || 0.8,
+                      ai_generated: true
+                    }
+                  })
+                }
+              })
+              
+              // K3.2 Task 2: Background Click Reset (clear highlights)
+              cyRef.current.on('tap', (evt: EventObject) => {
+                // Only if background was clicked (not a node or edge)
+                if (evt.target === cyRef.current) {
+                  setHighlightedElements(new Set())
+                  setSelectedNode(null)
+                  
+                  // Remove all highlight classes
+                  if (cyRef.current) {
+                    cyRef.current.elements().removeClass('highlighted-node highlighted-neighbor faded')
+                  }
+                }
               })
         
+              // Existing zoom handler
               cyRef.current.on('zoom', () => {
                 if (cyRef.current) {
                   setZoomLevel(cyRef.current.zoom())
@@ -374,7 +690,7 @@ export default function GraphVisualization() {
             }
         } catch (error) {
             console.error('Fehler bei der Cytoscape-Initialisierung:', error);
-            setError('Graph-Visualisierung konnte nicht initialisiert werden');
+            setCytoscapeError('Graph-Visualisierung konnte nicht initialisiert werden');
         }
     }
     
@@ -392,28 +708,111 @@ export default function GraphVisualization() {
     }
   }, [graphData, cytoscapeLoaded, isMounted, theme.palette.mode]);
 
+  // K3.2 Task 2: Enhanced Search mit Debouncing
   const handleSearch = () => {
-    if (!searchQuery.trim() || !cyRef.current) return
-    
-    const matchingNodes = cyRef.current.nodes().filter((node: NodeSingular) => {
-      const label = node.data('label').toLowerCase()
-      return label.includes(searchQuery.toLowerCase())
-    })
-    
-    if (matchingNodes.length > 0) {
-      cyRef.current.fit(matchingNodes, 100)
-      const firstNode = matchingNodes[0]
-      const nodeData = firstNode.data()
-      setSelectedNode({
-        id: nodeData.id,
-        label: nodeData.label,
-        type: nodeData.type,
-        properties: nodeData
-      })
-    } else {
-      setError('Keine Knoten gefunden, die der Suche entsprechen.')
-    }
+    debouncedSearch(searchQuery)
   }
+  
+  // Trigger debounced search on searchQuery change
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      debouncedSearch(searchQuery)
+    }
+  }, [searchQuery, debouncedSearch])
+
+  // K3.2 Task 3: WebSocket Integration für Live-Updates
+  useEffect(() => {
+    let reconnectTimeout: NodeJS.Timeout | null = null
+    let reconnectAttempts = 0
+    const maxReconnectAttempts = 5
+    
+    const connectWebSocket = () => {
+      try {
+        // WebSocket connection zu /ws/graph endpoint
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/graph`
+        
+        wsRef.current = new WebSocket(wsUrl)
+        
+        wsRef.current.onopen = () => {
+          console.log('Graph WebSocket connected')
+          setWsConnected(true)
+          reconnectAttempts = 0
+        }
+        
+        wsRef.current.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data)
+            
+            // Handle different types of real-time events
+            switch (message.type) {
+              case 'node_added':
+                handleLiveNodeAdded(message.data)
+                break
+              case 'relationship_created':
+                handleLiveRelationshipCreated(message.data)
+                break
+              case 'graph_optimized':
+                handleLiveGraphOptimized(message.data)
+                break
+              default:
+                console.log('Unknown WebSocket message type:', message.type)
+            }
+            
+            // Track live updates for debugging/monitoring
+            setLiveUpdates(prev => [
+              ...prev.slice(-9), // Keep last 10 updates
+              {
+                type: message.type,
+                data: message.data,
+                timestamp: Date.now()
+              }
+            ])
+            
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error)
+          }
+        }
+        
+        wsRef.current.onclose = () => {
+          console.log('Graph WebSocket disconnected')
+          setWsConnected(false)
+          
+          // Robust reconnection with exponential backoff
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
+            console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`)
+            
+            reconnectTimeout = setTimeout(() => {
+              reconnectAttempts++
+              connectWebSocket()
+            }, delay)
+          }
+        }
+        
+        wsRef.current.onerror = (error) => {
+          console.error('Graph WebSocket error:', error)
+        }
+        
+      } catch (error) {
+        console.error('Error creating WebSocket connection:', error)
+      }
+    }
+    
+    // Initialize WebSocket connection
+    connectWebSocket()
+    
+    // Cleanup on unmount
+    return () => {
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+      }
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+  }, []) // Empty dependency array - only run on mount/unmount
 
   const handleZoomIn = () => {
     if (cyRef.current) {
@@ -484,7 +883,7 @@ export default function GraphVisualization() {
 
   if (!isMounted) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }} data-testid="graph-container-loading">
         <Box mb={4}>
           <Typography variant="h4" component="h1" gutterBottom>
             Wissensgraph
@@ -498,7 +897,7 @@ export default function GraphVisualization() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }} data-testid="graph-container">
       <Box mb={4}>
         <Typography variant="h4" component="h1" gutterBottom>
           Wissensgraph
@@ -508,9 +907,29 @@ export default function GraphVisualization() {
         </Typography>
       </Box>
 
+      {/* K3.2 Error-Foundation Integration: Intelligente Error-Differenzierung */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
+        <InlineErrorDisplay 
+          source="graph"
+          variant="alert"
+          showRetryButton={canRetry}
+          onRetry={async () => {
+            const data = await loadGraphData()
+            if (data) {
+              setGraphData(data)
+            }
+          }}
+        />
+      )}
+      
+      {/* Cytoscape-specific errors (Non-retryable) */}
+      {cytoscapeError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setCytoscapeError(null)}>
+          {cytoscapeError}
+          {/* Graceful degradation suggestion */}
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Als Alternative können Sie die Knoten-Liste in der Seitenleiste verwenden.
+          </Typography>
         </Alert>
       )}
 
@@ -549,6 +968,22 @@ export default function GraphVisualization() {
               <Typography variant="body2" color="text.secondary">
                 Zoom: {Math.round(zoomLevel * 100)}%
               </Typography>
+              
+              {/* K3.2 Task 3: WebSocket Status Indicator */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <Box 
+                  sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%',
+                    bgcolor: wsConnected ? 'success.main' : 'error.main',
+                    animation: wsConnected ? 'none' : 'pulse 2s infinite'
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Live-Updates {wsConnected ? 'aktiv' : 'getrennt'}
+                </Typography>
+              </Box>
             </Box>
           </Paper>
         </Grid>
@@ -683,7 +1118,7 @@ export default function GraphVisualization() {
             </Card>
           )}
 
-          <Card>
+          <Card data-testid="graph-stats">
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Graph-Statistiken
@@ -740,6 +1175,202 @@ export default function GraphVisualization() {
           </Card>
         </Grid>
       </Grid>
+      
+      {/* K3.2 Task 3: Chain-of-Thought Transparenz Dialog */}
+      <Dialog
+        open={!!selectedEdgeForCoT}
+        onClose={() => setSelectedEdgeForCoT(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? 'rgba(30, 30, 30, 0.95)' 
+                : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)'
+          }
+        }}
+      >
+        {selectedEdgeForCoT && (
+          <>
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="h6">
+                  Warum? KI-Transparenz für Beziehung
+                </Typography>
+                {selectedEdgeForCoT.cotData?.ai_generated && (
+                  <Chip 
+                    label="KI-generiert" 
+                    color="primary" 
+                    size="small" 
+                    sx={{ 
+                      bgcolor: 'primary.light',
+                      color: 'primary.contrastText'
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {selectedEdgeForCoT.edge.label} • Gewichtung: {Math.round((selectedEdgeForCoT.cotData?.confidence || 0) * 100)}%
+              </Typography>
+            </DialogTitle>
+            
+            <DialogContent>
+              {/* Reasoning Explanation */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Begründung
+                </Typography>
+                <Paper 
+                  elevation={1} 
+                  sx={{ 
+                    p: 2, 
+                    bgcolor: (theme) => 
+                      theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.05)' 
+                        : 'rgba(0, 0, 0, 0.02)'
+                  }}
+                >
+                  <Typography variant="body1">
+                    {selectedEdgeForCoT.cotData?.reasoning}
+                  </Typography>
+                </Paper>
+              </Box>
+              
+              {/* Chain of Thought Steps */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Denkprozess (Chain-of-Thought)
+                </Typography>
+                <Stepper orientation="vertical">
+                  {selectedEdgeForCoT.cotData?.chain_of_thought.map((step, index) => (
+                    <Step key={index} active={true} completed={true}>
+                      <StepLabel>
+                        <Typography variant="body2" fontWeight="medium">
+                          {step}
+                        </Typography>
+                      </StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
+              </Box>
+              
+              {/* Confidence & Metrics */}
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Vertrauenswerte
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                    Gesamtvertrauen:
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(selectedEdgeForCoT.cotData?.confidence || 0) * 100} 
+                    sx={{ 
+                      flexGrow: 1, 
+                      height: 8,
+                      borderRadius: 4,
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Typography variant="body2" fontWeight="bold">
+                    {Math.round((selectedEdgeForCoT.cotData?.confidence || 0) * 100)}%
+                  </Typography>
+                </Box>
+                
+                <Typography variant="caption" color="text.secondary">
+                  Basierend auf semantischer Ähnlichkeit, Kontextueller Relevanz und Co-Occurrence-Häufigkeit.
+                </Typography>
+              </Box>
+            </DialogContent>
+            
+            <DialogActions>
+              <Button onClick={() => setSelectedEdgeForCoT(null)}>
+                Schließen
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  // Future: Report/Feedback functionality
+                  console.log('User feedback on CoT explanation')
+                  setSelectedEdgeForCoT(null)
+                }}
+              >
+                Feedback geben
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+      
+      {/* K3.2 Task 2: Intelligent Hover Tooltips */}
+      {hoveredElement && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: hoveredElement.position.x + 10,
+            top: hoveredElement.position.y - 10,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            bgcolor: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? 'rgba(0, 0, 0, 0.9)' 
+                : 'rgba(255, 255, 255, 0.95)',
+            color: (theme) => theme.palette.text.primary,
+            p: 1.5,
+            borderRadius: 1,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            boxShadow: 3,
+            maxWidth: 300,
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          {hoveredElement.type === 'node' ? (
+            // Node Tooltip: [Typ-Icon] [Label (fett)] + [Node-ID]
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                {getNodeIcon(hoveredElement.data.typeIcon)}
+                <Typography variant="body2" fontWeight="bold" sx={{ ml: 1 }}>
+                  {hoveredElement.data.label}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                ID: {hoveredElement.data.id}
+              </Typography>
+            </Box>
+          ) : (
+            // Edge Tooltip: [Beziehungs-Typ (fett)] + [Confidence als LinearProgress]
+            <Box>
+              <Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
+                {hoveredElement.data.label}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Gewichtung:
+                </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={hoveredElement.data.weight * 100} 
+                  sx={{ 
+                    flexGrow: 1, 
+                    height: 4,
+                    borderRadius: 2,
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {Math.round(hoveredElement.data.weight * 100)}%
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {hoveredElement.data.source} → {hoveredElement.data.target}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Container>
   )
 } 

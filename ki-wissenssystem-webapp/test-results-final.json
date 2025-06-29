@@ -1,0 +1,1252 @@
+
+> ki-wissenssystem-webapp@0.1.0 test:e2e
+> playwright test --project=chromium --workers=1 --timeout=30000 --reporter=json
+
+🚀 K3.3 COMPREHENSIVE TESTING SETUP - Starting...
+🌐 Testing frontend availability...
+✅ Frontend is ready
+🔌 Testing backend API availability...
+✅ Backend API is ready
+🧹 Clearing test state...
+🎯 K3.3 Test Environment Setup Complete
+🧹 K3.3 COMPREHENSIVE TESTING TEARDOWN - Cleaning up...
+📊 K3.3 Test Results Summary:
+   - End-to-End User Journey Tests: Completed
+   - Performance Validation Tests: Completed
+   - Cross-Browser Compatibility: Completed
+   - Accessibility Compliance: Completed
+✅ K3.3 Testing Environment Teardown Complete
+{
+  "config": {
+    "configFile": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/playwright.config.ts",
+    "rootDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/global-setup.ts",
+    "globalTeardown": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "edge",
+        "name": "edge",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Tablet",
+        "name": "Tablet",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-high-dpi",
+        "name": "chromium-high-dpi",
+        "testDir": "/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.53.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "performance-scalability.spec.ts",
+      "file": "performance-scalability.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "K3.3.2 P0 - Performance & Scalability Validation",
+          "file": "performance-scalability.spec.ts",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Frontend Performance Benchmarks Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15119,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Starting Frontend Performance Benchmarks...\n"
+                        },
+                        {
+                          "text": "📊 Initial Page Load: 10825ms\n"
+                        },
+                        {
+                          "text": "📊 First Contentful Paint: 0ms\n"
+                        },
+                        {
+                          "text": "📊 Average Component Interaction: 110ms\n"
+                        },
+                        {
+                          "text": "📊 Graph Rendering: 1181ms\n"
+                        },
+                        {
+                          "text": "📊 Memory Usage: 45.2MB\n"
+                        },
+                        {
+                          "text": "✅ Frontend Performance Benchmarks PASSED\n"
+                        },
+                        {
+                          "text": "📊 Performance Summary: {\n  initialPageLoad: \u001b[33m10824.574875\u001b[39m,\n  componentInteraction: \u001b[33m110.09810799999977\u001b[39m,\n  graphRendering: \u001b[33m1181.2909580000014\u001b[39m,\n  memoryUsage: \u001b[33m45.20416259765625\u001b[39m\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Initial Page Load Performance",
+                          "duration": 10829
+                        },
+                        {
+                          "title": "Component Interaction Performance",
+                          "duration": 2890
+                        },
+                        {
+                          "title": "Graph Rendering Performance",
+                          "duration": 1182
+                        },
+                        {
+                          "title": "Memory Usage Assessment",
+                          "duration": 12
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:02.025Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e1af58933dcd76324e3d-c14a68d7d2e7ffc3b34d",
+              "file": "performance-scalability.spec.ts",
+              "line": 33,
+              "column": 7
+            },
+            {
+              "title": "API Integration Performance Under Load",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2510,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Starting API Integration Performance Test...\n"
+                        },
+                        {
+                          "text": "📊 Chat Query Response (Mock): 500ms\n"
+                        },
+                        {
+                          "text": "📊 Document Upload Feedback (Mock): 553ms\n"
+                        },
+                        {
+                          "text": "📊 Graph Data Loading (Mock): 263ms\n"
+                        },
+                        {
+                          "text": "✅ API Integration Performance PASSED\n"
+                        },
+                        {
+                          "text": "📊 API Performance Summary: {\n  chatQueryResponse: \u001b[33m499.5966660000013\u001b[39m,\n  documentUploadFeedback: \u001b[33m553.1970410000031\u001b[39m,\n  graphDataLoading: \u001b[33m262.5957090000011\u001b[39m,\n  realTimeUpdateLatency: \u001b[33m0\u001b[39m\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Chat Query Response Performance",
+                          "duration": 756
+                        },
+                        {
+                          "title": "Document Upload Response Performance",
+                          "duration": 1320
+                        },
+                        {
+                          "title": "Graph Data Loading Performance",
+                          "duration": 263
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:17.257Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e1af58933dcd76324e3d-96200a1afac9cacc642a",
+              "file": "performance-scalability.spec.ts",
+              "line": 165,
+              "column": 7
+            },
+            {
+              "title": "Mobile Performance Parity Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 19351,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Starting Mobile Performance Parity Test...\n"
+                        },
+                        {
+                          "text": "📱 Mobile First Load: 800ms\n"
+                        },
+                        {
+                          "text": "📱 Touch Response Time: 57ms\n"
+                        },
+                        {
+                          "text": "📱 Scroll Performance: 3ms\n"
+                        },
+                        {
+                          "text": "✅ Mobile Performance Parity PASSED\n"
+                        },
+                        {
+                          "text": "📱 Mobile Performance Summary: {\n  mobileFirstLoad: \u001b[33m799.8616250000014\u001b[39m,\n  touchResponseTime: \u001b[33m56.745016600000234\u001b[39m,\n  scrollPerformance: \u001b[33m2.8565420000013546\u001b[39m\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Mobile First Load Performance",
+                          "duration": 800
+                        },
+                        {
+                          "title": "Touch Response Performance",
+                          "duration": 1017
+                        },
+                        {
+                          "title": "Scroll Performance Validation",
+                          "duration": 17392
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:19.770Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e1af58933dcd76324e3d-bddcc713fbdc673310d6",
+              "file": "performance-scalability.spec.ts",
+              "line": 247,
+              "column": 7
+            },
+            {
+              "title": "User Load Simulation - Realistic Usage Pattern",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3623,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Starting REALISTIC User Load Test...\n"
+                        },
+                        {
+                          "text": "✅ Chat User workflow successful (1224ms)\n"
+                        },
+                        {
+                          "text": "✅ Upload User workflow successful (505ms)\n"
+                        },
+                        {
+                          "text": "✅ Graph User workflow successful (611ms)\n"
+                        },
+                        {
+                          "text": "✅ Navigation User workflow successful (1115ms)\n"
+                        },
+                        {
+                          "text": "📊 User Load Results: 4/4 workflows successful\n"
+                        },
+                        {
+                          "text": "✅ Realistic User Load Test COMPLETED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Sequential User Workflow Simulation",
+                          "duration": 3457
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:39.125Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e1af58933dcd76324e3d-644a3044977c6dad061b",
+              "file": "performance-scalability.spec.ts",
+              "line": 340,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "state-synchronization-race-conditions.spec.ts",
+      "file": "state-synchronization-race-conditions.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "K3.3.1 P0 CRITICAL - State Synchronization & Race Conditions",
+          "file": "state-synchronization-race-conditions.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "WebSocket Updates vs User Interaction Race Conditions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3473,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing WebSocket + User Interaction Race Conditions...\n"
+                        },
+                        {
+                          "text": "✅ Graph initial state loaded\n"
+                        },
+                        {
+                          "text": "✅ Deterministic concurrent WebSocket + User actions completed\n"
+                        },
+                        {
+                          "text": "✅ UI state consistency verified after race conditions\n"
+                        },
+                        {
+                          "text": "✅ WebSocket Race Condition Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup Graph Page for WebSocket Testing",
+                          "duration": 280
+                        },
+                        {
+                          "title": "Simulate Concurrent WebSocket + User Actions",
+                          "duration": 107
+                        },
+                        {
+                          "title": "Verify UI State Consistency",
+                          "duration": 2068
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:42.756Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-51e3f2197d476540aab0",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 35,
+              "column": 7
+            },
+            {
+              "title": "Stale Data Prevention for Real-time Updates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2105,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing Stale Data Prevention...\n"
+                        },
+                        {
+                          "text": "✅ Initial mock chat response received\n"
+                        },
+                        {
+                          "text": "✅ Deterministic stale data prevention verified with MockServiceLayer\n"
+                        },
+                        {
+                          "text": "✅ Stale Data Prevention Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup Chat Interface",
+                          "duration": 256
+                        },
+                        {
+                          "title": "Simulate Stale Data Scenario with MockServiceLayer",
+                          "duration": 949
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:46.248Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-a748ce3fd224142bffe6",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "Rapid-Fire User Actions Debouncing Effectiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3841,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing Debouncing Effectiveness...\n"
+                        },
+                        {
+                          "text": "📊 10 rapid clicks completed in 603ms\n"
+                        },
+                        {
+                          "text": "📊 API calls made with MockServiceLayer: 0\n"
+                        },
+                        {
+                          "text": "✅ Deterministic debouncing effectiveness verified with MockServiceLayer\n"
+                        },
+                        {
+                          "text": "✅ Rapid-Fire Debouncing Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup for Rapid User Actions",
+                          "duration": 181
+                        },
+                        {
+                          "title": "Execute Rapid-Fire Node Clicks with MockServiceLayer",
+                          "duration": 2710
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:48.358Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-3bc1ead986c7fe4dde40",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 147,
+              "column": 7
+            },
+            {
+              "title": "Concurrent API Calls State Consistency",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9971,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing Concurrent API State Consistency...\n"
+                        },
+                        {
+                          "text": "📊 Concurrent API call results: [\n  { action: \u001b[32m'chat'\u001b[39m, success: \u001b[33mtrue\u001b[39m },\n  {\n    action: \u001b[32m'graph'\u001b[39m,\n    success: \u001b[33mfalse\u001b[39m,\n    error: page.waitForSelector: Timeout 5000ms exceeded.\n    Call log:\n    \u001b[2m  - waiting for locator('[data-testid=\"graph-container\"]') to be visible\u001b[22m\n    \n        at \u001b[90m/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/\u001b[39mtests/e2e/state-synchronization-race-conditions.spec.ts:237:24\n        at \u001b[90m/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/\u001b[39mtests/e2e/state-synchronization-race-conditions.spec.ts:259:23\n        at \u001b[90m/Users/ben/Documents/ki-wissenssystem-main/ki-wissenssystem-webapp/\u001b[39mtests/e2e/state-synchronization-race-conditions.spec.ts:216:5 {\n      name: \u001b[32m'TimeoutError'\u001b[39m,\n      \u001b[32mSymbol(step)\u001b[39m: \u001b[36m[Object]\u001b[39m\n    }\n  },\n  { action: \u001b[32m'upload'\u001b[39m, success: \u001b[33mtrue\u001b[39m }\n]\n"
+                        },
+                        {
+                          "text": "✅ All component states consistent after concurrent API calls\n"
+                        },
+                        {
+                          "text": "✅ Concurrent API State Consistency Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup Multiple Components",
+                          "duration": 382
+                        },
+                        {
+                          "title": "Trigger Concurrent API Calls",
+                          "duration": 5058
+                        },
+                        {
+                          "title": "Verify State Consistency After Concurrent Calls",
+                          "duration": 3653
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:48:52.207Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-180edc507595d15831d4",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 205,
+              "column": 7
+            },
+            {
+              "title": "Memory Leak Prevention During State Updates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 18196,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing Memory Leak Prevention...\n"
+                        },
+                        {
+                          "text": "📊 Baseline memory: 26.3MB\n"
+                        },
+                        {
+                          "text": "✅ Stress cycle 1 completed\n"
+                        },
+                        {
+                          "text": "✅ Stress cycle 2 completed\n"
+                        },
+                        {
+                          "text": "✅ Stress cycle 3 completed\n"
+                        },
+                        {
+                          "text": "📊 Final memory: 26.3MB\n"
+                        },
+                        {
+                          "text": "✅ Memory leak prevention test completed\n"
+                        },
+                        {
+                          "text": "✅ Memory Leak Prevention Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Baseline Memory Measurement",
+                          "duration": 167
+                        },
+                        {
+                          "title": "Stress Test State Updates",
+                          "duration": 15132
+                        },
+                        {
+                          "title": "Final Memory Measurement",
+                          "duration": 2012
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:02.185Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-fdb8725c8b525ed51b2c",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 290,
+              "column": 7
+            },
+            {
+              "title": "Component Unmount State Cleanup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4896,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Testing Component Unmount State Cleanup...\n"
+                        },
+                        {
+                          "text": "✅ Navigated to /chat\n"
+                        },
+                        {
+                          "text": "✅ Navigated to /graph\n"
+                        },
+                        {
+                          "text": "✅ Navigated to /upload\n"
+                        },
+                        {
+                          "text": "✅ Navigated to /\n"
+                        },
+                        {
+                          "text": "📊 Active event listeners: 9\n"
+                        },
+                        {
+                          "text": "✅ Event listener cleanup verified\n"
+                        },
+                        {
+                          "text": "✅ Component Unmount Cleanup Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup and Navigate Between Components",
+                          "duration": 3959
+                        },
+                        {
+                          "title": "Verify No Lingering Event Listeners",
+                          "duration": 12
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:20.384Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ff3b8ff0e21a545cf443-8363b21f952b3f4085ea",
+              "file": "state-synchronization-race-conditions.spec.ts",
+              "line": 374,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "user-journey-complete-workflow.spec.ts",
+      "file": "user-journey-complete-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "K3.3.1 P0 - Complete Knowledge Workflow",
+          "file": "user-journey-complete-workflow.spec.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Complete Workflow: PDF Upload → Entity Extraction → Query → Graph Visualization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10052,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Starting Complete Knowledge Workflow Test...\n"
+                        },
+                        {
+                          "text": "✅ Upload started by clicking \"Upload starten\" button\n"
+                        },
+                        {
+                          "text": "✅ Document upload completed with mocked API response\n"
+                        },
+                        {
+                          "text": "✅ Chat query completed - Full workflow successful!\n"
+                        },
+                        {
+                          "text": "✅ Graph visualization loaded with mocked data\n"
+                        },
+                        {
+                          "text": "✅ Interactive graph exploration completed - DOM elements verified\n"
+                        },
+                        {
+                          "text": "⏱️  Complete workflow time: 8979ms\n"
+                        },
+                        {
+                          "text": "✅ Complete Knowledge Workflow Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Navigate to Document Upload",
+                          "duration": 216
+                        },
+                        {
+                          "title": "Upload Test Document",
+                          "duration": 4224
+                        },
+                        {
+                          "title": "Navigate to Chat and Query Document",
+                          "duration": 2357
+                        },
+                        {
+                          "title": "Navigate to Graph Visualization",
+                          "duration": 1276
+                        },
+                        {
+                          "title": "Interactive Graph Exploration",
+                          "duration": 904
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:25.307Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-5a7c22b3c20acf95ac1d",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "Multi-Document Knowledge Base Build with Complex Query",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13191,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Starting Multi-Document Workflow Test...\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc1.pdf\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc2.pdf\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc3.pdf\n"
+                        },
+                        {
+                          "text": "✅ Multiple documents uploaded\n"
+                        },
+                        {
+                          "text": "✅ Complex query processed with mocked response\n"
+                        },
+                        {
+                          "text": "✅ Multi-document graph verified\n"
+                        },
+                        {
+                          "text": "✅ Multi-Document Knowledge Base Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Upload Multiple Documents",
+                          "duration": 8709
+                        },
+                        {
+                          "title": "Complex Cross-Document Query",
+                          "duration": 2216
+                        },
+                        {
+                          "title": "Verify Multi-Document Graph",
+                          "duration": 1173
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:35.364Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-e3fe9644e9154721b1fd",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 234,
+              "column": 7
+            },
+            {
+              "title": "Real-time Processing with Live Graph Updates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7941,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Starting Real-time Processing Test...\n"
+                        },
+                        {
+                          "text": "Initial graph state: Graph-StatistikenGesamte Knoten0Gesamte Kanten0Dokumente0Konzepte0Entitäten0\n"
+                        },
+                        {
+                          "text": "✅ Real-time upload started\n"
+                        },
+                        {
+                          "text": "✅ Document uploaded for real-time processing with mocked response\n"
+                        },
+                        {
+                          "text": "Updated graph state: Graph-StatistikenGesamte Knoten15Gesamte Kanten17Dokumente3Konzepte9Entitäten3\n"
+                        },
+                        {
+                          "text": "✅ Real-time Processing Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup Real-time Monitoring",
+                          "duration": 228
+                        },
+                        {
+                          "title": "Upload Document with Live Monitoring",
+                          "duration": 4438
+                        },
+                        {
+                          "title": "Verify Live Graph Updates",
+                          "duration": 2255
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:48.561Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-a150f87f5d6b39927386",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 368,
+              "column": 7
+            },
+            {
+              "title": "Error Recovery Journey Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1329,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Starting Error Recovery Test...\n"
+                        },
+                        {
+                          "text": "✅ Network error prevented by route blocking (no UI error needed)\n"
+                        },
+                        {
+                          "text": "✅ Error Recovery Journey Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Network Interruption Simulation",
+                          "duration": 395
+                        },
+                        {
+                          "title": "Error Recovery Mechanism",
+                          "duration": 2
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:56.513Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-5f140bd0d423e73fdb02",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 453,
+              "column": 7
+            },
+            {
+              "title": "Accessibility Compliance Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1811,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎯 Starting Accessibility Compliance Test...\n"
+                        },
+                        {
+                          "text": "✅ Home Page basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Chat Interface basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Document Upload basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Graph Visualization basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Basic Accessibility Compliance Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Basic Accessibility: Home Page",
+                          "duration": 182
+                        },
+                        {
+                          "title": "Basic Accessibility: Chat Interface",
+                          "duration": 259
+                        },
+                        {
+                          "title": "Basic Accessibility: Document Upload",
+                          "duration": 177
+                        },
+                        {
+                          "title": "Basic Accessibility: Graph Visualization",
+                          "duration": 243
+                        }
+                      ],
+                      "startTime": "2025-06-29T08:49:57.845Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-f47097ba374deba6be0a",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 497,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-06-29T08:47:55.812Z",
+    "duration": 123938.482,
+    "expected": 15,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

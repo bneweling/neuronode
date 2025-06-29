@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     chunk_overlap: int = 200
     max_retries: int = 3
     
+    # LiteLLM Proxy Configuration
+    litellm_proxy_url: str = "http://localhost:4000"  # Default for development
+    
     # Pydantic v2 configuration
     model_config = ConfigDict(env_file=".env", protected_namespaces=('settings_',))
     

@@ -2,9 +2,10 @@
 Pydantic-Modelle für strukturierte LLM-Antworten
 Gewährleistet robustes Parsing von LLM-Outputs
 """
-from typing import List, Optional, Dict, Any, Literal
+from typing import List, Optional, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field, validator
 from enum import Enum
+from datetime import datetime
 
 class RelationshipType(str, Enum):
     """Enum für Beziehungstypen"""
@@ -20,6 +21,114 @@ class ConfidenceLevel(str, Enum):
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     VERY_HIGH = "VERY_HIGH"
+
+class QueryIntent(str, Enum):
+    """Enum für Query-Intents"""
+    COMPLIANCE_REQUIREMENT = "compliance_requirement"
+    TECHNICAL_IMPLEMENTATION = "technical_implementation"
+    MAPPING_COMPARISON = "mapping_comparison"
+    BEST_PRACTICE = "best_practice"
+    SPECIFIC_CONTROL = "specific_control"
+    GENERAL_INFORMATION = "general_information"
+
+class RequestPriorityLevel(str, Enum):
+    """Request priority levels for LiteLLM"""
+    CRITICAL = "CRITICAL"  # 10 - Intent Analysis
+    HIGH = "HIGH"         # 8 - Real-time queries
+    MEDIUM = "MEDIUM"     # 6 - Standard processing
+    LOW = "LOW"           # 4 - Response synthesis
+    BATCH = "BATCH"       # 2 - Background processing
+
+class EntityData(BaseModel):
+    """Entity data structure for query analysis"""
+    text: str = Field(description="Entity text")
+    entity_type: str = Field(description="Type of entity (CONCEPT, STANDARD, TECHNOLOGY, etc.)")
+    confidence: float = Field(ge=0.0, le=1.0, description="Confidence score")
+
+class QueryAnalysis(BaseModel):
+    """Structured query analysis result"""
+    primary_intent: QueryIntent = Field(description="Primary intent of the query")
+    secondary_intents: List[QueryIntent] = Field(default_factory=list, description="Secondary intents")
+    entities: List[EntityData] = Field(default_factory=list, description="Extracted entities")
+    search_keywords: List[str] = Field(default_factory=list, description="Search keywords")
+    requires_comparison: bool = Field(default=False, description="Whether query requires comparison")
+    temporal_context: Optional[str] = Field(None, description="Temporal context if any")
+    confidence: float = Field(ge=0.0, le=1.0, description="Overall analysis confidence")
+    complexity_score: float = Field(ge=0.0, le=1.0, description="Query complexity score")
+
+class SynthesizedResponse(BaseModel):
+    """Synthesized response from LLM"""
+    answer: str = Field(description="Main response text")
+    sources: List[Dict[str, Any]] = Field(default_factory=list, description="Source references")
+    confidence: float = Field(ge=0.0, le=1.0, description="Response confidence")
+    follow_up_questions: List[str] = Field(default_factory=list, description="Suggested follow-up questions")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+class LLMRequest(BaseModel):
+    """Request structure for LiteLLM client"""
+    messages: List[Dict[str, str]] = Field(description="Chat messages")
+    model: str = Field(description="Model identifier")
+    priority: RequestPriorityLevel = Field(default=RequestPriorityLevel.MEDIUM, description="Request priority")
+    purpose: str = Field(description="Purpose/use case for model selection")
+    stream: bool = Field(default=False, description="Whether to stream response")
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Temperature setting")
+    max_tokens: Optional[int] = Field(None, ge=1, description="Maximum tokens")
+    timeout: Optional[float] = Field(None, ge=0.1, description="Request timeout in seconds")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional request metadata")
+
+class LLMResponse(BaseModel):
+    """Response structure from LiteLLM client"""
+    content: str = Field(description="Response content")
+    model: str = Field(description="Model used")
+    usage: Dict[str, int] = Field(default_factory=dict, description="Token usage statistics")
+    finish_reason: str = Field(description="Reason for completion")
+    response_time: float = Field(description="Response time in seconds")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional response metadata")
+
+class LLMStreamResponse(BaseModel):
+    """Stream response chunk from LiteLLM client"""
+    content: str = Field(description="Content chunk")
+    model: str = Field(description="Model used")
+    finish_reason: Optional[str] = Field(None, description="Reason for completion if finished")
+    is_final: bool = Field(default=False, description="Whether this is the final chunk")
+    chunk_index: int = Field(description="Index of this chunk")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional chunk metadata")
+
+class LLMMessage(BaseModel):
+    """Message structure for LLM conversations"""
+    role: str = Field(description="Message role (user, assistant, system)")
+    content: str = Field(description="Message content")
+
+class EmbeddingRequest(BaseModel):
+    """Request structure for embeddings"""
+    input: Union[str, List[str]] = Field(description="Text to embed")
+    model: str = Field(description="Embedding model identifier")
+    encoding_format: str = Field(default="float", description="Encoding format")
+    dimensions: Optional[int] = Field(None, description="Number of dimensions")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional request metadata")
+
+class EmbeddingResponse(BaseModel):
+    """Response structure for embeddings"""
+    embeddings: List[List[float]] = Field(description="Generated embeddings")
+    model: str = Field(description="Model used")
+    usage: Dict[str, int] = Field(default_factory=dict, description="Token usage")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional response metadata")
+
+class ModelCapabilities(BaseModel):
+    """Model capabilities and features"""
+    model_name: str = Field(description="Model identifier")
+    supports_streaming: bool = Field(default=False, description="Whether model supports streaming")
+    supports_function_calling: bool = Field(default=False, description="Whether model supports function calling")
+    max_tokens: Optional[int] = Field(None, description="Maximum token limit")
+    supports_vision: bool = Field(default=False, description="Whether model supports vision/images")
+    context_window: Optional[int] = Field(None, description="Context window size")
+    cost_per_token: Optional[float] = Field(None, description="Cost per token")
+
+class RequestPriority(BaseModel):
+    """Request priority configuration"""
+    level: RequestPriorityLevel = Field(description="Priority level")
+    queue_position: int = Field(description="Position in priority queue")
+    estimated_wait_time: Optional[float] = Field(None, description="Estimated wait time in seconds")
 
 class RelationshipAnalysis(BaseModel):
     """Strukturierte LLM-Antwort für Beziehungsanalyse"""

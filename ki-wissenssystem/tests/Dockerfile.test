@@ -1,0 +1,38 @@
+FROM mcr.microsoft.com/playwright:v1.40.0-focal
+
+# ===================================================================
+# ENTERPRISE TEST RUNNER - PLAYWRIGHT & NODE.JS
+# ===================================================================
+
+WORKDIR /app
+
+# Install Node.js dependencies
+COPY tests/package.json tests/package-lock.json ./
+RUN npm ci
+
+# Install additional dependencies for enterprise testing
+RUN apt-get update && apt-get install -y \
+    curl \
+    jq \
+    postgresql-client \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy test files
+COPY tests/ ./tests/
+COPY ki-wissenssystem-webapp/src/ ./src/
+COPY ki-wissenssystem-webapp/public/ ./public/
+
+# Install Playwright browsers
+RUN npx playwright install --with-deps chromium firefox webkit
+
+# Set environment variables
+ENV NODE_ENV=test
+ENV CI=true
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Create directories for test results
+RUN mkdir -p test-results playwright-report
+
+# Test execution command
+CMD ["npm", "run", "test:e2e:ci"] 

@@ -1,6 +1,20 @@
-from typing import List, Dict, Any, Optional
-from src.models.document_types import ControlItem, DocumentType
-from src.config.llm_config import llm_router, ModelPurpose
+# ===================================================================
+# STRUCTURED EXTRACTOR - LEGACY WRAPPER FOR LITELLM MIGRATION
+# KI-Wissenssystem - LiteLLM v1.72.6 Migration
+# 
+# MIGRATION STATUS:
+# - Core RAG Pipeline: 100% migrated to LiteLLM
+# - Legacy Wrapper: Maintains compatibility during transition
+# - Future Migration: To be migrated to EnhancedLiteLLMClient
+# ===================================================================
+
+from typing import List, Dict, Any, Optional, Tuple
+# Legacy wrapper import - TODO: Migrate to EnhancedLiteLLMClient
+try:
+    from src.config.llm_config import llm_router, ModelPurpose
+except ImportError:
+    # Fallback for migration phase
+    from src.config.llm_config_legacy import legacy_llm_router as llm_router, ModelPurpose
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
@@ -12,6 +26,7 @@ from src.config.exceptions import (
     ErrorCode, ProcessingPipelineError, LLMServiceError
 )
 from src.utils.error_handler import error_handler, handle_exceptions
+from src.models.document_types import DocumentType, ControlItem
 
 logger = logging.getLogger(__name__)
 

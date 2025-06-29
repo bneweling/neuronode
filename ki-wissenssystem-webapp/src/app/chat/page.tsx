@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
 import { Box } from '@mui/material'
+import { useEffect } from 'react'
+
 import ChatInterface from '@/components/chat/ChatInterface'
 
 export default function ChatPage() {

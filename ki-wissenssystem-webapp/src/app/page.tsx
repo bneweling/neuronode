@@ -1,6 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import {
+  Chat as ChatIcon,
+  AccountTree as GraphIcon,
+  CloudUpload as UploadIcon,
+  Assessment as StatusIcon,
+  School as KnowledgeIcon,
+  Science as DemoIcon,
+  Cloud as ProductionIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material'
 import {
   Container,
   Grid,
@@ -14,17 +23,9 @@ import {
   Chip,
   Alert,
 } from '@mui/material'
-import {
-  Chat as ChatIcon,
-  AccountTree as GraphIcon,
-  CloudUpload as UploadIcon,
-  Assessment as StatusIcon,
-  School as KnowledgeIcon,
-  Science as DemoIcon,
-  Cloud as ProductionIcon,
-  Settings as SettingsIcon,
-} from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+
 import QuickChatInterface from '@/components/chat/QuickChatInterface'
 import { useAppConfig } from '@/hooks/useAppConfig'
 
@@ -76,7 +77,7 @@ export default function HomePage() {
   )
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container maxWidth="lg" sx={{ py: 6 }} data-testid="home-container">
       {/* Mode Indicator - Nur nach Client Mount rendern */}
       {isMounted && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>

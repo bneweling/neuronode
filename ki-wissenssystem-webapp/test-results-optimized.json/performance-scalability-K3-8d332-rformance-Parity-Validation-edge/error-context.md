@@ -1,0 +1,90 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - button "menu"
+  - text: KI-Chat
+  - button
+- main:
+  - heading "Chat-Verlauf" [level=6]
+  - button "Neuer Chat"
+  - list:
+    - listitem:
+      - button "Neuer Chat 29.06.2025":
+        - text: Neuer Chat
+        - paragraph: 29.06.2025
+        - button
+  - button
+  - heading "Neuer Chat" [level=6]
+  - text: 19 Nachrichten
+  - list:
+    - listitem:
+      - paragraph: Hallo! Ich bin Ihr KI-Assistent. Wie kann ich Ihnen heute helfen?
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 0 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 0 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 1 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 1 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 2 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 2 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 3 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 3 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 4 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 4 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 5 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 5 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 6 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 6 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 7 for scroll test
+      - text: 12:56
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 7 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:56
+    - listitem:
+      - paragraph: Message 8 for scroll test
+      - text: 12:57
+    - listitem:
+      - paragraph: Das ist eine interessante Frage zu "Message 8 for scroll test". Im Demo-Modus kann ich Ihnen zeigen, wie das System funktioniert. In der Produktionsversion würde ich auf Ihre echten Dokumente und Datenquellen zugreifen, um eine präzise Antwort zu geben.
+      - text: 12:57
+    - listitem:
+      - paragraph: Message 9 for scroll test
+      - text: 12:57
+    - listitem:
+      - progressbar:
+        - img
+      - paragraph: KI antwortet...
+  - textbox "Nachricht eingeben..." [disabled]
+  - button [disabled]
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+```

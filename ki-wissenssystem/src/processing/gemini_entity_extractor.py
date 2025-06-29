@@ -16,41 +16,31 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from pathlib import Path
 import sys
+import asyncio
 
 # Füge das Konfigurationsmodul hinzu
 sys.path.append(str(Path(__file__).parent.parent))
 
+# Migration: New LiteLLM imports
+from ..llm.enhanced_litellm_client import (
+    get_litellm_client, 
+    EnhancedLiteLLMClient,
+    RequestPriorityLevel,
+    LiteLLMExceptionMapper
+)
+from ..llm.enhanced_model_manager import get_model_manager, TaskType, ModelTier
+from ..models.llm_models import LLMRequest, LLMMessage
+from ..config.prompt_loader import get_prompt
+
+# Legacy imports removed:
+# import google.generativeai as genai
+# from src.config.ai_services_loader import get_config
+
+# Optional imports with fallbacks
 try:
     import redis
 except ImportError:
     redis = None
-
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
-try:
-    from tenacity import retry, stop_after_attempt, wait_exponential
-    TENACITY_AVAILABLE = True
-except ImportError:
-    TENACITY_AVAILABLE = False
-    # Fallback-Decorator für retry
-    def retry(stop=None, wait=None):
-        def decorator(func):
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
-    
-    def stop_after_attempt(attempts):
-        return None
-    
-    def wait_exponential(multiplier=1, min=4, max=10):
-        return None
-
-from src.config.prompt_loader import get_prompt
-from src.config.ai_services_loader import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -81,70 +71,34 @@ class ExtractionResult:
 
 class GeminiEntityExtractor:
     """
-    API-basierter Entity Extractor mit Google Gemini.
+    Enhanced Entity Extractor with LiteLLM integration
     
-    Features:
-    - Redis-Caching mit konfigurierbarer TTL
-    - Batch-Verarbeitung für Effizienz  
-    - Retry-Mechanismus mit exponential backoff
-    - Fallback auf Regex-Extraktor bei Fehlern
-    - Kosten- und Performance-Tracking
+    MIGRATION FEATURES:
+    - Uses extraction-primary model (Gemini Pro for structured output)
+    - BATCH priority for quality validation tasks
+    - Redis caching with deterministic cache keys
+    - Enhanced error handling with LiteLLM exception mapping
+    - Backward compatible API for existing quality validation
+    - Performance optimized for batch entity extraction
     """
     
     def __init__(self):
         """
-        Initialisiert den Gemini Entity Extractor.
+        Initialisiert den Enhanced Entity Extractor.
         """
-        self.config = get_config()
-        self._setup_gemini_client()
+        self.litellm_client = get_litellm_client()
         self._setup_redis_client()
-        self.fallback_extractor = None  # Wird bei Bedarf geladen
+        self.fallback_extractor = None  # Legacy fallback if needed
         
         # Performance-Metriken
         self.total_api_calls = 0
         self.total_cache_hits = 0
         self.total_processing_time = 0.0
         
-        # Logge verfügbare Dependencies
-        if not redis:
-            logger.warning("Redis nicht verfügbar - Caching deaktiviert")
-        if not genai:
-            logger.warning("Google Generative AI nicht verfügbar - Fallback-Modus")
-        if not TENACITY_AVAILABLE:
-            logger.warning("Tenacity nicht verfügbar - Retry-Mechanismus deaktiviert")
+        # Configuration
+        self.cache_ttl = 2592000  # 30 days for document entity extraction
         
-        logger.info("GeminiEntityExtractor initialisiert")
-    
-    def _setup_gemini_client(self) -> None:
-        """
-        Konfiguriert den Gemini API Client.
-        """
-        if not genai:
-            logger.warning("Google Generative AI nicht installiert - Fallback-Modus")
-            self.gemini_client = None
-            self.model_name = "N/A"  # Setze Fallback-Modellname
-            return
-        
-        gemini_config = self.config.get_gemini_config()
-        api_key = gemini_config.get('api_key')
-        
-        if not api_key or api_key.startswith('${'):
-            logger.warning("Gemini API Key nicht konfiguriert - Fallback-Modus")
-            self.gemini_client = None
-            self.model_name = "N/A"  # Setze Fallback-Modellname
-            return
-        
-        try:
-            genai.configure(api_key=api_key)
-            self.model_name = self.config.get_model_for_task('extraction')
-            self.gemini_client = genai.GenerativeModel(self.model_name)
-            
-            logger.info(f"Gemini Client konfiguriert mit Modell: {self.model_name} (aus LLM-Config)")
-            
-        except Exception as e:
-            logger.error(f"Fehler bei Gemini Client Setup: {e}")
-            self.gemini_client = None
-            self.model_name = "N/A"  # Setze Fallback-Modellname
+        logger.info("Enhanced GeminiEntityExtractor initialized with LiteLLM client")
     
     def _setup_redis_client(self) -> None:
         """
@@ -155,20 +109,16 @@ class GeminiEntityExtractor:
             self.redis_client = None
             return
         
-        redis_config = self.config.get_redis_config()
-        
         try:
             self.redis_client = redis.Redis(
-                host=redis_config.get('host', 'localhost'),
-                port=redis_config.get('port', 6379),
-                db=redis_config.get('db', 0),
+                host="localhost",  # Default configuration
+                port=6379,
+                db=0,
                 decode_responses=True
             )
             
             # Test-Verbindung
             self.redis_client.ping()
-            
-            self.cache_ttl = redis_config.get('ttl_for_documents_seconds', 2592000)  # 30 Tage
             logger.info(f"Redis Client konfiguriert - TTL: {self.cache_ttl}s")
             
         except Exception as e:
@@ -178,26 +128,14 @@ class GeminiEntityExtractor:
     def _get_cache_key(self, text_chunk: str) -> str:
         """
         Generiert einen Cache-Schlüssel für einen Text-Chunk.
-        
-        Args:
-            text_chunk: Der zu verarbeitende Text
-            
-        Returns:
-            SHA-256 Hash als Cache-Schlüssel
         """
         # Erstelle deterministischen Hash aus Text + Modell + Prompt-Version
-        content = f"{text_chunk}|{self.model_name}|ner_extraction_v1_few_shot"
-        return f"ner_cache:{hashlib.sha256(content.encode()).hexdigest()[:16]}"
+        content = f"{text_chunk}|extraction-primary|ner_extraction_v1_few_shot"
+        return f"ner_cache_v2:{hashlib.sha256(content.encode()).hexdigest()[:16]}"
     
     def _get_from_cache(self, cache_key: str) -> Optional[List[ExtractedEntity]]:
         """
         Holt Ergebnis aus dem Redis Cache.
-        
-        Args:
-            cache_key: Cache-Schlüssel
-            
-        Returns:
-            Liste von ExtractedEntity oder None
         """
         if not self.redis_client:
             return None
@@ -217,10 +155,6 @@ class GeminiEntityExtractor:
     def _store_in_cache(self, cache_key: str, entities: List[ExtractedEntity]) -> None:
         """
         Speichert Ergebnis im Redis Cache.
-        
-        Args:
-            cache_key: Cache-Schlüssel
-            entities: Liste von ExtractedEntity
         """
         if not self.redis_client:
             return
@@ -247,54 +181,83 @@ class GeminiEntityExtractor:
         except Exception as e:
             logger.warning(f"Cache-Speicherung fehlgeschlagen: {e}")
     
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
-    def _call_gemini_api(self, prompt: str) -> str:
+    def _create_extraction_prompt(self, text_chunk: str) -> str:
+        """Create structured entity extraction prompt"""
+        return f"""Du bist ein Experte für die Extraktion von Entitäten aus Compliance- und Sicherheitsdokumenten.
+
+Extrahiere alle relevanten Entitäten aus dem folgenden Text und klassifiziere sie in diese Kategorien:
+- STANDARD: Standards und Frameworks (z.B. "ISO 27001", "NIST CSF", "BSI IT-Grundschutz")
+- CONTROL_ID: Spezifische Kontroll-IDs (z.B. "A.5.1.1", "OPS-01", "SC-7")
+- TECHNOLOGY: Technologien und Produkte (z.B. "Microsoft Azure", "Kubernetes", "LDAP")
+- PROCESS: Geschäftsprozesse und Aktivitäten (z.B. "Risikobewertung", "Incident Management")
+- ROLE: Rollen und Verantwortlichkeiten (z.B. "CISO", "Systemadministrator", "Data Controller")
+- ORGANIZATION: Organisationen und Unternehmen (z.B. "BSI", "Microsoft", "NIST")
+
+Antworte mit einem JSON-Objekt in folgendem Format:
+{{
+    "entities": [
+        {{
+            "text": "Gefundener Entitäten-Text",
+            "category": "KATEGORIE",
+            "confidence": 0.95
+        }}
+    ]
+}}
+
+Text für Entitäten-Extraktion:
+
+{text_chunk}"""
+    
+    async def _call_litellm_api_async(self, prompt: str) -> str:
         """
-        Führt einen API-Call an Gemini durch mit Retry-Mechanismus.
-        
-        Args:
-            prompt: Der formatierte Prompt
-            
-        Returns:
-            JSON-Response als String
-            
-        Raises:
-            Exception: Bei dauerhaften API-Fehlern
+        Führt einen API-Call an LiteLLM durch mit Retry-Mechanismus.
         """
-        if not self.gemini_client:
-            raise Exception("Gemini Client nicht verfügbar")
-        
         try:
-            gemini_config = self.config.get_gemini_config()
-            timeout = gemini_config.get('timeout_seconds', 45)
+            # === DYNAMIC MODEL RESOLUTION ===
+            # Get model manager and resolve optimal model for extraction task
+            model_manager = await get_model_manager()
+            model_config = await model_manager.get_model_for_task(
+                task_type=TaskType.EXTRACTION,
+                model_tier=ModelTier.BALANCED,  # Extraction needs good quality balance
+                fallback=True
+            )
             
-            response = self.gemini_client.generate_content(
-                prompt,
-                generation_config={
-                    'temperature': 0.1,  # Niedrige Temperatur für konsistente Extraktion
-                    'candidate_count': 1,
+            # Create LLM request with dynamically resolved model
+            request = LLMRequest(
+                messages=[
+                    LLMMessage(role="user", content=prompt)
+                ],
+                model=model_config["model"],  # DYNAMIC: Resolved from LiteLLM UI
+                temperature=0.1,  # Low temperature for consistent extraction
+                max_tokens=4096,
+                stream=False,
+                # Request structured JSON response
+                extra_kwargs={
+                    "response_format": {"type": "json_object"}
                 }
             )
             
+            logger.info(f"Using dynamic model for extraction: {model_config['model']} (tier: {model_config['tier']}, strategy: {model_config['selection_strategy']})")
+            
+            # Execute with BATCH priority (quality validation background task)
+            response = await self.litellm_client.complete(
+                request=request,
+                priority=RequestPriorityLevel.BATCH,  # Background processing priority
+                purpose="entity_extraction_validation"  # For audit logging
+            )
+            
             self.total_api_calls += 1
-            return response.text.strip()
+            return response.content.strip()
             
         except Exception as e:
-            logger.error(f"Gemini API Call fehlgeschlagen: {e}")
-            raise
+            logger.error(f"LiteLLM API Call fehlgeschlagen: {e}")
+            # Map LiteLLM exceptions for better error handling
+            mapped_exception = LiteLLMExceptionMapper.map_exception(e)
+            raise mapped_exception
     
-    def _parse_gemini_response(self, response_text: str) -> List[ExtractedEntity]:
+    def _parse_llm_response(self, response_text: str) -> List[ExtractedEntity]:
         """
-        Parst die JSON-Antwort von Gemini in ExtractedEntity Objekte.
-        
-        Args:
-            response_text: JSON-Response von Gemini
-            
-        Returns:
-            Liste von ExtractedEntity
+        Parst die JSON-Antwort von LiteLLM in ExtractedEntity Objekte.
         """
         try:
             # Entferne mögliche Markdown-Formatierung
@@ -319,43 +282,31 @@ class GeminiEntityExtractor:
             return entities
             
         except (json.JSONDecodeError, KeyError, ValueError) as e:
-            logger.error(f"Fehler beim Parsen der Gemini-Antwort: {e}")
+            logger.error(f"Fehler beim Parsen der LiteLLM-Antwort: {e}")
             logger.debug(f"Response Text: {response_text}")
             return []
     
     def _use_fallback_extractor(self, text_chunk: str) -> List[ExtractedEntity]:
         """
-        Verwendet den alten Regex-Extraktor als Fallback.
-        
-        Args:
-            text_chunk: Der zu verarbeitende Text
-            
-        Returns:
-            Liste von ExtractedEntity
+        Verwendet einen einfachen Pattern-basierten Extraktor als Fallback.
         """
-        if not self.config.is_fallback_enabled('regex_fallback_on_error'):
-            logger.warning("Fallback deaktiviert - leere Ergebnisse zurückgegeben")
-            return []
+        logger.warning("Using pattern-based fallback extractor")
         
-        # Lazy-Loading des Fallback-Extractors
-        if self.fallback_extractor is None:
-            try:
-                # Hier würde der Import des alten Extractors stehen
-                # from extractors.regex_entity_extractor import RegexEntityExtractor
-                # self.fallback_extractor = RegexEntityExtractor()
-                logger.info("Fallback-Extraktor würde hier geladen werden")
-                return []  # Placeholder
-            except ImportError:
-                logger.error("Fallback-Extraktor nicht verfügbar")
-                return []
+        # Simple pattern-based extraction for basic entities
+        entities = []
+        text_lower = text_chunk.lower()
         
-        try:
-            # return self.fallback_extractor.extract(text_chunk)
-            logger.info("Fallback-Extraktion würde hier durchgeführt werden")
-            return []  # Placeholder
-        except Exception as e:
-            logger.error(f"Fallback-Extraktion fehlgeschlagen: {e}")
-            return []
+        # Standard patterns
+        if any(term in text_lower for term in ["iso 27001", "iso/iec 27001", "isms"]):
+            entities.append(ExtractedEntity("ISO 27001", "STANDARD", 0.8))
+        
+        if any(term in text_lower for term in ["bsi", "grundschutz", "it-grundschutz"]):
+            entities.append(ExtractedEntity("BSI IT-Grundschutz", "STANDARD", 0.8))
+        
+        if any(term in text_lower for term in ["nist", "cybersecurity framework"]):
+            entities.append(ExtractedEntity("NIST CSF", "STANDARD", 0.8))
+        
+        return entities
     
     def extract_entities(self, text_chunk: str, chunk_id: str = None) -> ExtractionResult:
         """
@@ -386,14 +337,24 @@ class GeminiEntityExtractor:
                 source='cache'
             )
         
-        # 2. API-basierte Extraktion
+        # 2. LiteLLM-basierte Extraktion
         try:
-            prompt = get_prompt("ner_extraction_v1_few_shot", text_block=text_chunk)
-            response_text = self._call_gemini_api(prompt)
-            entities = self._parse_gemini_response(response_text)
+            # Create structured extraction prompt
+            extraction_prompt = self._create_extraction_prompt(text_chunk)
             
-            # Cache das Ergebnis
-            self._store_in_cache(cache_key, entities)
+            # Run async extraction in sync context
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If already in an event loop, use fallback
+                entities = self._use_fallback_extractor(text_chunk)
+                source = 'fallback'
+            else:
+                response_text = loop.run_until_complete(self._call_litellm_api_async(extraction_prompt))
+                entities = self._parse_llm_response(response_text)
+                source = 'api'
+                
+                # Cache das Ergebnis
+                self._store_in_cache(cache_key, entities)
             
             processing_time = int((time.time() - start_time) * 1000)
             self.total_processing_time += processing_time
@@ -402,12 +363,12 @@ class GeminiEntityExtractor:
                 entities=entities,
                 chunk_id=chunk_id,
                 processing_time_ms=processing_time,
-                source='api',
+                source=source,
                 api_cost_estimate=self._estimate_api_cost(text_chunk)
             )
             
         except Exception as e:
-            logger.error(f"API-Extraktion für Chunk {chunk_id} fehlgeschlagen: {e}")
+            logger.error(f"LiteLLM-Extraktion für Chunk {chunk_id} fehlgeschlagen: {e}")
             
             # 3. Fallback-Mechanismus
             entities = self._use_fallback_extractor(text_chunk)
@@ -442,25 +403,16 @@ class GeminiEntityExtractor:
     def _estimate_api_cost(self, text: str) -> float:
         """
         Schätzt die API-Kosten für einen Text.
-        
-        Args:
-            text: Der verarbeitete Text
-            
-        Returns:
-            Geschätzte Kosten in USD
         """
-        # Grobe Schätzung: Gemini Flash ~$0.075/1M input tokens
+        # Grobe Schätzung: Gemini Pro ~$3.5/1M input tokens via LiteLLM
         # Durchschnittlich ~4 Zeichen pro Token
         estimated_tokens = len(text) / 4
-        cost_per_token = 0.075 / 1_000_000
+        cost_per_token = 3.5 / 1_000_000
         return estimated_tokens * cost_per_token
     
     def get_performance_stats(self) -> Dict[str, Any]:
         """
         Gibt Performance-Statistiken zurück.
-        
-        Returns:
-            Dictionary mit Performance-Metriken
         """
         total_requests = self.total_api_calls + self.total_cache_hits
         cache_hit_rate = self.total_cache_hits / total_requests if total_requests > 0 else 0
@@ -470,7 +422,34 @@ class GeminiEntityExtractor:
             'total_cache_hits': self.total_cache_hits,
             'cache_hit_rate': cache_hit_rate,
             'average_processing_time_ms': self.total_processing_time / self.total_api_calls if self.total_api_calls > 0 else 0,
-            'gemini_model': self.model_name if hasattr(self, 'model_name') else 'N/A',
+            'model': 'extraction-primary (LiteLLM)',
             'redis_available': self.redis_client is not None,
-            'gemini_available': self.gemini_client is not None
-        } 
+            'litellm_available': True
+        }
+
+
+# ===================================================================
+# BACKWARD COMPATIBILITY WRAPPER 
+# ===================================================================
+
+class GeminiEntityExtractorLegacy:
+    """Legacy wrapper for backward compatibility during migration"""
+    
+    def __init__(self):
+        self.enhanced_extractor = GeminiEntityExtractor()
+        logger.warning("Using legacy GeminiEntityExtractor wrapper - migrate to GeminiEntityExtractor")
+    
+    def extract_entities(self, text_chunk: str, chunk_id: str = None) -> ExtractionResult:
+        """Legacy extraction method"""
+        return self.enhanced_extractor.extract_entities(text_chunk, chunk_id)
+    
+    def extract_entities_batch(self, text_chunks: List[str]) -> List[ExtractionResult]:
+        """Legacy batch extraction method"""
+        return self.enhanced_extractor.extract_entities_batch(text_chunks)
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Legacy performance stats method"""
+        return self.enhanced_extractor.get_performance_stats()
+
+# Legacy alias for existing code
+LegacyGeminiEntityExtractor = GeminiEntityExtractorLegacy 

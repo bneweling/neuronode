@@ -98,6 +98,131 @@ services:
     depends_on:
       - api
 
+  # Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8080"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - REDIS_HOST=redis
+      - LITELLM_PROXY_URL=http://litellm-proxy:4000
+    depends_on:
+      - neo4j
+      - chromadb
+      - redis
+      - litellm-proxy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./src:/app/src
+    networks:
+      - ki-network
+
+  # ===================================================================
+  # LITELLM PROXY - ENTERPRISE CENTRAL LLM HUB
+  # Version: v1.72.6-stable (Pre-Release with Performance Optimizations)
+  # Features: aiohttp transport, multi-instance rate limiting, file permissions
+  # ===================================================================
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-v1.72.6.rc
+    container_name: ki-wissenssystem-litellm-proxy
+    ports:
+      - "4000:4000"    # Main LiteLLM API endpoint
+      - "4001:4001"    # Prometheus metrics endpoint
+    environment:
+      # ===== API KEYS =====
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      
+      # ===== PERFORMANCE OPTIMIZATIONS (v1.72.0+) =====
+      - USE_AIOHTTP_TRANSPORT=true           # 2x RPS improvement
+      - EXPERIMENTAL_ENABLE_MULTI_INSTANCE_RATE_LIMITING=true
+      
+      # ===== DATABASE & STORAGE =====
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/litellm_db
+      - STORE_MODEL_IN_DB=true
+      
+      # ===== REDIS CONFIGURATION =====
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      
+      # ===== SECURITY & FEATURES =====
+      - ENABLE_FILE_PERMISSIONS=true         # v1.72.0+ vector store control
+      - ENABLE_AUDIT_LOGS=true              # Enterprise audit logging
+      
+      # ===== MONITORING & LOGGING =====
+      - LITELLM_LOG=INFO
+      - PROMETHEUS_PORT=4001
+      - TRACK_END_USERS_PROMETHEUS=false    # Prevent metrics bloat
+      
+      # ===== MASTER KEY (CHANGE IN PRODUCTION!) =====
+      - LITELLM_MASTER_KEY=sk-ki-system-master-2025
+      
+      # ===== UI AUTHENTICATION (per Documentation) =====
+      - UI_USERNAME=admin
+      - UI_PASSWORD=litellm-admin-2025
+      
+      # ===== TEMPORARY: DISABLE AUTH FOR TESTING =====
+      - DISABLE_AUTH=true
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+      - litellm_logs:/app/logs
+    command: [
+      "--config", "/app/config.yaml",
+      "--port", "4000",
+      "--host", "0.0.0.0",
+      "--detailed_debug"
+    ]
+    networks:
+      - ki-network
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===================================================================
+  # LITELLM WEB UI - INTEGRATED IN PROXY (per Documentation)
+  # UI läuft auf http://localhost:4000/ui (kein separater Container nötig)
+  # Konfiguration: UI_USERNAME und UI_PASSWORD im litellm-proxy service
+  # ===================================================================
+
+  # ===================================================================
+  # POSTGRESQL DATABASE FOR LITELLM
+  # Required for: model storage, audit logs, rate limiting, budgets
+  # ===================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: ki-wissenssystem-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=litellm_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ki-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d litellm_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
 networks:
   ki-network:
     driver: bridge
@@ -109,3 +234,5 @@ volumes:
   neo4j_plugins:
   chroma_data:
   redis_data:
+  postgres_data:      # PostgreSQL data for LiteLLM
+  litellm_logs:       # LiteLLM application logs

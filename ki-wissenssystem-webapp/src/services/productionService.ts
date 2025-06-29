@@ -62,6 +62,7 @@ export class ProductionAPIService implements KIWissenssystemAPI {
     document_type?: string;
     num_chunks?: number;
     num_controls?: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: any;
   }> {
     try {
@@ -161,6 +162,7 @@ export class ProductionAPIService implements KIWissenssystemAPI {
       const result = await response.json()
       
       // Transform backend response to frontend format
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const nodes = result.nodes.map((node: any) => ({
         id: node.id,
         label: node.label,
@@ -170,6 +172,7 @@ export class ProductionAPIService implements KIWissenssystemAPI {
         ...node.properties
       }))
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const edges = result.edges.map((edge: any) => ({
         id: edge.id,
         source: edge.source,

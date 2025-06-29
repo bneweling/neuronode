@@ -1,28 +1,5 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  List,
-  ListItem,
-  Avatar,
-  Chip,
-  CircularProgress,
-  Alert,
-  IconButton,
-  ListItemButton,
-  ListItemText,
-  ListItemIcon,
-  Button,
-  Menu,
-  MenuItem,
-  Slide,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material'
 import {
   Send as SendIcon,
   Stop as StopIcon,
@@ -37,12 +14,38 @@ import {
   Edit as EditIcon,
   AccountTree as GraphIcon,
 } from '@mui/icons-material'
-import { getAPIClient } from '@/lib/serviceFactory'
-import GraphVisualization from '@/components/graph/GraphVisualization'
-import { ExplanationGraph } from '@/components/chat/ExplanationGraph'
-import { useChatManager, type Message } from '@/hooks/useChatManager'
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  List,
+  ListItem,
+  Avatar,
+  Chip,
+  CircularProgress,
 
-export default function ChatInterface() {
+  IconButton,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Button,
+  Menu,
+  MenuItem,
+  Slide,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material'
+import { useState, useRef, useEffect, useCallback } from 'react'
+
+import { ExplanationGraph } from '@/components/chat/ExplanationGraph'
+import InlineErrorDisplay from '@/components/error/InlineErrorDisplay'
+import GraphVisualization from '@/components/graph/GraphVisualization'
+import { useChatApiError } from '@/hooks/useChatApi'
+import { useChatManager, type Message } from '@/hooks/useChatManager'
+import { getAPIClient } from '@/lib/serviceFactory'
+
+function ChatInterfaceCore() {
   // Chat Management Hook
   const chatManager = useChatManager()
   
@@ -51,10 +54,32 @@ export default function ChatInterface() {
   const [graphViewOpen, setGraphViewOpen] = useState(false)
   const [hasGraphBeenShown, setHasGraphBeenShown] = useState(false)
   const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
   const [selectedChatForMenu, setSelectedChatForMenu] = useState<string | null>(null)
+  
+  // K3.1.3 Enhanced Error Handling with Global Error Context
+  const {
+    isLoading,
+    executeWithErrorHandling,
+    clearError
+  } = useChatApiError({
+    onError: (backendError) => {
+      console.error('Chat API Error:', backendError)
+      // Handle specific error types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((backendError as any)?.error_code === 'LLM_API_QUOTA_EXCEEDED') {
+        // Auto-retry will be handled by the hook
+        console.log('LLM quota exceeded, auto-retry initiated...')
+      }
+    },
+    onRetry: (retryCount) => {
+      console.log(`Chat retry attempt #${retryCount}`)
+    },
+    onSuccess: () => {
+      // Clear any existing errors when successful
+      console.log('Chat message sent successfully')
+    }
+  })
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -95,44 +120,56 @@ export default function ChatInterface() {
 
     // Add user message to current chat
     chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
+    const messageContent = inputValue.trim()
     setInputValue('')
-    setIsLoading(true)
-    setError(null)
+    
+    // Clear any existing errors
+    clearError()
 
     try {
-      const apiClient = getAPIClient()
-      const response = await apiClient.sendMessage(inputValue.trim())
-      
-      // Use backend decision first, fallback to keyword analysis
-      const backendGraphRelevant = response.metadata?.graph_relevant || false
-      const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
-      const hasGraphData = backendGraphRelevant || keywordGraphRelevant
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
-        role: 'assistant',
-        timestamp: new Date(),
-        hasGraphData,
-        explanationGraph: response.metadata?.explanation_graph as any
+      // K3.1 Enhanced API call with intelligent error handling
+      const response = await executeWithErrorHandling(
+        async () => {
+          const apiClient = getAPIClient()
+          return await apiClient.sendMessage(messageContent)
+        },
+        {
+          retryable: true, // Chat messages are generally retryable
+          context: 'chat-message'
+        }
+      )
+
+      // Handle successful response
+      if (response) {
+        // Use backend decision first, fallback to keyword analysis
+        const backendGraphRelevant = response.metadata?.graph_relevant || false
+        const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
+        const hasGraphData = backendGraphRelevant || keywordGraphRelevant
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
+          role: 'assistant',
+          timestamp: new Date(),
+          hasGraphData,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          explanationGraph: response.metadata?.explanation_graph as any
+        }
+
+        // Add assistant message to current chat
+        chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
+
+        // Show graph view if response has graph-relevant content
+        if (hasGraphData) {
+          setGraphViewOpen(true)
+          setHasGraphBeenShown(true)
+        }
       }
-
-      // Add assistant message to current chat
-      chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
-
-      // Show graph view if response has graph-relevant content
-      if (hasGraphData) {
-        setGraphViewOpen(true)
-        setHasGraphBeenShown(true)
-      }
-
     } catch (error) {
-      console.error('Chat-Fehler:', error)
-      setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
-    } finally {
-      setIsLoading(false)
+      // Error handling is managed by executeWithErrorHandling, but ensure proper state cleanup
+      console.warn('Chat message sending completed with potential errors:', error)
     }
-  }, [inputValue, isLoading, chatManager])
+  }, [inputValue, isLoading, chatManager, executeWithErrorHandling, clearError])
 
   const handleNewChat = () => {
     chatManager.createNewChat()
@@ -196,14 +233,22 @@ export default function ChatInterface() {
         }
 
         chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
-        setIsLoading(true)
-        setError(null)
+        clearError()
 
         const sendPendingMessage = async () => {
-          try {
-            const apiClient = getAPIClient()
-            const response = await apiClient.sendMessage(pendingMessage)
-            
+          // K3.1 Enhanced API call for pending messages
+          const response = await executeWithErrorHandling(
+            async () => {
+              const apiClient = getAPIClient()
+              return await apiClient.sendMessage(pendingMessage)
+            },
+            {
+              retryable: true,
+              context: 'pending-chat-message'
+            }
+          )
+
+          if (response) {
             // Use backend decision first, fallback to keyword analysis
             const backendGraphRelevant = response.metadata?.graph_relevant || false
             const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
@@ -223,14 +268,10 @@ export default function ChatInterface() {
               setGraphViewOpen(true)
               setHasGraphBeenShown(true)
             }
-
-          } catch (error) {
-            console.error('Chat-Fehler:', error)
-            setError('Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.')
-          } finally {
-            setIsLoading(false)
-            setInputValue('')
           }
+          
+          // Clear input only after processing is complete
+          setInputValue('')
         }
 
         sendPendingMessage()
@@ -242,7 +283,7 @@ export default function ChatInterface() {
     return () => {
       window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
     }
-  }, [isLoading, chatManager])
+  }, [isLoading, chatManager, executeWithErrorHandling, clearError])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -292,7 +333,7 @@ export default function ChatInterface() {
   }
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }} data-testid="chat-container">
       {/* Chat Management Sidebar */}
       <Box
         ref={sidebarRef}
@@ -414,6 +455,7 @@ export default function ChatInterface() {
             <IconButton
               onClick={() => setGraphViewOpen(!graphViewOpen)}
               color={graphViewOpen ? "primary" : "default"}
+              data-testid="graph-toggle-button"
               sx={{
                 bgcolor: graphViewOpen ? 'primary.main' : 'transparent',
                 color: graphViewOpen ? 'primary.contrastText' : 'inherit',
@@ -442,11 +484,16 @@ export default function ChatInterface() {
           )}
         </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
+        {/* K3.1.3 Global Error Display - Shows errors for 'chat' source */}
+        <InlineErrorDisplay 
+          source="chat" 
+          variant="banner"
+          showRetryButton={true}
+          onRetry={() => {
+            // Retry logic handled by InlineErrorDisplay component
+            console.log('Chat error retry requested')
+          }}
+        />
 
         {/* Messages */}
         <Paper
@@ -476,6 +523,7 @@ export default function ChatInterface() {
               >
                 {getMessageAvatar(message.role)}
                 <Box
+                  data-testid={message.role === 'assistant' ? 'chat-response' : undefined}
                   sx={{
                     maxWidth: '70%',
                     p: 2.5,
@@ -626,11 +674,13 @@ export default function ChatInterface() {
             disabled={isLoading}
             variant="outlined"
             size="small"
+            data-testid="chat-input"
           />
           <IconButton
             color="primary"
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
+            data-testid="chat-send"
             sx={{
               bgcolor: 'primary.main',
               color: 'primary.contrastText',
@@ -706,6 +756,41 @@ export default function ChatInterface() {
           <ListItemText>Löschen</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Graph Toggle Button */}
+      {graphViewOpen && (
+        <Box 
+          position="fixed" 
+          bottom={16} 
+          right={16} 
+          zIndex={1000}
+        >
+          <Button
+            variant="contained"
+            startIcon={<GraphIcon />}
+            onClick={() => setGraphViewOpen(false)}
+            data-testid="graph-toggle-button"
+            sx={{
+              bgcolor: 'secondary.main',
+              color: 'secondary.contrastText',
+              '&:hover': {
+                bgcolor: 'secondary.dark',
+              },
+              boxShadow: 3
+            }}
+          >
+            Graph ausblenden
+          </Button>
+        </Box>
+      )}
     </Box>
   )
+}
+
+/**
+ * K3.1.3 ChatInterface with Optimized Global Error Architecture
+ * Removed ErrorBoundary wrapper in favor of inline error display and global error context
+ */
+export default function ChatInterface() {
+  return <ChatInterfaceCore />
 } 

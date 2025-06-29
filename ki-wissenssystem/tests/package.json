@@ -1,0 +1,47 @@
+{
+  "name": "ki-wissenssystem-e2e-tests",
+  "version": "1.0.0",
+  "description": "Enterprise E2E Testing Suite for KI-Wissenssystem",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --reporter=html,json,junit",
+    "test:critical": "playwright test --grep=\"@critical\" --project=\"chromium-desktop,firefox-desktop\"",
+    "test:security": "playwright test --grep=\"@security\" --project=\"security-testing\"",
+    "test:performance": "playwright test --grep=\"@performance\" --project=\"performance-testing\"",
+    "test:accessibility": "playwright test --grep=\"@accessibility\" --project=\"accessibility-testing\"",
+    "test:mobile": "playwright test --project=\"mobile-chrome,mobile-safari\"",
+    "test:debug": "DEBUG=1 playwright test --headed --project=\"debug-chrome\"",
+    "test:report": "playwright show-report",
+    "test:setup": "node setup/test-environment-setup.js",
+    "test:teardown": "node setup/test-environment-teardown.js"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "@axe-core/playwright": "^4.8.2",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "redis": "^4.6.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/pg": "^8.10.7",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "e2e-testing",
+    "playwright",
+    "enterprise",
+    "ki-wissenssystem",
+    "litellm",
+    "security-testing",
+    "performance-testing",
+    "accessibility-testing"
+  ],
+  "author": "KI-Wissenssystem Team",
+  "license": "MIT"
+} 
