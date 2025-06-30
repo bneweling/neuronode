@@ -14,8 +14,8 @@ import httpx
 from enum import Enum
 
 from src.config.settings import settings
-from src.llm.enhanced_litellm_client import get_litellm_client
-from src.llm.enhanced_model_manager import get_model_manager, TaskType, ModelTier
+from src.llm.litellm_client import get_litellm_client
+from src.llm.model_manager import get_model_manager, TaskType, ModelTier
 from src.utils.error_handler import error_handler
 from src.config.exceptions import LLMServiceError
 

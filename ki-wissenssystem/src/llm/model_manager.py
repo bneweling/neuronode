@@ -1,13 +1,14 @@
 """
-Enhanced Model Manager für dynamische Modell-Konfiguration
-Ermöglicht UI-gesteuerte Modell-Zuordnung ohne Neustart
+Production Model Manager für dynamische Modell-Konfiguration
+Enterprise-grade UI-gesteuerte Modell-Zuordnung ohne Neustart
 
-Unterstützt:
+Features:
 - 5 Task-Types (CLASSIFICATION, EXTRACTION, SYNTHESIS, VALIDATION_PRIMARY, VALIDATION_SECONDARY)
-- 5 Model-Profile (PREMIUM, BALANCED, COST_EFFECTIVE, SPECIALIZED, ULTRA_FAST)
+- 5 Model-Profile (PREMIUM, BALANCED, COST_EFFECTIVE, SPECIALIZED, ULTRA_FAST)  
 - Smart Alias Strategy: Direct Task-to-Model Mapping via LiteLLM UI
 - Real-time Model-Switching ohne Service-Neustart
 - Enterprise Budget & Performance Tracking
+- Intelligent fallback strategies and error handling
 """
 
 import httpx
@@ -38,16 +39,19 @@ class ModelTier(Enum):
     SPECIALIZED = "SPECIALIZED"   # Spezialisierte Modelle für spezielle Tasks
     ULTRA_FAST = "ULTRA_FAST"     # Ultraschnelle Modelle für Echtzeit-Anwendungen
 
-class EnhancedModelManager:
+class ModelManager:
     """
-    Enterprise-Grade Model Manager mit LiteLLM Integration
+    Production Model Manager mit LiteLLM Integration
+    
+    Enterprise-grade dynamic model resolution and management for the KI-Wissenssystem.
+    Enables real-time model switching via LiteLLM UI without service restarts.
     
     Features:
-    - Dynamische Modell-Auflösung über LiteLLM UI
-    - Team-basierte Modell-Zuordnung
-    - Performance & Cost Tracking
-    - Real-time Configuration Updates
-    - Fallback-Strategien für Ausfälle
+    - Dynamic model resolution via LiteLLM Smart Alias System
+    - Team-based model assignment and budget management
+    - Performance & Cost tracking with enterprise metrics
+    - Real-time configuration updates and cache management
+    - Intelligent fallback strategies for high availability
     """
     
     def __init__(self, settings: Settings = None):
@@ -68,7 +72,7 @@ class EnhancedModelManager:
         self._response_time_history = []
         self._cost_tracking_enabled = True
         
-        logger.info(f"EnhancedModelManager initialized with proxy URL: {self.litellm_proxy_url}")
+        logger.info(f"ModelManager initialized with proxy URL: {self.litellm_proxy_url}")
 
     async def __aenter__(self):
         return self
@@ -364,14 +368,17 @@ class EnhancedModelManager:
         
         logger.info("Model configuration cache refreshed successfully")
 
-# Singleton Instance für globale Nutzung
-_enhanced_model_manager = None
+# ===================================================================
+# SINGLETON FACTORY - ENTERPRISE EDITION
+# ===================================================================
 
-async def get_model_manager() -> EnhancedModelManager:
-    """Factory Function für EnhancedModelManager Singleton"""
-    global _enhanced_model_manager
+_model_manager = None
+
+async def get_model_manager() -> ModelManager:
+    """Factory Function für ModelManager Singleton - Enterprise Edition"""
+    global _model_manager
     
-    if _enhanced_model_manager is None:
-        _enhanced_model_manager = EnhancedModelManager()
+    if _model_manager is None:
+        _model_manager = ModelManager()
     
-    return _enhanced_model_manager 
+    return _model_manager 

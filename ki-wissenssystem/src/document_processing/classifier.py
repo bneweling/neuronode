@@ -18,9 +18,9 @@ import asyncio
 import time
 
 # Migration: New LiteLLM imports
-from ..llm.enhanced_litellm_client import (
+from ..llm.litellm_client import (
     get_litellm_client, 
-    EnhancedLiteLLMClient,
+    LiteLLMClient,
     RequestPriorityLevel,
     LiteLLMExceptionMapper
 )

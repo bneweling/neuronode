@@ -37,8 +37,8 @@ model_list:
 # LiteLLM Configuration
 litellm_settings:
   # Test Environment
-  drop_params: true
-  set_verbose: false
+  drop_params: false
+  set_verbose: true
   
   # Test Database (separate from production)
   database_url: postgresql://test_user:test_pass@test-postgres:5432/test_litellm_db
@@ -50,9 +50,9 @@ litellm_settings:
   # Test Caching (disabled for deterministic tests)
   cache: false
   
-  # Test Logging
-  success_callback: ["database", "prometheus"]
-  failure_callback: ["database"]
+  # K7 Enterprise Testing - Request Interception Callbacks
+  success_callback: ["src.testing.litellm_request_inspector.litellm_success_callback"]
+  failure_callback: ["src.testing.litellm_request_inspector.litellm_failure_callback"]
   
   # Test Budget (unlimited for tests)
   max_budget: 0

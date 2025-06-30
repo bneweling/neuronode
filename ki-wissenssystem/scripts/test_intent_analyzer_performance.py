@@ -20,13 +20,13 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from src.retrievers.intent_analyzer import EnhancedIntentAnalyzer, QueryIntent
+from src.retrievers.intent_analyzer import IntentAnalyzer, QueryIntent
 
 class IntentAnalyzerBenchmark:
     """Performance-Benchmark für Intent Analyzer Migration"""
     
     def __init__(self):
-        self.analyzer = EnhancedIntentAnalyzer()
+        self.analyzer = IntentAnalyzer()
         self.benchmark_results = {
             "test_start": datetime.now().isoformat(),
             "test_queries": [],

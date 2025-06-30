@@ -115,4 +115,18 @@ obsidian-ki-plugin/main.js.map
 # Windows-spezifische Dateien
 # Windows scripts no longer supported
 !ki-wissenssystem/README-Windows.md
-setup.log 
+setup.log
+
+# Generated Output Files (K6 Phase 6.3a)
+ki-wissenssystem/output/
+*_test_results.json
+*_tier_report.json
+*_optimization_results*.json
+
+# Test and monitoring reports (generated)
+test-results-*.json
+monitoring_report_*.json
+quality_report_*.json
+
+# Quality Assurance Archives (K6 Phase 6.3b)
+ki-wissenssystem/quality_assurance/archive/ 

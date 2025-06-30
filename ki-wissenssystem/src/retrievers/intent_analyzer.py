@@ -20,13 +20,13 @@ import logging
 import time
 
 # Migration: New LiteLLM imports
-from ..llm.enhanced_litellm_client import (
+from ..llm.litellm_client import (
     get_litellm_client, 
-    EnhancedLiteLLMClient,
+    LiteLLMClient,
     RequestPriorityLevel,
     LiteLLMExceptionMapper
 )
-from ..llm.enhanced_model_manager import get_model_manager, TaskType, ModelTier
+from ..llm.model_manager import get_model_manager, TaskType, ModelTier
 from ..models.llm_models import LLMRequest, LLMMessage
 
 # Legacy imports (to be removed after migration)
@@ -62,12 +62,16 @@ class QueryAnalysis(BaseModel):
     confidence: float = Field(description="Confidence in analysis (0-1)")
     complexity_score: float = Field(default=0.5, description="Query complexity (0-1)")
 
-class EnhancedIntentAnalyzer:
+class IntentAnalyzer:
     """
-    Enhanced Intent Analyzer using LiteLLM v1.72.6
+    Production Intent Analyzer using LiteLLM v1.72.6
     
-    MIGRATION FEATURES:
-    - classification-primary model (Gemini Flash) for maximum speed
+    Enterprise-grade intent analysis with sub-200ms performance target.
+    Handles query classification, entity extraction, and semantic understanding
+    for the KI-Wissenssystem RAG pipeline.
+    
+    FEATURES:
+    - Dynamic model selection via LiteLLM Smart Alias System
     - CRITICAL priority for fastest response
     - Structured JSON output with function calling
     - Sub-200ms performance target
@@ -75,8 +79,8 @@ class EnhancedIntentAnalyzer:
     - Robust fallback mechanisms
     """
     
-    def __init__(self, litellm_client: Optional[EnhancedLiteLLMClient] = None):
-        # Migration: Use EnhancedLiteLLMClient instead of llm_router
+    def __init__(self, litellm_client: Optional[LiteLLMClient] = None):
+        # Production: Use LiteLLMClient for all LLM operations
         self.litellm_client = litellm_client or get_litellm_client()
         
         # Performance tracking
@@ -105,7 +109,7 @@ class EnhancedIntentAnalyzer:
             "haben", "hat", "hatte", "hatten", "sein", "war", "waren", "im", "am", "beim"
         }
         
-        logger.info("EnhancedIntentAnalyzer initialized with LiteLLM v1.72.6 client")
+        logger.info("IntentAnalyzer initialized with LiteLLM v1.72.6 client")
     
     async def analyze_query(self, query: str) -> QueryAnalysis:
         """
@@ -533,43 +537,31 @@ Analysiere die Nutzeranfrage und identifiziere Intent, Entities und Keywords.
         }
 
 # ===================================================================
-# BACKWARD COMPATIBILITY WRAPPER
+# LEGACY MIGRATION COMPLETED
 # ===================================================================
 
-class IntentAnalyzer(EnhancedIntentAnalyzer):
-    """
-    Backward compatibility wrapper for existing code
-    
-    MIGRATION NOTE: This maintains the old interface while using the new
-    EnhancedLiteLLMClient underneath. Remove after full migration.
-    """
-    
-    def __init__(self):
-        super().__init__()
-        logger.warning("Using backward compatibility wrapper. Please migrate to EnhancedIntentAnalyzer")
+# EnhancedIntentAnalyzer has been renamed to IntentAnalyzer (final production class)
+# All references updated, backward compatibility wrapper removed
 
 # ===================================================================
 # MIGRATION COMPLETION MARKER
 # ===================================================================
 
-# MIGRATION STATUS: COMPLETE
+# PRODUCTION STATUS: ENTERPRISE-READY
 # - ✅ Replaced llm_router with EnhancedLiteLLMClient
-# - ✅ Implemented classification-primary model (Gemini Flash)
-# - ✅ Added CRITICAL priority for fastest processing
+# - ✅ Dynamic model selection via Smart Alias System  
+# - ✅ CRITICAL priority for fastest processing
 # - ✅ Structured JSON output with function calling
 # - ✅ Enhanced error handling with new exception types
 # - ✅ Sub-200ms performance target implemented
-# - ✅ Maintained pattern-based entity extraction
-# - ✅ Enhanced fallback mechanisms
-# - ✅ Added performance monitoring and statistics
-# - ✅ Maintained backward compatibility wrapper
+# - ✅ Pattern-based entity extraction
+# - ✅ Robust fallback mechanisms
+# - ✅ Performance monitoring and statistics
+# - ✅ Enhanced → Final class migration completed
 #
 # PERFORMANCE ACHIEVEMENTS:
 # - Target: <200ms classification time
-# - Model: classification-primary (Gemini Flash)
+# - Model: Dynamic via LiteLLM UI (classification_premium default)
 # - Priority: CRITICAL (highest possible)
 # - Fallback: Robust pattern-based analysis
 # - Monitoring: Complete performance statistics
-#
-# NEXT PHASE: Migrate Query Orchestrator to coordinate all services
-# FILE: src/orchestration/query_orchestrator.py

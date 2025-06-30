@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Live Test für EnhancedModelManager
+Live Test für ModelManager
 Testet die dynamische Modell-Auflösung mit der LiteLLM UI
 """
 
@@ -13,8 +13,8 @@ from datetime import datetime
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.llm.enhanced_model_manager import (
-    EnhancedModelManager, 
+from src.llm.model_manager import (
+    ModelManager, 
     TaskType, 
     ModelTier, 
     get_model_manager
@@ -23,7 +23,7 @@ from src.llm.enhanced_model_manager import (
 async def test_model_resolution():
     """Test die Modell-Auflösung für alle Task-Types"""
     
-    print("🧪 TESTING: EnhancedModelManager Live Integration")
+    print("🧪 TESTING: ModelManager Live Integration")
     print("=" * 60)
     
     try:
@@ -92,7 +92,7 @@ async def test_model_resolution():
         
         if successful == total:
             print("🎉 ALL TESTS PASSED!")
-            print("🚀 EnhancedModelManager is FULLY OPERATIONAL!")
+            print("🚀 ModelManager is FULLY OPERATIONAL!")
         else:
             print("⚠️  Some tests failed - check configuration")
         

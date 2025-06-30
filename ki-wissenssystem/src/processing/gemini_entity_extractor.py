@@ -22,13 +22,13 @@ import asyncio
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Migration: New LiteLLM imports
-from ..llm.enhanced_litellm_client import (
+from ..llm.litellm_client import (
     get_litellm_client, 
-    EnhancedLiteLLMClient,
+    LiteLLMClient,
     RequestPriorityLevel,
     LiteLLMExceptionMapper
 )
-from ..llm.enhanced_model_manager import get_model_manager, TaskType, ModelTier
+from ..llm.model_manager import get_model_manager, TaskType, ModelTier
 from ..models.llm_models import LLMRequest, LLMMessage
 from ..config.prompt_loader import get_prompt
 

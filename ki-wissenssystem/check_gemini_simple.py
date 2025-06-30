@@ -284,11 +284,11 @@ class SimpleGeminiChecker:
             print("   ./ki-cli.sh process test-bsi-dokument.txt --fast    # Schnell")
             print("   ./ki-cli.sh process test-bsi-dokument.txt --verbose # Vollständig")
         
-        # Speichere detaillierte Ergebnisse
-        with open('gemini_tier_report.json', 'w') as f:
+        # Speichere detaillierte Ergebnisse (K6: Output-Verzeichnis für generierte Dateien)
+        with open('output/reports/gemini_tier_report.json', 'w') as f:
             json.dump(self.results, f, indent=2, default=str)
         
-        print(f"\n📄 Detaillierter Bericht gespeichert: gemini_tier_report.json")
+        print(f"\n📄 Detaillierter Bericht gespeichert: output/reports/gemini_tier_report.json")
         print(f"⏰ Diagnose-Zeit: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         return most_likely_tier

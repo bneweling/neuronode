@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Smart Alias Strategy Test Suite
-Tests the new Smart Alias implementation with EnhancedModelManager
+Tests the new Smart Alias implementation with ModelManager
 
 Features Tested:
 - 25 Task-Profile combinations resolved correctly
@@ -20,8 +20,8 @@ from typing import Dict, Any, List
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.llm.enhanced_model_manager import (
-    EnhancedModelManager, 
+from src.llm.model_manager import (
+    ModelManager, 
     TaskType, 
     ModelTier, 
     get_model_manager
@@ -48,7 +48,7 @@ async def test_smart_alias_resolution():
     try:
         # Get model manager
         model_manager = await get_model_manager()
-        print_result(True, "EnhancedModelManager initialized successfully")
+        print_result(True, "ModelManager initialized successfully")
         
         # Test Matrix: All 5 Tasks × 5 Profiles = 25 combinations
         test_matrix = [
@@ -208,8 +208,8 @@ async def test_smart_alias_resolution():
         print(f"🎯 Exact Match Rate: {(exact_matches/total_tests)*100:.1f}%")
         print(f"🔄 Intelligent Fallback Rate: {(profile_fallbacks/total_tests)*100:.1f}%")
         
-        # Export detailed results
-        results_file = "smart_alias_test_results.json"
+        # Export detailed results (K6: Output-Verzeichnis für generierte Dateien)
+        results_file = "output/test_results/smart_alias_test_results.json"
         with open(results_file, 'w') as f:
             json.dump({
                 "test_timestamp": datetime.now().isoformat(),

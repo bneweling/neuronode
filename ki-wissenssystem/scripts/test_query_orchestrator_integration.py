@@ -3,7 +3,7 @@
 Enhanced Query Orchestrator Integration Test
 ============================================
 
-Comprehensive end-to-end testing of the EnhancedQueryOrchestrator with 
+Comprehensive end-to-end testing of the QueryOrchestrator with 
 LiteLLM v1.72.6 integration, validating:
 
 1. Complete RAG pipeline orchestration
@@ -34,7 +34,7 @@ import logging
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.orchestration.query_orchestrator import EnhancedQueryOrchestrator
+from src.orchestration.query_orchestrator import QueryOrchestrator
 from src.models.llm_models import QueryAnalysis, SynthesizedResponse, QueryIntent, EntityData
 from src.config.exceptions import QueryProcessingError, ErrorCode
 
@@ -42,8 +42,8 @@ from src.config.exceptions import QueryProcessingError, ErrorCode
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class MockEnhancedIntentAnalyzer:
-    """Mock for EnhancedIntentAnalyzer with realistic behavior"""
+class MockIntentAnalyzer:
+    """Mock for IntentAnalyzer with realistic behavior"""
     
     async def analyze_query(self, query: str) -> QueryAnalysis:
         """Mock intent analysis with realistic delay and results"""
@@ -107,8 +107,8 @@ class MockHybridRetriever:
         
         return results
 
-class MockEnhancedResponseSynthesizer:
-    """Mock for EnhancedResponseSynthesizer with realistic synthesis"""
+class MockResponseSynthesizer:
+    """Mock for ResponseSynthesizer with realistic synthesis"""
     
     async def synthesize_response(
         self, 
@@ -161,7 +161,7 @@ class MockEnhancedResponseSynthesizer:
         )
 
 class QueryOrchestratorIntegrationTest:
-    """Comprehensive integration test suite for EnhancedQueryOrchestrator"""
+    """Comprehensive integration test suite for QueryOrchestrator"""
     
     def __init__(self):
         self.test_results = {
@@ -223,7 +223,7 @@ class QueryOrchestratorIntegrationTest:
         assert "analysis" in result
         
         # Validate metadata
-        assert result["metadata"]["orchestrator_version"] == "EnhancedQueryOrchestrator_v1.72.6"
+        assert result["metadata"]["orchestrator_version"] == "QueryOrchestrator_v1.72.6"
         assert result["metadata"]["litellm_integration"] is True
         assert "performance_breakdown" in result["metadata"]
         
@@ -312,10 +312,10 @@ class QueryOrchestratorIntegrationTest:
         failing_analyzer = Mock()
         failing_analyzer.analyze_query = AsyncMock(side_effect=Exception("Mock analyzer failure"))
         
-        orchestrator = EnhancedQueryOrchestrator(
+        orchestrator = QueryOrchestrator(
             intent_analyzer=failing_analyzer,
             hybrid_retriever=MockHybridRetriever(),
-            response_synthesizer=MockEnhancedResponseSynthesizer()
+            response_synthesizer=MockResponseSynthesizer()
         )
         
         # Test error handling
@@ -411,19 +411,19 @@ class QueryOrchestratorIntegrationTest:
         assert "query" in result
         assert "response" in result
         assert "metadata" in result
-        assert result["metadata"]["orchestrator_version"] == "EnhancedQueryOrchestrator_v1.72.6"
+        assert result["metadata"]["orchestrator_version"] == "QueryOrchestrator_v1.72.6"
         
         self.test_results["total_tests"] += 1
         self.test_results["passed"] += 1
         
         logger.info("✅ Legacy compatibility validated")
     
-    def _create_mock_orchestrator(self) -> EnhancedQueryOrchestrator:
+    def _create_mock_orchestrator(self) -> QueryOrchestrator:
         """Create orchestrator with mock services for testing"""
-        return EnhancedQueryOrchestrator(
-            intent_analyzer=MockEnhancedIntentAnalyzer(),
+        return QueryOrchestrator(
+            intent_analyzer=MockIntentAnalyzer(),
             hybrid_retriever=MockHybridRetriever(),
-            response_synthesizer=MockEnhancedResponseSynthesizer()
+            response_synthesizer=MockResponseSynthesizer()
         )
     
     def generate_test_report(self):

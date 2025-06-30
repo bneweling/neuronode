@@ -114,6 +114,7 @@ ${BOLD}DEVELOPMENT:${NC}
 ${BOLD}MAINTENANCE:${NC}
     ${GREEN}clean${NC}           Clean up Docker resources
     ${GREEN}clean:deep${NC}      Deep clean (images, volumes, networks)
+    ${GREEN}clean:reports${NC}   Clean up old monitoring reports
     ${GREEN}update${NC}          Update dependencies
     ${GREEN}lint${NC}            Run code linting
     ${GREEN}format${NC}          Format code automatically
@@ -397,6 +398,17 @@ cmd_clean_deep() {
     fi
 }
 
+cmd_clean_reports() {
+    log_step "Cleaning up old reports..."
+    if [ -f "scripts/maintenance/cleanup_reports.sh" ]; then
+        bash scripts/maintenance/cleanup_reports.sh
+        log_success "Reports cleanup completed"
+    else
+        log_error "Report cleanup script not found"
+        exit 1
+    fi
+}
+
 cmd_update() {
     log_step "Updating dependencies..."
     
@@ -512,6 +524,7 @@ main() {
         # Maintenance
         clean)              cmd_clean ;;
         clean:deep)         cmd_clean_deep ;;
+        clean:reports)      cmd_clean_reports ;;
         update)             cmd_update ;;
         lint)               cmd_lint ;;
         format)             cmd_format ;;
