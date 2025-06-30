@@ -127,75 +127,73 @@ check_prerequisites() {
 
 show_help() {
     show_banner
-    cat << EOF
-${BOLD}USAGE:${NC}
-    ./manage.sh <command>
-
-${BOLD}🚀 SYSTEM COMMANDS:${NC}
-    ${GREEN}up${NC}              Start complete development environment
-    ${GREEN}down${NC}            Stop and remove all containers  
-    ${GREEN}restart${NC}         Restart all services
-    ${GREEN}logs${NC}            Show logs from all services
-    ${GREEN}health${NC}          Check system health status
-    ${GREEN}status${NC}          Show current system status
-    ${GREEN}monitor${NC}         Real-time system monitoring
-
-${BOLD}🏗️ BUILD & DEPLOYMENT:${NC}
-    ${GREEN}build${NC}           Build all Docker images
-    ${GREEN}build:prod${NC}      Build production images with optimization
-    ${GREEN}deploy:staging${NC}  Deploy to staging environment
-    ${GREEN}deploy:prod${NC}     Deploy to production environment
-    ${GREEN}backup${NC}          Create data backup
-    ${GREEN}restore${NC}         Restore data from backup
-
-${BOLD}🧪 TESTING:${NC}
-    ${GREEN}test${NC}            Run backend unit tests
-    ${GREEN}test:e2e${NC}        Run Playwright E2E tests
-    ${GREEN}test:performance${NC} Run performance benchmarks
-    ${GREEN}test:coverage${NC}   Generate test coverage report
-    ${GREEN}test:all${NC}        Run complete test suite
-    ${GREEN}test:enterprise${NC} Run K7 enterprise tests
-
-${BOLD}💻 DEVELOPMENT:${NC}
-    ${GREEN}dev:frontend${NC}    Start frontend development server
-    ${GREEN}dev:backend${NC}     Start backend development server
-    ${GREEN}dev:full${NC}        Start full development environment
-    ${GREEN}dev:litellm${NC}     Start LiteLLM service only
-
-${BOLD}🔧 MAINTENANCE:${NC}
-    ${GREEN}clean${NC}           Clean up Docker resources
-    ${GREEN}clean:deep${NC}      Deep clean (images, volumes, networks)
-    ${GREEN}clean:reports${NC}   Clean up old monitoring reports
-    ${GREEN}update${NC}          Update dependencies
-    ${GREEN}lint${NC}            Run code linting
-    ${GREEN}format${NC}          Format code automatically
-    ${GREEN}security${NC}        Run security scan
-
-${BOLD}📊 INFORMATION:${NC}
-    ${GREEN}help${NC}            Show this help message
-    ${GREEN}version${NC}         Show system version information
-    ${GREEN}audit${NC}           Run security and dependency audit
-    ${GREEN}docs${NC}            Open documentation
-    ${GREEN}config${NC}          Show current configuration
-
-${BOLD}🎯 EXAMPLES:${NC}
-    ./manage.sh up              # Start development environment
-    ./manage.sh test:e2e        # Run E2E tests
-    ./manage.sh deploy:staging  # Deploy to staging
-    ./manage.sh health          # Check system health
-
-${BOLD}⚡ QUICK START (Enterprise):${NC}
-    1. ./manage.sh up           # Start all services
-    2. ./manage.sh test:all     # Validate functionality
-    3. ./manage.sh monitor      # Monitor health
-    4. Open $FRONTEND_URL
-
-${BOLD}🔗 Access Points:${NC}
-    Frontend:    $FRONTEND_URL
-    Backend API: $BACKEND_URL/docs
-    LiteLLM:     $LITELLM_URL
-    Monitoring:  $BACKEND_URL/metrics
-EOF
+    echo -e "${BOLD}USAGE:${NC}"
+    echo "    ./manage.sh <command>"
+    echo ""
+    echo -e "${BOLD}🚀 SYSTEM COMMANDS:${NC}"
+    echo -e "    ${GREEN}up${NC}              Start complete development environment"
+    echo -e "    ${GREEN}down${NC}            Stop and remove all containers"
+    echo -e "    ${GREEN}restart${NC}         Restart all services"
+    echo -e "    ${GREEN}logs${NC}            Show logs from all services"
+    echo -e "    ${GREEN}health${NC}          Check system health status"
+    echo -e "    ${GREEN}status${NC}          Show current system status"
+    echo -e "    ${GREEN}monitor${NC}         Real-time system monitoring"
+    echo ""
+    echo -e "${BOLD}🏗️ BUILD & DEPLOYMENT:${NC}"
+    echo -e "    ${GREEN}build${NC}           Build all Docker images"
+    echo -e "    ${GREEN}build:prod${NC}      Build production images with optimization"
+    echo -e "    ${GREEN}deploy:staging${NC}  Deploy to staging environment"
+    echo -e "    ${GREEN}deploy:prod${NC}     Deploy to production environment"
+    echo -e "    ${GREEN}backup${NC}          Create data backup"
+    echo -e "    ${GREEN}restore${NC}         Restore data from backup"
+    echo ""
+    echo -e "${BOLD}🧪 TESTING:${NC}"
+    echo -e "    ${GREEN}test${NC}            Run backend unit tests"
+    echo -e "    ${GREEN}test:e2e${NC}        Run Playwright E2E tests"
+    echo -e "    ${GREEN}test:performance${NC} Run performance benchmarks"
+    echo -e "    ${GREEN}test:coverage${NC}   Generate test coverage report"
+    echo -e "    ${GREEN}test:all${NC}        Run complete test suite"
+    echo -e "    ${GREEN}test:enterprise${NC} Run K7 enterprise tests"
+    echo ""
+    echo -e "${BOLD}💻 DEVELOPMENT:${NC}"
+    echo -e "    ${GREEN}dev:frontend${NC}    Start frontend development server"
+    echo -e "    ${GREEN}dev:backend${NC}     Start backend development server"
+    echo -e "    ${GREEN}dev:full${NC}        Start full development environment"
+    echo -e "    ${GREEN}dev:litellm${NC}     Start LiteLLM service only"
+    echo ""
+    echo -e "${BOLD}🔧 MAINTENANCE:${NC}"
+    echo -e "    ${GREEN}clean${NC}           Clean up Docker resources"
+    echo -e "    ${GREEN}clean:deep${NC}      Deep clean (images, volumes, networks)"
+    echo -e "    ${GREEN}clean:reports${NC}   Clean up old monitoring reports"
+    echo -e "    ${GREEN}update${NC}          Update dependencies"
+    echo -e "    ${GREEN}lint${NC}            Run code linting"
+    echo -e "    ${GREEN}format${NC}          Format code automatically"
+    echo -e "    ${GREEN}security${NC}        Run security scan"
+    echo ""
+    echo -e "${BOLD}📊 INFORMATION:${NC}"
+    echo -e "    ${GREEN}help${NC}            Show this help message"
+    echo -e "    ${GREEN}version${NC}         Show system version information"
+    echo -e "    ${GREEN}audit${NC}           Run security and dependency audit"
+    echo -e "    ${GREEN}docs${NC}            Open documentation"
+    echo -e "    ${GREEN}config${NC}          Show current configuration"
+    echo ""
+    echo -e "${BOLD}🎯 EXAMPLES:${NC}"
+    echo "    ./manage.sh up              # Start development environment"
+    echo "    ./manage.sh test:e2e        # Run E2E tests"
+    echo "    ./manage.sh deploy:staging  # Deploy to staging"
+    echo "    ./manage.sh health          # Check system health"
+    echo ""
+    echo -e "${BOLD}⚡ QUICK START (Enterprise):${NC}"
+    echo "    1. ./manage.sh up           # Start all services"
+    echo "    2. ./manage.sh test:all     # Validate functionality"
+    echo "    3. ./manage.sh monitor      # Monitor health"
+    echo "    4. Open $FRONTEND_URL"
+    echo ""
+    echo -e "${BOLD}🔗 Access Points:${NC}"
+    echo "    Frontend:    $FRONTEND_URL"
+    echo "    Backend API: $BACKEND_URL/docs"
+    echo "    LiteLLM:     $LITELLM_URL"
+    echo "    Monitoring:  $BACKEND_URL/metrics"
 }
 
 # System commands
@@ -862,14 +860,14 @@ cmd_security() {
 # Information commands
 cmd_version() {
     show_banner
-    echo "${BOLD}Version Information:${NC}"
+    echo -e "${BOLD}Version Information:${NC}"
     echo "Git: $(git describe --tags --always --dirty 2>/dev/null || echo 'No git repository')"
     echo "Docker: $(docker --version 2>/dev/null || echo 'Not available')"
     echo "Docker Compose: $(docker-compose --version 2>/dev/null || echo 'Not available')"
     echo "Node.js: $(node --version 2>/dev/null || echo 'Not available')"
     echo "Python: $(python --version 2>/dev/null || python3 --version 2>/dev/null || echo 'Not available')"
     echo ""
-    echo "${BOLD}Service Status:${NC}"
+    echo -e "${BOLD}Service Status:${NC}"
     if docker-compose -f $DEV_COMPOSE_FILE ps 2>/dev/null | grep -q "Up"; then
         cmd_status
     else
@@ -916,23 +914,23 @@ cmd_docs() {
 cmd_config() {
     log_step "Current configuration:"
     echo ""
-    echo "${BOLD}Paths:${NC}"
+    echo -e "${BOLD}Paths:${NC}"
     echo "  Backend:    $BACKEND_DIR"
     echo "  Frontend:   $FRONTEND_DIR"
     echo "  Docs:       $DOCS_DIR"
     echo ""
-    echo "${BOLD}Compose Files:${NC}"
+    echo -e "${BOLD}Compose Files:${NC}"
     echo "  Development: $DEV_COMPOSE_FILE"
     echo "  Production:  $COMPOSE_FILE"
     echo "  Testing:     $TEST_COMPOSE_FILE"
     echo ""
-    echo "${BOLD}URLs:${NC}"
+    echo -e "${BOLD}URLs:${NC}"
     echo "  Frontend:    $FRONTEND_URL"
     echo "  Backend:     $BACKEND_URL"
     echo "  LiteLLM:     $LITELLM_URL"
     echo ""
     if [ -f "$BACKEND_DIR/.env" ]; then
-        echo "${BOLD}Environment:${NC}"
+        echo -e "${BOLD}Environment:${NC}"
         grep -E "^[A-Z_]+" "$BACKEND_DIR/.env" | head -10
     fi
 }
