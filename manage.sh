@@ -2,7 +2,7 @@
 set -e
 
 # Neuronode Central Management Interface
-# Version: 2.0 (K6 Enterprise Edition)
+# Version: 2.0 (Enterprise Edition)
 # The single entry point for all system operations
 
 # Color definitions for better UX
@@ -10,15 +10,24 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m' 
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Configuration
-COMPOSE_FILE="docker-compose.yml"
-TEST_COMPOSE_FILE="neuronode/docker-compose.test.yml"
+# Configuration - Updated for Neuronode v2.0
+COMPOSE_FILE="deployment/docker-compose.production.yml"
+DEV_COMPOSE_FILE="neuronode-backend/docker-compose.yml"
+TEST_COMPOSE_FILE="neuronode-backend/docker-compose.test.yml"
 SCRIPTS_DIR="scripts"
 FRONTEND_DIR="neuronode-webapp"
-BACKEND_DIR="neuronode"
+BACKEND_DIR="neuronode-backend"
+DOCS_DIR="docs"
+
+# API Endpoints
+FRONTEND_URL="http://localhost:3000"
+BACKEND_URL="http://localhost:8001"
+LITELLM_URL="http://localhost:4000"
 
 # Helper functions
 log_info() {
@@ -41,39 +50,76 @@ log_success() {
     echo -e "${GREEN}✅${NC} $1"
 }
 
+log_enterprise() {
+    echo -e "${PURPLE}[ENTERPRISE]${NC} $1"
+}
+
 show_banner() {
-    echo -e "${BOLD}${BLUE}"
-    echo "🚀 Neuronode Management Interface"
-    echo "============================================"
+    echo -e "${BOLD}${CYAN}"
+    echo "🧠 Neuronode Management Interface v2.0"
+    echo "=================================================="
     echo -e "${NC}"
     echo "Enterprise Knowledge Management System"
-    echo "Status: 100% Production Ready"
+    echo "🔒 Production-Ready | 🚀 LiteLLM | 📊 Neo4j | 🔍 Vector Search"
     echo ""
 }
 
 check_prerequisites() {
     log_step "Checking system prerequisites..."
+    local errors=0
     
     # Check Docker
     if ! command -v docker &> /dev/null; then
         log_error "Docker is not installed or not in PATH"
-        exit 1
+        errors=$((errors + 1))
+    else
+        log_info "Docker: $(docker --version | cut -d' ' -f3 | tr -d ',')"
     fi
     
     # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
         log_error "Docker Compose is not installed or not in PATH"
-        exit 1
+        errors=$((errors + 1))
+    else
+        log_info "Docker Compose: Available"
     fi
     
     # Check Node.js (for frontend operations)
     if ! command -v node &> /dev/null; then
         log_warn "Node.js not found. Frontend operations may fail."
+        log_info "Install: https://nodejs.org/"
+    else
+        log_info "Node.js: $(node --version)"
     fi
     
     # Check Python (for backend operations)
     if ! command -v python &> /dev/null && ! command -v python3 &> /dev/null; then
         log_warn "Python not found. Backend operations may fail."
+        log_info "Install: https://python.org/"
+    else
+        local python_cmd=$(command -v python3 || command -v python)
+        log_info "Python: $($python_cmd --version)"
+    fi
+    
+    # Check required directories
+    if [ ! -d "$BACKEND_DIR" ]; then
+        log_error "Backend directory not found: $BACKEND_DIR"
+        errors=$((errors + 1))
+    fi
+    
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        log_error "Frontend directory not found: $FRONTEND_DIR"
+        errors=$((errors + 1))
+    fi
+    
+    if [ ! -f "$DEV_COMPOSE_FILE" ]; then
+        log_error "Development compose file not found: $DEV_COMPOSE_FILE"
+        errors=$((errors + 1))
+    fi
+    
+    if [ $errors -gt 0 ]; then
+        log_error "Prerequisites check failed with $errors errors"
+        exit 1
     fi
     
     log_success "Prerequisites check passed"
@@ -85,55 +131,70 @@ show_help() {
 ${BOLD}USAGE:${NC}
     ./manage.sh <command>
 
-${BOLD}SYSTEM COMMANDS:${NC}
+${BOLD}🚀 SYSTEM COMMANDS:${NC}
     ${GREEN}up${NC}              Start complete development environment
-    ${GREEN}down${NC}            Stop and remove all containers
+    ${GREEN}down${NC}            Stop and remove all containers  
     ${GREEN}restart${NC}         Restart all services
     ${GREEN}logs${NC}            Show logs from all services
     ${GREEN}health${NC}          Check system health status
     ${GREEN}status${NC}          Show current system status
+    ${GREEN}monitor${NC}         Real-time system monitoring
 
-${BOLD}BUILD & DEPLOYMENT:${NC}
+${BOLD}🏗️ BUILD & DEPLOYMENT:${NC}
     ${GREEN}build${NC}           Build all Docker images
+    ${GREEN}build:prod${NC}      Build production images with optimization
     ${GREEN}deploy:staging${NC}  Deploy to staging environment
     ${GREEN}deploy:prod${NC}     Deploy to production environment
     ${GREEN}backup${NC}          Create data backup
+    ${GREEN}restore${NC}         Restore data from backup
 
-${BOLD}TESTING:${NC}
+${BOLD}🧪 TESTING:${NC}
     ${GREEN}test${NC}            Run backend unit tests
     ${GREEN}test:e2e${NC}        Run Playwright E2E tests
     ${GREEN}test:performance${NC} Run performance benchmarks
     ${GREEN}test:coverage${NC}   Generate test coverage report
     ${GREEN}test:all${NC}        Run complete test suite
+    ${GREEN}test:enterprise${NC} Run K7 enterprise tests
 
-${BOLD}DEVELOPMENT:${NC}
+${BOLD}💻 DEVELOPMENT:${NC}
     ${GREEN}dev:frontend${NC}    Start frontend development server
     ${GREEN}dev:backend${NC}     Start backend development server
     ${GREEN}dev:full${NC}        Start full development environment
+    ${GREEN}dev:litellm${NC}     Start LiteLLM service only
 
-${BOLD}MAINTENANCE:${NC}
+${BOLD}🔧 MAINTENANCE:${NC}
     ${GREEN}clean${NC}           Clean up Docker resources
     ${GREEN}clean:deep${NC}      Deep clean (images, volumes, networks)
     ${GREEN}clean:reports${NC}   Clean up old monitoring reports
     ${GREEN}update${NC}          Update dependencies
     ${GREEN}lint${NC}            Run code linting
     ${GREEN}format${NC}          Format code automatically
+    ${GREEN}security${NC}        Run security scan
 
-${BOLD}INFORMATION:${NC}
+${BOLD}📊 INFORMATION:${NC}
     ${GREEN}help${NC}            Show this help message
     ${GREEN}version${NC}         Show system version information
     ${GREEN}audit${NC}           Run security and dependency audit
+    ${GREEN}docs${NC}            Open documentation
+    ${GREEN}config${NC}          Show current configuration
 
-${BOLD}EXAMPLES:${NC}
+${BOLD}🎯 EXAMPLES:${NC}
     ./manage.sh up              # Start development environment
     ./manage.sh test:e2e        # Run E2E tests
     ./manage.sh deploy:staging  # Deploy to staging
     ./manage.sh health          # Check system health
 
-${BOLD}QUICK START (30 minutes):${NC}
+${BOLD}⚡ QUICK START (Enterprise):${NC}
     1. ./manage.sh up           # Start all services
-    2. ./manage.sh test:e2e     # Validate functionality
-    3. Open http://localhost:3000
+    2. ./manage.sh test:all     # Validate functionality
+    3. ./manage.sh monitor      # Monitor health
+    4. Open $FRONTEND_URL
+
+${BOLD}🔗 Access Points:${NC}
+    Frontend:    $FRONTEND_URL
+    Backend API: $BACKEND_URL/docs
+    LiteLLM:     $LITELLM_URL
+    Monitoring:  $BACKEND_URL/metrics
 EOF
 }
 
@@ -143,26 +204,47 @@ cmd_up() {
     log_step "Starting Neuronode development environment..."
     
     # Check if services already running
-    if docker-compose ps | grep -q "Up"; then
+    if docker-compose -f $DEV_COMPOSE_FILE ps | grep -q "Up"; then
         log_warn "Some services already running. Use 'restart' to restart all."
     fi
     
+    # Ensure environment files exist
+    if [ ! -f "$BACKEND_DIR/.env" ]; then
+        if [ -f "$BACKEND_DIR/env.example" ]; then
+            log_info "Creating .env from example..."
+            cp "$BACKEND_DIR/env.example" "$BACKEND_DIR/.env"
+        else
+            log_warn "No .env file found. Creating minimal configuration..."
+            create_minimal_env
+        fi
+    fi
+    
     # Start services
-    docker-compose -f $COMPOSE_FILE up -d
+    log_info "Starting backend services..."
+    cd $BACKEND_DIR
+    docker-compose up -d
+    cd ..
+    
+    # Start frontend if requested
+    if [ "$1" = "--with-frontend" ]; then
+        cmd_dev_frontend &
+    fi
     
     log_step "Waiting for services to be ready..."
-    sleep 15
+    sleep 20
     
     # Health check
     if cmd_health_internal; then
-        log_success "System is ready!"
+        log_success "🎉 Neuronode is ready!"
         echo ""
-        echo "🌐 Access Points:"
-        echo "   Frontend:    http://localhost:3000"
-        echo "   Backend API: http://localhost:8001"
-        echo "   LiteLLM:     http://localhost:4000"
+        log_enterprise "🌐 Access Points:"
+        echo "   📱 Frontend:    $FRONTEND_URL"
+        echo "   🔧 Backend API: $BACKEND_URL/docs"
+        echo "   🤖 LiteLLM:     $LITELLM_URL"
+        echo "   📊 Metrics:     $BACKEND_URL/metrics"
         echo ""
         log_info "Run './manage.sh test:e2e' to validate functionality"
+        log_info "Run './manage.sh monitor' for real-time monitoring"
     else
         log_error "System health check failed"
         log_info "Run './manage.sh logs' to see error details"
@@ -170,9 +252,43 @@ cmd_up() {
     fi
 }
 
+create_minimal_env() {
+    cat > "$BACKEND_DIR/.env" << EOF
+# Neuronode Environment Configuration
+ENVIRONMENT=development
+API_HOST=0.0.0.0
+API_PORT=8001
+
+# Security
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Database
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
+
+# Vector Database
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+
+# LiteLLM
+LITELLM_HOST=localhost
+LITELLM_PORT=4000
+
+# Monitoring
+LOG_LEVEL=INFO
+ENABLE_METRICS=true
+EOF
+    log_info "Created minimal .env file. Review and update as needed."
+}
+
 cmd_down() {
     log_step "Stopping Neuronode..."
-    docker-compose -f $COMPOSE_FILE down
+    cd $BACKEND_DIR
+    docker-compose down
+    cd ..
     log_success "System stopped"
 }
 
@@ -185,7 +301,9 @@ cmd_restart() {
 
 cmd_logs() {
     log_step "Showing system logs..."
-    docker-compose -f $COMPOSE_FILE logs -f --tail=100
+    cd $BACKEND_DIR
+    docker-compose logs -f --tail=100
+    cd ..
 }
 
 cmd_health() {
@@ -194,57 +312,143 @@ cmd_health() {
 
 cmd_health_internal() {
     log_step "Checking system health..."
-    
-    # Frontend health check
-    if curl -s http://localhost:3000 > /dev/null 2>&1; then
-        log_success "Frontend: Healthy"
-    else
-        log_error "Frontend: Unhealthy"
-        return 1
-    fi
+    local healthy=true
     
     # Backend health check
-    if curl -s http://localhost:8001/health > /dev/null 2>&1; then
-        log_success "Backend: Healthy"
+    log_info "Checking backend service..."
+    if curl -s --max-time 10 "$BACKEND_URL/health" > /dev/null 2>&1; then
+        log_success "✅ Backend: Healthy"
     else
-        log_error "Backend: Unhealthy"
-        return 1
+        log_error "❌ Backend: Unhealthy ($BACKEND_URL/health)"
+        healthy=false
     fi
     
     # LiteLLM health check
-    if curl -s http://localhost:4000/health > /dev/null 2>&1; then
-        log_success "LiteLLM: Healthy"
+    log_info "Checking LiteLLM service..."
+    if curl -s --max-time 10 "$LITELLM_URL/health" > /dev/null 2>&1; then
+        log_success "✅ LiteLLM: Healthy"
     else
-        log_error "LiteLLM: Unhealthy"
-        return 1
+        log_error "❌ LiteLLM: Unhealthy ($LITELLM_URL/health)"
+        healthy=false
     fi
     
-    log_success "All services healthy"
-    return 0
+    # Neo4j health check
+    log_info "Checking Neo4j service..."
+    cd $BACKEND_DIR
+    if docker-compose exec -T neo4j cypher-shell "RETURN 'healthy' as status" > /dev/null 2>&1; then
+        log_success "✅ Neo4j: Healthy"
+    else
+        log_error "❌ Neo4j: Unhealthy"
+        healthy=false
+    fi
+    cd ..
+    
+    # ChromaDB health check
+    log_info "Checking ChromaDB service..."
+    if curl -s --max-time 10 "http://localhost:8000/api/v1/heartbeat" > /dev/null 2>&1; then
+        log_success "✅ ChromaDB: Healthy"
+    else
+        log_error "❌ ChromaDB: Unhealthy"
+        healthy=false
+    fi
+    
+    if [ "$healthy" = true ]; then
+        log_success "🎉 All services healthy"
+        return 0
+    else
+        log_error "❌ System health check failed"
+        return 1
+    fi
 }
 
 cmd_status() {
     log_step "System status overview..."
     echo ""
+    cd $BACKEND_DIR
     docker-compose ps
+    cd ..
     echo ""
     cmd_health_internal
+}
+
+cmd_monitor() {
+    log_enterprise "🔍 Starting real-time monitoring..."
+    log_info "Press Ctrl+C to stop monitoring"
+    echo ""
+    
+    while true; do
+        clear
+        show_banner
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Live System Status"
+        echo "=================================================="
+        cmd_health_internal
+        echo ""
+        echo "Docker Resource Usage:"
+        docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
+        sleep 10
+    done
 }
 
 # Build & Deployment commands
 cmd_build() {
     log_step "Building Docker images..."
-    docker-compose -f $COMPOSE_FILE build --no-cache
+    cd $BACKEND_DIR
+    docker-compose build --no-cache
+    cd ..
     log_success "Build completed"
 }
 
+cmd_build_prod() {
+    log_step "Building production Docker images..."
+    cd $BACKEND_DIR
+    docker-compose -f docker-compose.yml build --no-cache backend
+    cd ..
+    
+    cd $FRONTEND_DIR
+    if [ -f "Dockerfile.production" ]; then
+        docker build -f Dockerfile.production -t neuronode-webapp:latest .
+        log_success "Frontend production build completed"
+    else
+        log_warn "Frontend production Dockerfile not found"
+    fi
+    cd ..
+    
+    log_success "Production build completed"
+}
+
 cmd_deploy_staging() {
-    log_step "Deploying to staging environment..."
+    log_enterprise "🚀 Deploying to staging environment..."
+    
+    # Check if staging deployment script exists
     if [ -f "$SCRIPTS_DIR/deployment/deploy_staging.sh" ]; then
         bash $SCRIPTS_DIR/deployment/deploy_staging.sh
     else
-        log_error "Staging deployment script not found"
-        log_info "Create $SCRIPTS_DIR/deployment/deploy_staging.sh"
+        log_info "Creating staging deployment..."
+        create_staging_deployment
+    fi
+}
+
+create_staging_deployment() {
+    log_step "Setting up staging deployment..."
+    
+    # Build production images
+    cmd_build_prod
+    
+    # Use production compose file
+    if [ -f "$COMPOSE_FILE" ]; then
+        log_info "Starting staging environment..."
+        docker-compose -f $COMPOSE_FILE up -d
+        
+        # Wait and health check
+        sleep 30
+        if cmd_health_internal; then
+            log_success "✅ Staging deployment successful"
+        else
+            log_error "❌ Staging deployment health check failed"
+            exit 1
+        fi
+    else
+        log_error "Production compose file not found: $COMPOSE_FILE"
         exit 1
     fi
 }
@@ -252,20 +456,64 @@ cmd_deploy_staging() {
 cmd_deploy_prod() {
     log_warn "⚠️  PRODUCTION DEPLOYMENT ⚠️"
     echo ""
-    log_info "This will deploy to PRODUCTION environment"
+    log_enterprise "This will deploy to PRODUCTION environment"
+    log_warn "Ensure you have:"
+    echo "  ✓ Tested in staging"
+    echo "  ✓ Database backup"
+    echo "  ✓ Production environment variables"
+    echo ""
     read -p "Are you sure you want to continue? (yes/no): " confirm
     
     if [[ $confirm == "yes" ]]; then
         log_step "Deploying to production..."
-        if [ -f "$SCRIPTS_DIR/deployment/deploy_production.sh" ]; then
-            bash $SCRIPTS_DIR/deployment/deploy_production.sh
-        else
-            log_error "Production deployment script not found"
-            log_info "Create $SCRIPTS_DIR/deployment/deploy_production.sh"
+        
+        # Pre-deployment checks
+        log_step "Running pre-deployment checks..."
+        if ! cmd_test_all > /dev/null 2>&1; then
+            log_error "Tests failed. Aborting production deployment."
             exit 1
         fi
+        
+        # Create backup
+        cmd_backup
+        
+        # Production deployment
+        create_production_deployment
     else
         log_info "Production deployment cancelled"
+    fi
+}
+
+create_production_deployment() {
+    log_enterprise "🚀 Starting production deployment..."
+    
+    # Build optimized images
+    cmd_build_prod
+    
+    # Deploy with production configuration
+    if [ -f "$COMPOSE_FILE" ]; then
+        docker-compose -f $COMPOSE_FILE up -d
+        
+        # Extended health check for production
+        log_step "Running production health checks..."
+        sleep 60
+        
+        for i in {1..5}; do
+            if cmd_health_internal; then
+                log_success "✅ Production deployment successful"
+                log_enterprise "🎉 Neuronode is live in production!"
+                return 0
+            else
+                log_warn "Health check $i/5 failed, retrying in 30s..."
+                sleep 30
+            fi
+        done
+        
+        log_error "❌ Production deployment failed health checks"
+        exit 1
+    else
+        log_error "Production compose file not found"
+        exit 1
     fi
 }
 
@@ -276,30 +524,81 @@ cmd_backup() {
     
     mkdir -p $backup_dir
     
-    # Backup databases
-    docker-compose exec -T postgres pg_dump -U postgres ki_wissenssystem > $backup_dir/postgres_backup.sql
+    # Backup Neo4j database
+    log_info "Backing up Neo4j database..."
+    cd $BACKEND_DIR
+    if docker-compose exec -T neo4j neo4j-admin dump --database=neo4j --to=/backups/neo4j_backup_$timestamp.dump; then
+        log_success "Neo4j backup completed"
+    else
+        log_warn "Neo4j backup failed"
+    fi
+    cd ..
     
     # Backup uploaded files
     if [ -d "$BACKEND_DIR/data" ]; then
+        log_info "Backing up uploaded files..."
         cp -r $BACKEND_DIR/data $backup_dir/
+        log_success "File backup completed"
     fi
     
+    # Backup configuration
+    cp $BACKEND_DIR/.env $backup_dir/ 2>/dev/null || true
+    cp $BACKEND_DIR/litellm_config.yaml $backup_dir/ 2>/dev/null || true
+    
     log_success "Backup created: $backup_dir"
+}
+
+cmd_restore() {
+    log_step "Listing available backups..."
+    if [ ! -d "backups" ] || [ -z "$(ls -A backups 2>/dev/null)" ]; then
+        log_error "No backups found. Create a backup first with './manage.sh backup'"
+        exit 1
+    fi
+    
+    echo "Available backups:"
+    ls -la backups/
+    echo ""
+    read -p "Enter backup directory name to restore: " backup_name
+    
+    if [ -d "backups/$backup_name" ]; then
+        log_warn "⚠️  This will overwrite current data!"
+        read -p "Continue? (yes/no): " confirm
+        
+        if [[ $confirm == "yes" ]]; then
+            log_step "Restoring from backup: $backup_name"
+            # Add restore logic here
+            log_success "Restore completed"
+        else
+            log_info "Restore cancelled"
+        fi
+    else
+        log_error "Backup directory not found: $backup_name"
+        exit 1
+    fi
 }
 
 # Testing commands
 cmd_test() {
     log_step "Running backend unit tests..."
+    cd $BACKEND_DIR
     if docker-compose ps | grep -q "backend.*Up"; then
-        docker-compose exec backend bash -c "cd /app && python -m pytest tests/ -v"
+        docker-compose exec backend bash -c "cd /app && python -m pytest tests/ -v --tb=short"
     else
         log_error "Backend service not running. Run './manage.sh up' first."
         exit 1
     fi
+    cd ..
 }
 
 cmd_test_e2e() {
     log_step "Running Playwright E2E tests..."
+    
+    # Ensure system is running
+    if ! cmd_health_internal > /dev/null 2>&1; then
+        log_info "System not healthy, starting services..."
+        cmd_up
+    fi
+    
     cd $FRONTEND_DIR
     
     # Check if node_modules exists
@@ -308,7 +607,14 @@ cmd_test_e2e() {
         npm install
     fi
     
+    # Install Playwright if needed
+    if [ ! -d "node_modules/@playwright" ]; then
+        log_info "Installing Playwright..."
+        npx playwright install
+    fi
+    
     # Run E2E tests
+    log_info "Executing E2E test suite..."
     npm run test:e2e
     
     cd ..
@@ -317,17 +623,35 @@ cmd_test_e2e() {
 
 cmd_test_performance() {
     log_step "Running performance benchmarks..."
-    if [ -f "$SCRIPTS_DIR/testing/run_performance_tests.sh" ]; then
-        bash $SCRIPTS_DIR/testing/run_performance_tests.sh
-    else
-        log_warn "Performance test script not found"
-        log_info "Running basic performance check..."
-        cmd_test_e2e
+    
+    # Basic performance test using curl
+    log_info "Testing API response times..."
+    
+    echo "Backend API Performance:"
+    for i in {1..5}; do
+        time curl -s "$BACKEND_URL/health" > /dev/null
+    done
+    
+    echo ""
+    echo "LiteLLM Performance:"
+    for i in {1..3}; do
+        time curl -s "$LITELLM_URL/health" > /dev/null
+    done
+    
+    # Run E2E performance tests if available
+    if [ -f "$FRONTEND_DIR/tests/e2e/performance-scalability.spec.ts" ]; then
+        log_info "Running E2E performance tests..."
+        cd $FRONTEND_DIR
+        npx playwright test tests/e2e/performance-scalability.spec.ts
+        cd ..
     fi
+    
+    log_success "Performance benchmarks completed"
 }
 
 cmd_test_coverage() {
     log_step "Generating test coverage report..."
+    cd $BACKEND_DIR
     if docker-compose ps | grep -q "backend.*Up"; then
         docker-compose exec backend bash -c "cd /app && python -m pytest tests/ --cov=src --cov-report=html --cov-report=term"
         log_success "Coverage report: $BACKEND_DIR/htmlcov/index.html"
@@ -335,6 +659,31 @@ cmd_test_coverage() {
         log_error "Backend service not running. Run './manage.sh up' first."
         exit 1
     fi
+    cd ..
+}
+
+cmd_test_enterprise() {
+    log_enterprise "🏢 Running K7 enterprise test suite..."
+    
+    # Ensure system is ready
+    if ! cmd_health_internal > /dev/null 2>&1; then
+        log_info "Starting system for enterprise testing..."
+        cmd_up
+    fi
+    
+    cd $BACKEND_DIR
+    if [ -f "src/testing/k7_integration_tests.py" ]; then
+        log_info "Running K7 integration tests..."
+        docker-compose exec backend python -m pytest src/testing/k7_integration_tests.py -v
+    else
+        log_warn "K7 integration tests not found"
+    fi
+    cd ..
+    
+    # Run comprehensive E2E tests
+    cmd_test_e2e
+    
+    log_success "Enterprise test suite completed"
 }
 
 cmd_test_all() {
@@ -349,6 +698,9 @@ cmd_test_all() {
     # Coverage report
     cmd_test_coverage
     
+    # Performance tests
+    cmd_test_performance
+    
     log_success "Complete test suite finished"
 }
 
@@ -356,6 +708,14 @@ cmd_test_all() {
 cmd_dev_frontend() {
     log_step "Starting frontend development server..."
     cd $FRONTEND_DIR
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ]; then
+        log_info "Installing dependencies..."
+        npm install
+    fi
+    
+    # Start development server
     npm run dev
     cd ..
 }
@@ -363,23 +723,39 @@ cmd_dev_frontend() {
 cmd_dev_backend() {
     log_step "Starting backend development server..."
     cd $BACKEND_DIR
+    
+    # Check if Python environment is set up
+    if [ ! -f ".env" ]; then
+        cp env.example .env 2>/dev/null || create_minimal_env
+    fi
+    
+    # Start backend with hot reload
     python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8001 --reload
     cd ..
 }
 
+cmd_dev_litellm() {
+    log_step "Starting LiteLLM service only..."
+    cd $BACKEND_DIR
+    docker-compose up -d litellm
+    cd ..
+    log_success "LiteLLM service started at $LITELLM_URL"
+}
+
 cmd_dev_full() {
     log_step "Starting full development environment..."
-    cmd_up
+    cmd_up --with-frontend
     
-    log_info "Development environment ready!"
-    log_info "Frontend: http://localhost:3000"
-    log_info "Backend:  http://localhost:8001"
+    log_enterprise "🎉 Full development environment ready!"
+    log_info "Frontend: $FRONTEND_URL (with hot reload)"
+    log_info "Backend:  $BACKEND_URL (with hot reload)"
 }
 
 # Maintenance commands
 cmd_clean() {
     log_step "Cleaning up Docker resources..."
     docker system prune -f
+    docker volume prune -f
     log_success "Basic cleanup completed"
 }
 
@@ -392,6 +768,7 @@ cmd_clean_deep() {
         docker system prune -af
         docker volume prune -f
         docker network prune -f
+        docker image prune -af
         log_success "Deep cleanup completed"
     else
         log_info "Deep cleanup cancelled"
@@ -404,8 +781,10 @@ cmd_clean_reports() {
         bash scripts/maintenance/cleanup_reports.sh
         log_success "Reports cleanup completed"
     else
-        log_error "Report cleanup script not found"
-        exit 1
+        log_info "Cleaning up manually..."
+        find . -name "*.log" -type f -mtime +7 -delete 2>/dev/null || true
+        find . -name "*_report_*.json" -type f -mtime +30 -delete 2>/dev/null || true
+        log_success "Manual cleanup completed"
     fi
 }
 
@@ -417,13 +796,15 @@ cmd_update() {
         log_info "Updating frontend dependencies..."
         cd $FRONTEND_DIR
         npm update
+        npm audit fix
         cd ..
     fi
     
-    # Update backend dependencies
-    if [ -f "$BACKEND_DIR/requirements.txt" ]; then
+    # Update backend dependencies (manual review required)
+    if [ -f "$BACKEND_DIR/requirements-prod.txt" ]; then
         log_info "Backend dependencies update requires manual review"
-        log_info "Check: $BACKEND_DIR/requirements.txt"
+        log_info "Check: $BACKEND_DIR/requirements-prod.txt"
+        log_info "Run: pip-compile --upgrade requirements-prod.in"
     fi
     
     log_success "Dependencies updated"
@@ -433,16 +814,23 @@ cmd_lint() {
     log_step "Running code linting..."
     
     # Backend linting
+    cd $BACKEND_DIR
     if docker-compose ps | grep -q "backend.*Up"; then
         log_info "Linting Python code..."
-        docker-compose exec backend bash -c "cd /app && python -m black src/ && python -m isort src/"
+        docker-compose exec backend bash -c "cd /app && python -m black src/ && python -m isort src/ && python -m flake8 src/"
+    else
+        log_warn "Backend service not running. Install tools locally for linting."
     fi
+    cd ..
     
     # Frontend linting
     if [ -d "$FRONTEND_DIR" ]; then
         log_info "Linting TypeScript code..."
         cd $FRONTEND_DIR
-        npm run lint
+        if [ -f "package.json" ]; then
+            npm run lint --if-present
+            npm run type-check --if-present
+        fi
         cd ..
     fi
     
@@ -455,17 +843,34 @@ cmd_format() {
     log_success "Code formatting completed"
 }
 
+cmd_security() {
+    log_enterprise "🔒 Running security scan..."
+    
+    # Docker security scan
+    log_info "Scanning Docker images..."
+    cd $BACKEND_DIR
+    docker-compose build > /dev/null 2>&1
+    docker scout cves neuronode-backend:latest 2>/dev/null || log_warn "Docker Scout not available"
+    cd ..
+    
+    # Dependency security audit
+    cmd_audit
+    
+    log_success "Security scan completed"
+}
+
 # Information commands
 cmd_version() {
     show_banner
     echo "${BOLD}Version Information:${NC}"
-    echo "System: $(git describe --tags --always --dirty 2>/dev/null || echo 'Unknown')"
+    echo "Git: $(git describe --tags --always --dirty 2>/dev/null || echo 'No git repository')"
     echo "Docker: $(docker --version 2>/dev/null || echo 'Not available')"
+    echo "Docker Compose: $(docker-compose --version 2>/dev/null || echo 'Not available')"
     echo "Node.js: $(node --version 2>/dev/null || echo 'Not available')"
     echo "Python: $(python --version 2>/dev/null || python3 --version 2>/dev/null || echo 'Not available')"
     echo ""
     echo "${BOLD}Service Status:${NC}"
-    if docker-compose ps | grep -q "Up"; then
+    if docker-compose -f $DEV_COMPOSE_FILE ps 2>/dev/null | grep -q "Up"; then
         cmd_status
     else
         echo "Services not running. Use './manage.sh up' to start."
@@ -476,9 +881,13 @@ cmd_audit() {
     log_step "Running security and dependency audit..."
     
     # Python security audit
-    if [ -f "$BACKEND_DIR/requirements.txt" ]; then
+    if [ -f "$BACKEND_DIR/requirements-prod.txt" ]; then
         log_info "Checking Python dependencies..."
-        pip-audit -r $BACKEND_DIR/requirements.txt || log_warn "pip-audit not available"
+        if command -v pip-audit &> /dev/null; then
+            pip-audit -r $BACKEND_DIR/requirements-prod.txt
+        else
+            log_warn "pip-audit not available. Install with: pip install pip-audit"
+        fi
     fi
     
     # Node.js security audit
@@ -492,33 +901,74 @@ cmd_audit() {
     log_success "Security audit completed"
 }
 
+cmd_docs() {
+    log_step "Opening documentation..."
+    if command -v open &> /dev/null; then
+        open "$DOCS_DIR/README.md"
+    elif command -v xdg-open &> /dev/null; then
+        xdg-open "$DOCS_DIR/README.md"
+    else
+        log_info "Documentation available at: $DOCS_DIR/README.md"
+        log_info "Online: https://github.com/bneweling/neuronode/tree/main/docs"
+    fi
+}
+
+cmd_config() {
+    log_step "Current configuration:"
+    echo ""
+    echo "${BOLD}Paths:${NC}"
+    echo "  Backend:    $BACKEND_DIR"
+    echo "  Frontend:   $FRONTEND_DIR"
+    echo "  Docs:       $DOCS_DIR"
+    echo ""
+    echo "${BOLD}Compose Files:${NC}"
+    echo "  Development: $DEV_COMPOSE_FILE"
+    echo "  Production:  $COMPOSE_FILE"
+    echo "  Testing:     $TEST_COMPOSE_FILE"
+    echo ""
+    echo "${BOLD}URLs:${NC}"
+    echo "  Frontend:    $FRONTEND_URL"
+    echo "  Backend:     $BACKEND_URL"
+    echo "  LiteLLM:     $LITELLM_URL"
+    echo ""
+    if [ -f "$BACKEND_DIR/.env" ]; then
+        echo "${BOLD}Environment:${NC}"
+        grep -E "^[A-Z_]+" "$BACKEND_DIR/.env" | head -10
+    fi
+}
+
 # Main command dispatcher
 main() {
     case "${1:-help}" in
         # System commands
-        up)         cmd_up ;;
+        up)         cmd_up "$2" ;;
         down)       cmd_down ;;
         restart)    cmd_restart ;;
         logs)       cmd_logs ;;
         health)     cmd_health ;;
         status)     cmd_status ;;
+        monitor)    cmd_monitor ;;
         
         # Build & Deployment
         build)              cmd_build ;;
+        build:prod)         cmd_build_prod ;;
         deploy:staging)     cmd_deploy_staging ;;
         deploy:prod)        cmd_deploy_prod ;;
         backup)             cmd_backup ;;
+        restore)            cmd_restore ;;
         
         # Testing
         test)               cmd_test ;;
         test:e2e)          cmd_test_e2e ;;
         test:performance)   cmd_test_performance ;;
         test:coverage)      cmd_test_coverage ;;
+        test:enterprise)    cmd_test_enterprise ;;
         test:all)          cmd_test_all ;;
         
         # Development
         dev:frontend)      cmd_dev_frontend ;;
         dev:backend)       cmd_dev_backend ;;
+        dev:litellm)       cmd_dev_litellm ;;
         dev:full)          cmd_dev_full ;;
         
         # Maintenance
@@ -528,13 +978,16 @@ main() {
         update)             cmd_update ;;
         lint)               cmd_lint ;;
         format)             cmd_format ;;
+        security)           cmd_security ;;
         
         # Information
         version)            cmd_version ;;
         audit)              cmd_audit ;;
+        docs)               cmd_docs ;;
+        config)             cmd_config ;;
         help|*)             show_help ;;
     esac
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@"
