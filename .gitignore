@@ -1,4 +1,6 @@
-# Python
+# 🧠 Neuronode - Professional .gitignore
+
+# === PYTHON ===
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,114 +21,88 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual Environment
-venv/
-env/
-ENV/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Docker
-.dockerignore
-
-# Node.js
+# === NODE.JS ===
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Next.js build artifacts
+.pnpm-debug.log*
+package-lock.json
 .next/
 out/
-coverage/
+.cache/
+.vercel/
+.env*.local
 
-# Playwright test results
-test-results/
-playwright-report/
-test-results-*.json
-
-# Generated test output files
-*_test_results*.json
-*_report*.json
-*_optimization_results*.json
-
-# IDE
+# === DEVELOPMENT ===
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Data directories
-ki-wissenssystem/data/documents/*
-!ki-wissenssystem/data/documents/.gitkeep
-ki-wissenssystem/data/temp/*
-!ki-wissenssystem/data/temp/.gitkeep
+# === ENVIRONMENT & SECRETS ===
+.env
+.env.local
+.env.production
+*.key
+*.pem
+secrets/
+.secrets
 
-# SSL certificates
-ki-wissenssystem/ssl/*
-!ki-wissenssystem/ssl/.gitkeep
-
-# API Process IDs
-.api.pid
-
-# Docker volumes data
-neo4j_data/
-chroma_data/
+# === DATABASE & STORAGE ===
+*.db
+*.sqlite
+*.sqlite3
+neo4j/
+chroma_db/
+postgres_data/
 redis_data/
 
-# Deployment configurations (sensitive)
-deployment/*.env
-deployment/production-*.yml
+# === LOGS & TEMP ===
+logs/
+*.log
+temp/
+tmp/
+.tmp/
+coverage/
+.coverage
+.nyc_output
+test-results/
+playwright-report/
 
-# Obsidian Plugin build artifacts
-obsidian-ki-plugin/main.js
-obsidian-ki-plugin/main.js.map
+# === DOCKER & DEPLOYMENT ===
+.docker/
+docker-compose.override.yml
+.dockerignore
 
-# Setup config
-.setup-config
+# === NEURONODE SPECIFIC ===
+neuronode-backend/output/
+neuronode-backend/data/documents/
+neuronode-backend/data/temp/
+neuronode-backend/ssl/
+neuronode-backend/venv/
+neuronode-backend/litellm-repo/
+neuronode-webapp/.next/
+neuronode-webapp/coverage/
+neuronode-webapp/playwright-report/
+neuronode-webapp/test-results/
 
-# Windows-spezifische Dateien
-# Windows scripts no longer supported
-!ki-wissenssystem/README-Windows.md
-setup.log
+# === LEGACY & CLEANUP ===
+**/legacy/
+**/*_old.*
+**/*_backup.*
+*.backup
+*.bak
 
-# Generated Output Files (K6 Phase 6.3a)
-ki-wissenssystem/output/
-*_test_results.json
-*_tier_report.json
-*_optimization_results*.json
-
-# Test and monitoring reports (generated)
-test-results-*.json
-monitoring_report_*.json
-quality_report_*.json
-
-# Quality Assurance Archives (K6 Phase 6.3b)
-ki-wissenssystem/quality_assurance/archive/ 
+# === OUTPUT & REPORTS ===
+reports/
+output/
+quality_assurance/reports/
+*.xml
+*.junit
+htmlcov/ 

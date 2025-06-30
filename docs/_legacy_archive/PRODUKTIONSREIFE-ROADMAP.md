@@ -1,8 +1,8 @@
-# Produktionsreife Roadmap: KI-Wissenssystem Konsolidierung
+# Produktionsreife Roadmap: Neuronode Konsolidierung
 
 ## 🎯 Mission Statement: keine abkürzungen, keine mocks unter keinen umständen. lieber abbrechen statt schlechte qualität (unbedingt beachten!!!!)
 
-**Ziel:** Transformation des aktuellen KI-Wissenssystems von einem funktionalen Prototyp zu einem produktionsreifen, enterprise-tauglichen System durch systematische Bereinigung, Testing und Dokumentation.
+**Ziel:** Transformation des aktuellen Neuronodes von einem funktionalen Prototyp zu einem produktionsreifen, enterprise-tauglichen System durch systematische Bereinigung, Testing und Dokumentation.
 
 **Zeitrahmen:** 8-10 Wochen  
 **Status:** AKTIVE KONSOLIDIERUNGSPHASE  
@@ -187,7 +187,7 @@ TEST_INFRASTRUCTURE_AUDIT:
   status: "❌ CRITICAL - Keine echte Test-Abdeckung"
   
   test_files:
-    location: "ki-wissenssystem/tests/"
+    location: "neuronode/tests/"
     files_found: 6
     files_status: "ALLE LEER (0 Bytes, 0 lines)"
     files_list:
@@ -3407,7 +3407,7 @@ IMPLEMENTATION_METHODOLOGY_PROVEN:
 - **Messbare Qualität:** Jede Phase hat objektive Abschlusskriterien
 - **Zeitbox-Disziplin:** 8-10 Wochen einhalten, P3-Tasks dokumentieren für später
 
-**🎯 Mission:** Ein robustes, gut getestetes, vollständig dokumentiertes und produktionsreifes KI-Wissenssystem, das als solide Basis für zukünftige Erweiterungen dient.
+**🎯 Mission:** Ein robustes, gut getestetes, vollständig dokumentiertes und produktionsreifes Neuronode, das als solide Basis für zukünftige Erweiterungen dient.
 
 ## 🏆 **K3.3 FINALE NICHT-MOBILE TEST-ERGEBNISSE - 88% ERFOLGSRATE**
 

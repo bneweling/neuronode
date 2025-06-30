@@ -1,6 +1,6 @@
-# 🚀 KI-Wissenssystem Production Deployment Guide
+# 🚀 Neuronode Production Deployment Guide
 
-Umfassende Anleitung für den produktiven Einsatz des KI-Wissenssystems mit Docker, Monitoring und automatisierten Deployments.
+Umfassende Anleitung für den produktiven Einsatz des Neuronodes mit Docker, Monitoring und automatisierten Deployments.
 
 > **📚 Navigation**: [🏠 Hauptdokumentation](README.md) | [🌐 Web-App Guide](README-WEBAPP.md) | [📖 Dokumentationsübersicht](docs/README.md)
 
@@ -22,7 +22,7 @@ Umfassende Anleitung für den produktiven Einsatz des KI-Wissenssystems mit Dock
 ```bash
 # 1. Repository klonen und in Projekt-Verzeichnis wechseln
 git clone <repository-url>
-cd ki-wissenssystem-main
+cd neuronode-main
 
 # 2. Production Setup ausführen
 chmod +x production-setup.sh

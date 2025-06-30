@@ -1,14 +1,14 @@
-# Branch-Struktur des KI-Wissenssystems
+# Branch-Struktur des Neuronodes
 
 ## Übersicht
 
-Das KI-Wissenssystem wird in zwei parallelen Versionen entwickelt, um verschiedene Frontend-Interfaces zu unterstützen:
+Das Neuronode wird in zwei parallelen Versionen entwickelt, um verschiedene Frontend-Interfaces zu unterstützen:
 
 ## Aktuelle Branches
 
 ### `webapp-version` - Standalone Web-App Version ⭐ **AKTUELL**
 - **Zweck**: Eigenständige Web-Anwendung (Hauptfokus)
-- **Frontend**: Next.js Web-App (`ki-wissenssystem-webapp/`)
+- **Frontend**: Next.js Web-App (`neuronode-webapp/`)
 - **Status**: ✅ **Produktionsbereit** - Vollständig entwickelt und getestet
 - **Zielgruppe**: Alle Nutzer - eigenständige, professionelle Lösung
 - **Features**:
@@ -33,7 +33,7 @@ Das KI-Wissenssystem wird in zwei parallelen Versionen entwickelt, um verschiede
 ## Gemeinsame Komponenten
 
 Beide Branches teilen sich:
-- **Backend-API** (`ki-wissenssystem/src/api/`) - ✅ Identisch
+- **Backend-API** (`neuronode/src/api/`) - ✅ Identisch
 - **Core-Funktionalitäten** (Document Processing, Retrievers, etc.) - ✅ Identisch
 - **Konfiguration und Setup-Skripte** - ✅ Cross-kompatibel
 - **Docker Services** (Neo4j, ChromaDB, Redis) - ✅ Identisch

@@ -95,7 +95,7 @@ services:
   # Application Services
   backend:
     build: 
-      context: ./ki-wissenssystem
+      context: ./neuronode-backend
       dockerfile: Dockerfile.production
     container_name: ki-prod-backend
     restart: unless-stopped
@@ -141,7 +141,7 @@ services:
 
   frontend:
     build:
-      context: ./ki-wissenssystem-webapp  
+      context: ./neuronode-backend-webapp  
       dockerfile: Dockerfile.production
     container_name: ki-prod-frontend
     restart: unless-stopped

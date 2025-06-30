@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# KI-Wissenssystem Central Management Interface
+# Neuronode Central Management Interface
 # Version: 2.0 (K6 Enterprise Edition)
 # The single entry point for all system operations
 
@@ -15,10 +15,10 @@ NC='\033[0m' # No Color
 
 # Configuration
 COMPOSE_FILE="docker-compose.yml"
-TEST_COMPOSE_FILE="ki-wissenssystem/docker-compose.test.yml"
+TEST_COMPOSE_FILE="neuronode/docker-compose.test.yml"
 SCRIPTS_DIR="scripts"
-FRONTEND_DIR="ki-wissenssystem-webapp"
-BACKEND_DIR="ki-wissenssystem"
+FRONTEND_DIR="neuronode-webapp"
+BACKEND_DIR="neuronode"
 
 # Helper functions
 log_info() {
@@ -43,7 +43,7 @@ log_success() {
 
 show_banner() {
     echo -e "${BOLD}${BLUE}"
-    echo "🚀 KI-Wissenssystem Management Interface"
+    echo "🚀 Neuronode Management Interface"
     echo "============================================"
     echo -e "${NC}"
     echo "Enterprise Knowledge Management System"
@@ -140,7 +140,7 @@ EOF
 # System commands
 cmd_up() {
     check_prerequisites
-    log_step "Starting KI-Wissenssystem development environment..."
+    log_step "Starting Neuronode development environment..."
     
     # Check if services already running
     if docker-compose ps | grep -q "Up"; then
@@ -171,13 +171,13 @@ cmd_up() {
 }
 
 cmd_down() {
-    log_step "Stopping KI-Wissenssystem..."
+    log_step "Stopping Neuronode..."
     docker-compose -f $COMPOSE_FILE down
     log_success "System stopped"
 }
 
 cmd_restart() {
-    log_step "Restarting KI-Wissenssystem..."
+    log_step "Restarting Neuronode..."
     cmd_down
     sleep 5
     cmd_up

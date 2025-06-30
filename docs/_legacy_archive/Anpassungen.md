@@ -6,7 +6,7 @@ Hier ist die finale, detaillierte Sammlung an konkreten Vorgaben für Ihre IDE. 
 
 ---
 
-## Finale Roadmap: Implementierung des Dynamischen KI-Wissenssystems
+## Finale Roadmap: Implementierung des Dynamischen Neuronodes
 
 **Zielsetzung:** Transformation des bestehenden Systems in eine dynamische, kontextsensitive und wartbare Architektur, die auf API-basierten KI-Services (Gemini), einem intelligenten Graphen und robusten, versionierten Prompts basiert.
 

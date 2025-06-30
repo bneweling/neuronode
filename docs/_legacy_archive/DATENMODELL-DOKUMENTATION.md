@@ -1,14 +1,14 @@
-# 📊 KI-Wissenssystem Datenmodell-Dokumentation
+# 📊 Neuronode Datenmodell-Dokumentation
 
 **Version:** 1.0  
 **Datum:** Januar 2025  
-**Autor:** KI-Wissenssystem Team  
+**Autor:** Neuronode Team  
 
 ---
 
 ## 🎯 Überblick
 
-Das KI-Wissenssystem verwendet ein hybrides Datenmodell, das strukturierte Graph-Datenbanken mit Vektor-Embeddings kombiniert, um sowohl semantische Suche als auch komplexe Beziehungsanalysen zu ermöglichen.
+Das Neuronode verwendet ein hybrides Datenmodell, das strukturierte Graph-Datenbanken mit Vektor-Embeddings kombiniert, um sowohl semantische Suche als auch komplexe Beziehungsanalysen zu ermöglichen.
 
 ### Architektur-Überblick
 

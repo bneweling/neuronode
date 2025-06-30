@@ -1,4 +1,4 @@
-# 🛠️ KI-Wissenssystem - Entwicklungsguide
+# 🛠️ Neuronode - Entwicklungsguide
 
 > **📚 Navigation**: [🏠 Hauptdokumentation](README.md) | [🌐 Web-App Guide](README-WEBAPP.md) | [📖 Dokumentationsübersicht](docs/README.md)
 
@@ -58,7 +58,7 @@ npm run dev                # Automatisches Bauen bei Änderungen
 
 ### **2. Entwicklungs-Modus starten:**
 ```bash
-cd ki-wissenssystem
+cd neuronode
 ./dev-mode.sh              # macOS/Linux - Interaktives Entwicklungs-Menü
 ```
 
@@ -144,7 +144,7 @@ npm install neue-bibliothek
 npm run build
 
 # 3. Plugin neu installieren
-../ki-wissenssystem/setup-obsidian.sh
+../neuronode/setup-obsidian.sh
 
 # 4. Obsidian neu starten
 ```
@@ -154,7 +154,7 @@ npm run build
 ### **Backend-Debugging:**
 ```bash
 # API-Logs in Echtzeit
-tail -f ki-wissenssystem/logs/api.log
+tail -f neuronode/logs/api.log
 
 # Docker-Service-Logs
 docker-compose logs -f neo4j chromadb
@@ -234,7 +234,7 @@ pip install fehlende-bibliothek
 cd obsidian-ki-plugin && npm run build
 
 # 2. Plugin neu installieren
-cd ../ki-wissenssystem && ./setup-obsidian.sh
+cd ../neuronode && ./setup-obsidian.sh
 
 # 3. Obsidian komplett neu starten
 ```

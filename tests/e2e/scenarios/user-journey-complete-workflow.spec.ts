@@ -16,7 +16,7 @@ test.describe('Complete Knowledge Workflow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to application homepage
     await page.goto('/');
-    await expect(page).toHaveTitle(/KI-Wissenssystem/);
+    await expect(page).toHaveTitle(/Neuronode/);
   });
 
   test('should complete full workflow: Upload → Process → Chat → Graph', async ({ page }) => {

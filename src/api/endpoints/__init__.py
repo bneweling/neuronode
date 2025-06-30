@@ -1,6 +1,6 @@
 # API Endpoints Module
 """
-Enterprise API Endpoints for KI-Wissenssystem
+Enterprise API Endpoints for Neuronode
 """
 
 from .model_management import router as model_management_router

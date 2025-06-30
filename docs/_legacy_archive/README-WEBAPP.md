@@ -1,4 +1,4 @@
-# KI-Wissenssystem - Web-App Version
+# Neuronode - Web-App Version
 
 Eine moderne, eigenständige Web-Anwendung für intelligente Dokumentenverarbeitung und Wissensmanagement.
 
@@ -6,7 +6,7 @@ Eine moderne, eigenständige Web-Anwendung für intelligente Dokumentenverarbeit
 
 ## Überblick
 
-Diese Version des KI-Wissenssystems bietet eine vollständig eigenständige Web-Anwendung mit:
+Diese Version des Neuronodes bietet eine vollständig eigenständige Web-Anwendung mit:
 
 - **Moderne Benutzeroberfläche** mit Material Design 3
 - **Responsives Design** für Desktop, Tablet und Mobile
@@ -18,13 +18,13 @@ Diese Version des KI-Wissenssystems bietet eine vollständig eigenständige Web-
 ## Architektur
 
 ```
-ki-wissenssystem-webapp/     # Next.js Web-App (Frontend)
+neuronode-webapp/     # Next.js Web-App (Frontend)
 ├── src/
 │   ├── app/                 # Next.js App Router
 │   ├── components/          # React Komponenten
 │   └── lib/                 # Utilities
 
-ki-wissenssystem/            # Backend Services
+neuronode/            # Backend Services
 ├── src/api/                 # FastAPI Backend
 ├── src/document_processing/ # Dokumentenverarbeitung
 ├── src/retrievers/          # RAG Retrieval System
@@ -36,14 +36,14 @@ ki-wissenssystem/            # Backend Services
 ### 1. Backend Services starten
 
 ```bash
-cd ki-wissenssystem
+cd neuronode
 ./start-all.sh
 ```
 
 ### 2. Web-App starten
 
 ```bash
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 npm install
 npm run dev
 ```
@@ -82,11 +82,11 @@ Die Web-App ist dann unter http://localhost:3000 verfügbar.
 
 ```bash
 # Backend Development Mode
-cd ki-wissenssystem
+cd neuronode
 ./dev-mode.sh
 
 # Frontend Development
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 npm run dev
 ```
 
@@ -98,11 +98,11 @@ FastAPI Docs: http://localhost:8000/docs
 
 ```bash
 # Backend Tests
-cd ki-wissenssystem
+cd neuronode
 python -m pytest tests/
 
 # Frontend Tests
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 npm test
 ```
 
@@ -112,11 +112,11 @@ npm test
 
 ```bash
 # Backend Services
-cd ki-wissenssystem
+cd neuronode
 docker-compose up -d
 
 # Web-App (separate deployment)
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 docker build -t ki-webapp .
 docker run -p 3000:3000 ki-webapp
 ```
@@ -130,7 +130,7 @@ docker run -p 3000:3000 ki-webapp
 
 ## Konfiguration
 
-### Backend (`ki-wissenssystem/.env`)
+### Backend (`neuronode/.env`)
 ```env
 # LLM Configuration
 LLM_PROVIDER=ollama
@@ -173,5 +173,5 @@ Dokumente und Wissensgraphen können direkt übernommen werden:
 
 ## Version
 
-Diese README bezieht sich auf die **Web-App Version** des KI-Wissenssystems.
+Diese README bezieht sich auf die **Web-App Version** des Neuronodes.
 Für die Obsidian Plugin Version siehe Branch `main`. 

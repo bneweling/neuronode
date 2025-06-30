@@ -1,4 +1,4 @@
-# KI-Wissenssystem: Vollständiger Workflow-Guide
+# Neuronode: Vollständiger Workflow-Guide
 
 ## Übersicht: Vom Dokument zum Wissensgraph
 

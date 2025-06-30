@@ -5,7 +5,7 @@
 
 ### ✅ **PHASE 1: PORT-KONFLIKT BEHOBEN**
 - **LiteLLM WebUI** läuft jetzt auf **Port 3001** (nicht 3000)
-- **KI-Wissenssystem WebApp** behält Port 3000
+- **Neuronode WebApp** behält Port 3000
 - **Keine Konflikte** mehr zwischen den Services
 
 ### ✅ **PHASE 2: VOLLSTÄNDIGE SERVICE-MIGRATION ABGESCHLOSSEN**

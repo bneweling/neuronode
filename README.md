@@ -1,314 +1,296 @@
-# 📚 KI-Wissenssystem - Enterprise Knowledge Management
+# 🧠 Neuronode - Enterprise Knowledge Management System
 
-**Version:** 2.0 (Enterprise-Ready)  
-**Datum:** Januar 2025  
-**Status:** Produktionsreif mit umfassender Dokumentation
+**Version:** 2.0  
+**Status:** Produktionsreif  
+**Letzte Aktualisierung:** Januar 2025
 
----
+Neuronode ist ein enterprise-grade KI-gestütztes Wissensmanagementsystem, das strukturierte Graph-Datenbanken mit Vektor-Embeddings kombiniert, um sowohl semantische Suche als auch komplexe Beziehungsanalysen zu ermöglichen.
 
-## 🎯 Übersicht
+## 🚀 **ÜBERSICHT**
 
-Das KI-Wissenssystem ist eine **moderne RAG-Pipeline** (Retrieval-Augmented Generation) für intelligente Dokumentenverarbeitung und Wissensmanagement. Das System kombiniert Graph-Datenbanken mit Vektor-Embeddings, um sowohl strukturierte Compliance-Dokumente als auch unstrukturierte technische Dokumentation zu verarbeiten.
+### **Was ist Neuronode?**
 
-### Zentrale Features
+Neuronode transformiert unstrukturierte Dokumente in ein intelligentes, durchsuchbares Knowledge Graph. Das System nutzt moderne KI-Modelle über LiteLLM für:
 
-✅ **Hybrid RAG-System** - Graph + Vector Search  
-✅ **Multi-LLM Integration** - OpenAI, Anthropic, Google  
-✅ **Document Processing** - PDF, Word, Excel, PowerPoint  
-✅ **Real-time Chat Interface** - WebSocket-basiert  
-✅ **Graph Visualization** - Interaktive Wissensgraphen  
-✅ **Enterprise Security** - JWT, Rate-Limiting, Audit-Logs
+- **Dokumentverarbeitung**: Multi-Format-Support (PDF, DOCX, TXT, XML, etc.)
+- **Intelligente Extraktion**: Automatische Entitäts- und Beziehungserkennung
+- **Hybrid-Suche**: Kombination aus semantischer Vektorsuche und Graph-Traversierung
+- **Natürliche Sprache**: Chat-Interface für komplexe Wissensabfragen
+- **Visualisierung**: Interaktive Knowledge Graph-Darstellung
 
----
+### **Kernfeatures**
 
-## 📖 Umfassende Dokumentations-Navigation
+- ✅ **27 Smart-Alias AI-Modelle** über LiteLLM-Integration
+- ✅ **Enterprise-Sicherheit** mit JWT, RBAC und Rate Limiting
+- ✅ **Multi-Format-Dokumentenverarbeitung** 
+- ✅ **Real-time Chat-Interface** mit Kontext-Awareness
+- ✅ **Interaktive Graph-Visualisierung**
+- ✅ **Umfassendes Testing** mit 100% E2E-Coverage
+- ✅ **Performance-optimiert** für Enterprise-Workloads
 
-### 🚀 Schnellstart & Einführung
-- [**Getting Started**](docs/1_getting_started.md) - 30-Minuten Setup-Guide
-- [**Troubleshooting**](docs/6_troubleshooting.md) - Häufige Probleme und Lösungen
+## 📋 **SCHNELLSTART**
 
-### 🏗️ System-Architektur & Design
-- [**System-Architektur**](docs/2_architecture.md) - Umfassende Architektur-Dokumentation
-- [**Workflows & Prozesse**](docs/3_workflows.md) - Detaillierte Workflow-Dokumentation
-- [**Komponenten-Übersicht**](docs/5_components.md) - Einzelne Komponenten und Integration
+### **Systemanforderungen**
+- Docker & Docker Compose
+- Node.js 18+ (für Frontend-Entwicklung)
+- 8GB RAM (minimum), 16GB empfohlen
+- 50GB freier Speicherplatz
 
-### 🚀 Deployment & Operations
-- [**Deployment Guide**](docs/4_deployment.md) - Development, Staging, Production
-
----
-
-## 🏁 Quick Start
-
-### 1. System Requirements
+### **1. Repository klonen**
 ```bash
-# Mindestanforderungen
-CPU: 4 Cores
-RAM: 8GB
-Disk: 20GB SSD
-OS: macOS, Linux, Windows (mit WSL2)
+git clone <repository-url>
+cd neuronode
 ```
 
-### 2. Installation (30 Sekunden)
+### **2. Umgebung konfigurieren**
 ```bash
-# Repository klonen
-git clone [repository-url] ki-wissenssystem
-cd ki-wissenssystem
+# API-Keys konfigurieren (erforderlich für Produktivbetrieb)
+cp neuronode-backend/env.example neuronode-backend/.env
 
-# Automatisches Setup
-./manage.sh up
+# API-Keys in .env eintragen:
+# OPENAI_API_KEY=sk-...
+# ANTHROPIC_API_KEY=sk-ant-...
+# GOOGLE_API_KEY=...
+```
 
-# System Status prüfen
+### **3. Services starten**
+```bash
+# Alle Services starten (Backend + LiteLLM + Datenbanken)
+cd neuronode-backend
+./manage.sh start
+
+# Frontend starten (separates Terminal)
+cd neuronode-webapp
+npm install
+npm run dev
+```
+
+### **4. System validieren**
+```bash
+# Health Checks
+curl http://localhost:8001/health    # Backend API
+curl http://localhost:4000/health    # LiteLLM Proxy
+open http://localhost:3000           # Frontend
+open http://localhost:4000/ui        # LiteLLM Admin UI
+```
+
+## 🏗️ **ARCHITEKTUR**
+
+### **Service-Überblick**
+```
+Frontend (Next.js)     → http://localhost:3000
+├── Backend API        → http://localhost:8001
+├── LiteLLM Proxy      → http://localhost:4000
+├── Neo4j Graph DB     → bolt://localhost:7687
+├── ChromaDB Vectors   → http://localhost:8000
+├── PostgreSQL         → localhost:5432
+└── Redis Cache        → localhost:6379
+```
+
+### **Datenfluss**
+1. **Upload**: Dokumente über Web-Interface hochladen
+2. **Processing**: Automatische Klassifikation und Chunking
+3. **Extraction**: KI-basierte Entitäts- und Beziehungserkennung
+4. **Storage**: Hybrid-Speicherung in Graph- und Vector-Datenbank
+5. **Query**: Natürliche Sprache → Hybrid Retrieval → KI-Antwort
+
+## 🔧 **VERWENDUNG**
+
+### **Dokumente hochladen**
+1. Frontend öffnen: http://localhost:3000
+2. "Upload" → Datei auswählen → Upload starten
+3. Processing-Status verfolgen
+4. Dokument in Knowledge Graph verfügbar
+
+### **Wissen abfragen**
+1. "Chat" → Natürliche Frage eingeben
+2. System kombiniert Graph- und Vektor-Suche
+3. KI generiert kontextuelle Antwort mit Quellen
+4. Ergebnisse in Graph visualisieren
+
+### **Graph erkunden**
+1. "Graph" → Interaktive Visualisierung
+2. Knoten und Beziehungen explorieren
+3. Filter und Suchfunktionen nutzen
+4. Export-Funktionen verfügbar
+
+## 🧪 **TESTING**
+
+### **E2E Tests ausführen**
+```bash
+# Vollständige E2E-Test-Suite
+cd neuronode-webapp
+npm run test:e2e
+
+# Spezifische Test-Szenarien
+npx playwright test user-journey-complete-workflow.spec.ts
+npx playwright test performance-scalability.spec.ts
+```
+
+### **Backend Tests**
+```bash
+cd neuronode-backend
+pytest tests/ -v --cov=src --cov-report=html
+```
+
+### **Test-Coverage**
+- **Unit Tests**: 90%+ Coverage
+- **Integration Tests**: 80%+ Coverage  
+- **E2E Tests**: 100% Critical Path Coverage
+
+## 📊 **MONITORING**
+
+### **System Health**
+```bash
+# Service Status überprüfen
 ./manage.sh status
+
+# Service Logs anzeigen
+./manage.sh logs
+
+# Performance Metriken
+curl http://localhost:8001/metrics
 ```
 
-### 3. Erste Schritte
+### **LiteLLM Monitoring**
+- **Admin UI**: http://localhost:4000/ui
+- **Model Performance**: Real-time Analytics
+- **Cost Tracking**: Token Usage & API Costs
+- **Rate Limits**: Request Throttling Status
+
+## 🔐 **SICHERHEIT**
+
+### **Produktionseinstellungen**
 ```bash
-# 1. Frontend öffnen
-open http://localhost:3000
+# API-Keys niemals in Git committen
+# Nur in .env oder Environment Variables
 
-# 2. API Documentation
-open http://localhost:8000/docs
+# LiteLLM Authentifizierung aktivieren
+DISABLE_AUTH=false
+UI_USERNAME=admin
+UI_PASSWORD=secure-password-2025
 
-# 3. Graph Database UI
-open http://localhost:7474
+# JWT-Konfiguration
+JWT_SECRET_KEY=your-secure-secret
+LITELLM_MASTER_KEY=sk-your-master-key
 ```
 
----
+### **Sicherheitsfeatures**
+- ✅ JWT-basierte Authentifizierung
+- ✅ Role-Based Access Control (RBAC)
+- ✅ API Rate Limiting
+- ✅ Input Validation & Sanitization
+- ✅ Audit Logging
 
-## 📊 System Status (Produktions-Metriken)
+## 🚀 **DEPLOYMENT**
 
-### Performance Durchbrüche (Januar 2025)
-```yaml
-Intent Analysis: 0.02ms ✅ (10,000x besser als Ziel)
-Document Processing: 88-93% Erfolgsrate ✅
-Query Pipeline: 3-10s Antwortzeit ✅
-System Uptime: 98.5% ✅
-Error Rate: <1% ✅
-Cache Hit Rate: 45-70% ✅
-```
-
-### Unterstützte Dateiformate
-```yaml
-PDF: 95% Erfolgsrate ✅ (komplexe Layouts: 85%)
-Word (.docx): 92% Erfolgsrate ✅
-Excel (.xlsx): 90% Erfolgsrate ✅
-PowerPoint (.pptx): 88% Erfolgsrate ✅
-Text (.txt): 99% Erfolgsrate ✅
-XML: 85% Erfolgsrate ✅
-
-Limitierungen:
-  - Dateien >50MB: Memory-Issues ⚠️
-  - Gescannte PDFs: OCR nicht implementiert ⚠️
-  - Komplexe Excel-Formeln: Nicht ausgewertet ⚠️
-```
-
-### LLM Integration Status (23 Modelle)
-```yaml
-OpenAI: 9 Modelle (inkl. gpt-4.1, o4-mini, o3-mini) ✅
-Anthropic: 7 Modelle (inkl. claude-opus-4, claude-sonnet-4) ✅
-Google: 7 Modelle (inkl. gemini-2.5-pro, gemini-2.5-flash) ✅
-Fallback-Strategien: Intelligent Load-Balancing ✅
-Model Profiles: 5 Profile (premium, balanced, cost-effective) ✅
-```
-
----
-
-## 🚀 Management Commands
-
-Das System bietet ein zentrales Management-Interface:
-
+### **Development**
 ```bash
-# System Management
-./manage.sh start           # Alle Services starten
-./manage.sh stop            # Alle Services stoppen
-./manage.sh restart         # System neu starten
-./manage.sh status          # Service Status anzeigen
-./manage.sh logs            # System Logs anzeigen
-
-# Development
-./manage.sh dev-setup       # Development Environment
-./manage.sh test            # Tests ausführen
-./manage.sh clean           # Temporäre Dateien löschen
-
-# Production
-./manage.sh deploy          # Production Deployment
-./manage.sh backup          # System Backup
-./manage.sh health-check    # Gesundheitsprüfung
+./manage.sh start     # Lokale Entwicklung
+npm run dev           # Frontend mit Hot-Reload
 ```
 
----
-
-## 🏗️ Architektur Übersicht
-
-### System-Komponenten
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │   LiteLLM       │
-│   (Next.js)     │◄──►│   (Python)      │◄──►│   Proxy         │
-│   Port 3000     │    │   Port 8000     │    │   Port 4000     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Neo4j Graph   │    │     Redis       │    │   Chroma DB     │
-│   Port 7474     │    │   Port 6379     │    │   Port 8001     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### Tech Stack Details
-```yaml
-Frontend: Next.js 15 + TypeScript + Material Web ✅
-Backend: FastAPI + Python 3.11 + Pydantic ✅
-Databases: Neo4j (Graph) + ChromaDB (Vector) + Redis (Cache) ✅
-LLMs: OpenAI + Anthropic + Google (via LiteLLM v1.72.6) ✅
-Deployment: Docker Compose + Nginx + SSL ✅
-Monitoring: Custom Metrics + Health Checks + Audit Logs ✅
-Testing: Jest + Playwright + Pytest (100% E2E Coverage) ✅
-```
----
-
-## 💡 Anwendungsbeispiele & Fragestellungen
-
-Das KI-Wissenssystem ist darauf ausgelegt, komplexe Anfragen zu Sicherheitsstandards, Compliance-Dokumenten und technischen Best Practices zu beantworten. Es nutzt seine hybriden RAG-Fähigkeiten (Graph- und Vektorsuche), um präzise und kontextbezogene Antworten aus den integrierten Dokumenten zu generieren. Hier sind einige konkrete Beispiele, wie Sie das System nutzen können:
-
-### Beispiel 1: Cross-Compliance-Analyse
-*   **Szenario:** Sie möchten die Beziehung zwischen einem spezifischen BSI IT-Grundschutz-Baustein und den Anforderungen der ISO 27001 verstehen, um Compliance-Lücken zu identifizieren oder Überschneidungen zu nutzen.
-*   **Frage an das System:** "Welche ISO 27001 Controls sind relevant für BSI APP.6.A3 zur sicheren Beschaffung von Software?"
-*   **Erwarteter Nutzen:** Das System durchsucht beide Dokumente, erkennt die spezifizierte BSI-Anforderung (APP.6.A3) und identifiziert daraufhin passende oder sich überlappende Controls aus dem Annex A der ISO 27001, um Ihnen eine strukturierte Antwort und mögliche Referenzen zu liefern.
-
-### Beispiel 2: Technologie-spezifische Best Practices
-*   **Szenario:** Ein Entwicklerteam muss Multi-Faktor-Authentisierung (MFA) in einer Microsoft Exchange-Umgebung implementieren und sucht nach umfassenden Best Practices, die sowohl allgemeine IT-Betriebsanweisungen als auch spezifische Exchange-Sicherheitsrichtlinien berücksichtigen.
-*   **Frage an das System:** "Welche Best Practices für Multi-Faktor-Authentisierung (MFA) finden sich in den Dokumenten, insbesondere im Kontext von Microsoft Exchange und allgemeinen IT-Betrieb?"
-*   **Erwarteter Nutzen:** Das System extrahiert und synthetisiert relevante Informationen zu MFA aus verschiedenen BSI-Bausteinen (z.B. `ORP.4 Identitäts- und Berechtigungsmanagement`, `APP.5.2 Microsoft Exchange und Outlook`, `OPS.1.1.1 Allgemeiner IT-Betrieb`) und liefert eine konsolidierte, handlungsleitende Antwort, die operative und anwendungsspezifische Aspekte vereint.
-
-### Beispiel 3: Bedrohungs- und Kontroll-Zuordnung
-*   **Szenario:** Ein Security Architect bewertet die Risiken für eingebettete Systeme in einer Produktionsumgebung und benötigt eine schnelle Übersicht der größten Bedrohungen und der zugehörigen Kontrollmaßnahmen gemäß BSI.
-*   **Frage an das System:** "Was sind die größten Gefährdungen für eingebettete Systeme laut BSI und welche Kontrollen werden vorgeschlagen, um diese zu mindern?"
-*   **Erwarteter Nutzen:** Das System analysiert den BSI SYS.4.3-Baustein (Eingebettete Systeme), identifiziert die beschriebene Gefährdungslage und verknüpft diese direkt mit den relevanten Anforderungen und Kontrollmaßnahmen aus demselben Dokument, um einen klaren Überblick über Risiken und deren Minderung zu geben.
-
----
-
-
-## 📈 Entwicklungsfortschritt & Roadmap
-
-### K6 Implementation Status (Januar 2025)
-```yaml
-✅ Phase 1: Infrastructure & Migration (100%)
-✅ Phase 2: Enhanced LiteLLM Integration (100%)
-✅ Phase 3: Quality Assurance & Testing (100%)
-✅ Phase K6: Wissenskonsolidierung & Repository-Cleanup (100%)
-```
-
-### Nächste Entwicklungsschritte
-- **Multi-Language Support** - Erweiterte Sprachunterstützung
-- **Advanced Analytics** - Detaillierte Usage-Analytics
-- **Mobile Optimization** - Native mobile Apps
-- **API Extensions** - Erweiterte API-Funktionalität
-
----
-
-## 🎯 Features
-
-### **✅ Core Features (Production-Ready)**
-- 🌐 **Responsive Web-App** - Material Design 3, PWA-Ready
-- 💬 **Multi-Chat System** - Mehrere Sessions mit Verlauf
-- 🕸️ **Graph-Visualisierung** - Interaktive Wissensgraphen
-- 📄 **Document Upload** - Drag & Drop mit automatischer Analyse
-- 🔍 **Semantische Suche** - ChromaDB Vector Search
-- 🧠 **Multi-LLM Support** - OpenAI, Anthropic, Google Gemini 2.5
-- 🔄 **Real-time Updates** - WebSocket-Integration
-- 🌙 **Dark/Light Mode** - Vollständiges Theme-System
-
-### **🛡️ Enterprise Features**
-- 🔐 **Security** - XSS/CSRF Prevention, Input Validation
-- 📊 **Monitoring** - Health Checks, Performance Metrics
-- 🏭 **Production-Ready** - Docker, SSL, Zero-Downtime Deployment
-- 🚀 **Performance** - Intent Analysis 0.02ms, Query Pipeline 3-10s
-- ♿ **Accessibility** - WCAG 2.1 AA Compliant
-- 🌐 **Cross-Browser** - Chrome, Firefox, Safari, Edge
-
----
-
-## 🏁 Für neue Entwickler
-
-### **Setup (30 Minuten):**
-1. **Repository klonen:** `git clone [repository-url]`
-2. **System starten:** `./manage.sh up`
-3. **Tests laufen lassen:** `./manage.sh test`
-4. **Browser öffnen:** http://localhost:3000
-
-### **Entwicklung:**
-- **Frontend:** `ki-wissenssystem-webapp/src/` (Next.js + TypeScript)
-- **Backend:** `ki-wissenssystem/src/` (Python + FastAPI)
-- **Tests:** Playwright E2E + Python Unit Tests
-- **Dokumentation:** Beginne mit [docs/1_getting_started.md](docs/1_getting_started.md)
-
-### **Bei Problemen:**
-- **Health Check:** `./manage.sh status`
-- **Logs:** `./manage.sh logs`
-- **Troubleshooting:** [docs/6_troubleshooting.md](docs/6_troubleshooting.md)
-
----
-
-## 🎉 K6 Phase Completion
-
-Das Projekt hat erfolgreich die **K6 Wissenskonsolidierung & Repository-Cleanup Phase** abgeschlossen:
-
-- **✅ Wissenskonsolidierung:** Zentrale Dokumentation in `docs/`
-- **✅ Script-Konsolidierung:** Einziger Einstiegspunkt `manage.sh`
-- **✅ Deep Code Cleanup:** 90% JSON-Reduktion, Legacy-Archive
-- **✅ Finale Validierung:** 100% Test Success Rate
-- **✅ Production-Ready:** Enterprise-grade System
-
-**Das KI-Wissenssystem ist jetzt ein professionelles Enterprise-Produkt.**
-
----
-
-## 🚀 Production Deployment
-
+### **Production**
 ```bash
-# Quick Deployment
-./manage.sh deploy
+# Docker Compose für Production
+docker-compose -f deployment/docker-compose.production.yml up -d
 
-# Advanced Deployment
-./manage.sh deploy:production
-
-# Health Monitoring
-./manage.sh health-check
+# Environment Variables konfigurieren
+cp deployment/production-env.template .env
+# API-Keys und Passwörter konfigurieren
 ```
 
-Siehe [docs/4_deployment.md](docs/4_deployment.md) für detaillierte Anweisungen.
+### **Skalierung**
+- **Horizontal**: Stateless Services, Load Balancing
+- **Datenbank**: Neo4j Clustering, ChromaDB Partitionierung
+- **Performance**: Redis Caching, Connection Pooling
+
+## 📚 **DOKUMENTATION**
+
+### **Vollständige Dokumentation**
+- **[Getting Started](docs/1_getting_started.md)**: Detaillierte Installation
+- **[Architektur](docs/2_architecture.md)**: System-Design und Komponenten
+- **[Datenmodell](docs/2_data_model.md)**: Schema und Beziehungen
+- **[Workflows](docs/3_workflows.md)**: Entwicklungs-Prozesse
+- **[Deployment](docs/4_deployment.md)**: Production Setup
+- **[Komponenten](docs/5_components.md)**: Feature-Details
+- **[Testing](docs/7_enterprise_testing.md)**: Umfassende Test-Strategie
+- **[Troubleshooting](docs/6_troubleshooting.md)**: Fehlerbehebung
+
+### **API-Dokumentation**
+- **Swagger UI**: http://localhost:8001/docs
+- **Interactive API**: Vollständige Endpoint-Dokumentation
+- **Authentication**: JWT-basierte API-Authentifizierung
+
+## 🛠️ **ENTWICKLUNG**
+
+### **Projekt-Struktur**
+```
+neuronode/
+├── neuronode-backend/         # Backend Services
+│   ├── src/                   # Python Source Code
+│   ├── tests/                 # Backend Tests
+│   ├── docker-compose.yml     # Development Services
+│   └── manage.sh              # Service Management
+├── neuronode-webapp/          # Frontend Application
+│   ├── src/                   # Next.js Source Code
+│   ├── tests/                 # E2E Tests
+│   └── package.json           # Frontend Dependencies
+└── docs/                      # Dokumentation
+```
+
+### **Beitragen**
+1. **Issues**: GitHub Issues für Bugs und Feature Requests
+2. **Pull Requests**: Feature Branches → Main
+3. **Testing**: Alle Tests müssen bestehen
+4. **Code Style**: ESLint + Prettier für Frontend, Black für Backend
+
+### **Technologie-Stack**
+- **Backend**: Python, FastAPI, Neo4j, ChromaDB, Redis
+- **Frontend**: Next.js, TypeScript, Material Web Components
+- **AI/ML**: LiteLLM, OpenAI, Anthropic, Google AI
+- **Infrastructure**: Docker, PostgreSQL, NGINX
+
+## 📈 **PERFORMANCE**
+
+### **Benchmarks**
+- **Dokumentverarbeitung**: < 30 Sekunden (Standard-PDFs)
+- **Chat-Antworten**: < 5 Sekunden (komplexe Abfragen)
+- **Graph-Visualisierung**: < 3 Sekunden (bis 1000 Knoten)
+- **Concurrent Users**: 100+ gleichzeitig unterstützt
+
+### **Optimierungen**
+- **Caching**: Redis für häufige Abfragen
+- **Async Processing**: Non-blocking I/O
+- **Smart Routing**: Model-spezifische Optimierungen
+- **Resource Management**: Memory-effiziente Verarbeitung
+
+## 🏆 **STATUS & ROADMAP**
+
+### **Aktuelle Version (2.0)**
+- ✅ LiteLLM Integration (27 Modelle)
+- ✅ Enterprise Testing Framework
+- ✅ Production-Ready Security
+- ✅ Comprehensive Documentation
+- ✅ Performance Optimizations
+
+### **Nächste Releases**
+- **Q1 2025**: Multi-Language Support, Enhanced Analytics
+- **Q2 2025**: Advanced Visualizations, API v2
+- **Q3 2025**: Enterprise Integrations, Advanced Security
+
+## 📞 **SUPPORT**
+
+### **Community**
+- **GitHub**: Issues, Diskussionen, Feature Requests
+- **Dokumentation**: Umfassende Guides und Tutorials
+- **Examples**: Code-Beispiele und Use Cases
+
+### **Enterprise Support**
+- **Professional Services**: Implementation Support
+- **Custom Development**: Feature-Entwicklung
+- **Training**: Team-Schulungen und Best Practices
 
 ---
 
-## 🤝 Beitragen
-
-1. **Fork** das Repository
-2. **Feature Branch** erstellen: `git checkout -b feature/amazing-feature`
-3. **Commits** mit aussagekräftigen Messages
-4. **Tests** ausführen: `./manage.sh test`
-5. **Pull Request** erstellen
-
----
-
-## 📞 Support
-
-- **Dokumentation:** [docs/](docs/) - Vollständige Dokumentation
-- **Issues:** GitHub Issues für Bug-Reports
-- **Management:** `./manage.sh help` für alle verfügbaren Befehle
-- **Development:** Siehe [docs/1_getting_started.md](docs/1_getting_started.md)
-- **Production:** Siehe [docs/6_troubleshooting.md](docs/6_troubleshooting.md)
-
----
-
-## 📄 **Lizenz**
-
-[Lizenz-Information hier einfügen]
-
----
-
-**💡 Ein sauberes, dokumentiertes und leicht verständliches System - bereit für Enterprise-Einsatz.**
-
-*Version: 2.0 | Phase: K6 Completion | Letzte Aktualisierung: 2025-06-29*
+**Neuronode - Transforming Knowledge into Intelligence** 🧠✨

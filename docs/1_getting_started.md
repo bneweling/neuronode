@@ -2,7 +2,7 @@
 
 ## **Ziel: System in unter 30 Minuten lauffähig**
 
-Dieser Guide führt neue Entwickler durch den kompletten Setup-Prozess für die lokale Entwicklungsumgebung des KI-Wissenssystems.
+Dieser Guide führt neue Entwickler durch den kompletten Setup-Prozess für die lokale Entwicklungsumgebung des Neuronodes.
 
 ---
 
@@ -31,7 +31,7 @@ git --version           # >= 2.30.0
 ```bash
 # 1. Repository klonen
 git clone [REPOSITORY_URL]
-cd ki-wissenssystem-main
+cd neuronode-main
 
 # 2. System starten (alle Services)
 ./manage.sh up
@@ -53,7 +53,7 @@ open http://localhost:3000
 
 ```bash
 # Backend Environment
-cd ki-wissenssystem
+cd neuronode
 cp .env.example .env
 
 # Wichtige Environment-Variablen setzen:
@@ -76,7 +76,7 @@ docker-compose up -d postgres redis
 
 ```bash
 # Python Environment
-cd ki-wissenssystem
+cd neuronode
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -92,7 +92,7 @@ pip install -r requirements.txt
 
 ```bash
 # Frontend Dependencies
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 npm install --legacy-peer-deps
 
 # Development Server starten
@@ -162,11 +162,11 @@ cp tests/fixtures/test-document.pdf ~/Desktop/
 ### **Code-Änderungen:**
 ```bash
 # Frontend (Hot Reload)
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 # Änderungen werden automatisch übernommen
 
 # Backend (Neustart erforderlich)
-cd ki-wissenssystem
+cd neuronode
 # Nach Änderungen:
 ./manage.sh backend:restart
 ```
@@ -185,11 +185,11 @@ cd ki-wissenssystem
 ### **Tests während Development:**
 ```bash
 # Frontend Tests
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 npm test
 
 # Backend Tests  
-cd ki-wissenssystem
+cd neuronode
 python -m pytest tests/
 
 # E2E Tests (vollständig)
@@ -244,7 +244,7 @@ docker system prune -a
 **3. Node/NPM-Probleme:**
 ```bash
 # Node modules neu installieren
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
 ```
@@ -252,7 +252,7 @@ npm install --legacy-peer-deps
 **4. Python-Environment-Probleme:**
 ```bash
 # Virtual Environment neu erstellen
-cd ki-wissenssystem
+cd neuronode
 rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
@@ -278,8 +278,8 @@ Nach erfolgreichem Setup:
 1. **Architektur verstehen:** Lese [2_architecture.md](2_architecture.md)
 2. **Testing-Strategien:** Lese [3_testing_strategy.md](3_testing_strategy.md)
 3. **Code-Basis erkunden:** 
-   - Frontend: `ki-wissenssystem-webapp/src/`
-   - Backend: `ki-wissenssystem/src/`
+   - Frontend: `neuronode-webapp/src/`
+   - Backend: `neuronode/src/`
 4. **Beitragen:** Siehe `CONTRIBUTING.md` für Development-Richtlinien
 
 ---
@@ -297,7 +297,7 @@ Nach erfolgreichem Setup:
 
 ---
 
-**🎉 Herzlichen Glückwunsch! Du hast das KI-Wissenssystem erfolgreich lokal aufgesetzt.**
+**🎉 Herzlichen Glückwunsch! Du hast das Neuronode erfolgreich lokal aufgesetzt.**
 
 *Geschätzte Setup-Zeit: 15-30 Minuten*  
 *Bei Problemen: Siehe [6_troubleshooting.md](6_troubleshooting.md)* 

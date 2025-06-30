@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-QUALITY_DIR="ki-wissenssystem/quality_assurance"
+QUALITY_DIR="neuronode/quality_assurance"
 ARCHIVE_DIR="$QUALITY_DIR/archive"
 DAYS_TO_KEEP=30
 MAX_REPORTS_PER_COMPONENT=5
@@ -108,5 +108,5 @@ log_info "✅ Report cleanup completed successfully"
 if [ $monitoring_archived -gt 0 ] || [ $quality_archived -gt 0 ]; then
     echo ""
     log_step "💡 Recommendation: Add archive directory to .gitignore:"
-    echo "   ki-wissenssystem/quality_assurance/archive/"
+    echo "   neuronode/quality_assurance/archive/"
 fi 

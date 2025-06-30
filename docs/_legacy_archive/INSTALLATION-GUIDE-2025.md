@@ -1,4 +1,4 @@
-# KI-Wissenssystem - Komplette Neuinstallation 2025
+# Neuronode - Komplette Neuinstallation 2025
 
 ## 🚨 **Aktualisierungsstatus (Januar 2025)**
 
@@ -12,7 +12,7 @@
 
 ### 1. **Automatische Installation:**
 ```bash
-cd ki-wissenssystem
+cd neuronode
 ./setup.sh
 ```
 
@@ -44,7 +44,7 @@ MODEL_PROFILE=gemini_only
 
 ### 4. **Webapp installieren:**
 ```bash
-cd ../ki-wissenssystem-webapp
+cd ../neuronode-webapp
 npm install
 npm run dev
 ```
@@ -66,7 +66,7 @@ docker --version
 
 ### **Schritt 2: Backend Setup**
 ```bash
-cd ki-wissenssystem
+cd neuronode
 
 # Virtual Environment
 python3.11 -m venv venv
@@ -122,7 +122,7 @@ uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8080
 
 ### **Schritt 5: Frontend Setup**
 ```bash
-cd ../ki-wissenssystem-webapp
+cd ../neuronode-webapp
 
 # Dependencies installieren
 npm install
@@ -176,7 +176,7 @@ python3 scripts/system/switch-model-profile.py gemini_only
 
 ### **1. Backend testen:**
 ```bash
-cd ki-wissenssystem
+cd neuronode
 
 # Gemini API
 python scripts/setup/test-gemini-api.py
@@ -190,7 +190,7 @@ docker-compose ps
 
 ### **2. Frontend testen:**
 ```bash
-cd ki-wissenssystem-webapp
+cd neuronode-webapp
 
 # Development Server
 npm run dev
@@ -214,13 +214,13 @@ open http://localhost:7474
 ## 📁 **Vollständige Verzeichnisstruktur**
 
 ```
-ki-wissenssystem-main/
-├── ki-wissenssystem/          # Backend (Python)
+neuronode-main/
+├── neuronode/          # Backend (Python)
 │   ├── setup.sh ✅            # Aktualisiert 2025
 │   ├── requirements.txt ✅     # Gemini 2.5 ready
 │   ├── .env.example ✅        # Aktuelle Vorlage
 │   └── src/
-├── ki-wissenssystem-webapp/   # Frontend (Next.js)
+├── neuronode-webapp/   # Frontend (Next.js)
 │   ├── package.json
 │   └── src/
 └── obsidian-ki-plugin/        # Obsidian Plugin
@@ -279,6 +279,6 @@ docker-compose logs
 2. **✅ API-Keys eintragen:** `.env` bearbeiten
 3. **✅ Gemini testen:** `python scripts/setup/test-gemini-api.py`
 4. **✅ Backend starten:** `./start-api.sh`
-5. **✅ Frontend installieren:** `cd ../ki-wissenssystem-webapp && npm install && npm run dev`
+5. **✅ Frontend installieren:** `cd ../neuronode-webapp && npm install && npm run dev`
 
 **Status:** 🟢 **PRODUKTIONSBEREIT** mit Gemini 2.5 API 

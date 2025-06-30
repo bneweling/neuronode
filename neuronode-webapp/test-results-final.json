@@ -1,0 +1,592 @@
+{
+  "config": {
+    "configFile": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/playwright.config.ts",
+    "rootDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "test-results-final.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "edge",
+        "name": "edge",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Tablet",
+        "name": "Tablet",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-high-dpi",
+        "name": "chromium-high-dpi",
+        "testDir": "/Users/ben/Library/Mobile Documents/com~apple~CloudDocs/Codebase/neuronode-backend/neuronode-webapp/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.53.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 60000
+    }
+  },
+  "suites": [
+    {
+      "title": "user-journey-complete-workflow.spec.ts",
+      "file": "user-journey-complete-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "K8 P0 - Complete Knowledge Workflow",
+          "file": "user-journey-complete-workflow.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Complete Workflow: PDF Upload → Entity Extraction → Query → Graph Visualization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 23990,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔧 Setting up comprehensive LLM mocking for real backend integration\n"
+                        },
+                        {
+                          "text": "🎯 Starting Complete Knowledge Workflow Test with Real Backend Integration...\n"
+                        },
+                        {
+                          "text": "🚀 K8: Testing REAL frontend-backend upload integration\n"
+                        },
+                        {
+                          "text": "✅ Upload started with real backend integration\n"
+                        },
+                        {
+                          "text": "✅ Document upload completed with REAL backend integration\n"
+                        },
+                        {
+                          "text": "🔧 Mocking backend query response\n"
+                        },
+                        {
+                          "text": "✅ Chat query completed with mocked response!\n"
+                        },
+                        {
+                          "text": "🔧 Strategy 1 failed, trying direct navigation...\n"
+                        },
+                        {
+                          "text": "✅ Graph navigation: Direct goto successful\n"
+                        },
+                        {
+                          "text": "✅ Graph container detected successfully\n"
+                        },
+                        {
+                          "text": "📊 Graph stats loaded: Graph-StatistikenGesamte Knoten100Gesamte Kanten0Dokumente0Konzepte0Entitäten69\n"
+                        },
+                        {
+                          "text": "✅ Graph visualization loaded with 100 nodes\n"
+                        },
+                        {
+                          "text": "📊 Interactive exploration graph stats: Graph-StatistikenGesamte Knoten100Gesamte Kanten0Dokumente0Konzepte0Entitäten69\n"
+                        },
+                        {
+                          "text": "✅ Interactive graph exploration successful: 100 nodes available\n"
+                        },
+                        {
+                          "text": "✅ Graph container ready for interaction\n"
+                        },
+                        {
+                          "text": "⏱️  Complete workflow time: 22356ms\n"
+                        },
+                        {
+                          "text": "✅ Complete Knowledge Workflow Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Navigate to Document Upload",
+                          "duration": 337
+                        },
+                        {
+                          "title": "Upload Test Document",
+                          "duration": 345
+                        },
+                        {
+                          "title": "Navigate to Chat and Query Document",
+                          "duration": 2111
+                        },
+                        {
+                          "title": "Navigate to Graph Visualization",
+                          "duration": 19421
+                        },
+                        {
+                          "title": "Interactive Graph Exploration",
+                          "duration": 135
+                        }
+                      ],
+                      "startTime": "2025-06-30T20:05:05.050Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-1eea247053ff3b17651a",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 104,
+              "column": 7
+            },
+            {
+              "title": "Multi-Document Knowledge Base Build with Complex Query",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11055,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔧 Setting up comprehensive LLM mocking for real backend integration\n"
+                        },
+                        {
+                          "text": "🎯 Starting Multi-Document Workflow Test...\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc1.pdf\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc2.pdf\n"
+                        },
+                        {
+                          "text": "✅ Upload started for doc3.pdf\n"
+                        },
+                        {
+                          "text": "✅ Multiple documents uploaded\n"
+                        },
+                        {
+                          "text": "✅ Complex query sent - Assuming success from network activity\n"
+                        },
+                        {
+                          "text": "📊 Multi-doc graph stats: Graph-StatistikenGesamte Knoten100Gesamte Kanten0Dokumente0Konzepte0Entitäten69\n"
+                        },
+                        {
+                          "text": "✅ Multi-document graph verification successful: 100 nodes\n"
+                        },
+                        {
+                          "text": "✅ Multi-Document Knowledge Base Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Upload Multiple Documents",
+                          "duration": 2347
+                        },
+                        {
+                          "title": "Complex Cross-Document Query",
+                          "duration": 6571
+                        },
+                        {
+                          "title": "Verify Multi-Document Graph",
+                          "duration": 645
+                        }
+                      ],
+                      "startTime": "2025-06-30T20:05:29.303Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-a5f7e33e6754798f0396",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 429,
+              "column": 7
+            },
+            {
+              "title": "Real-time Processing with Live Graph Updates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4882,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔧 Setting up comprehensive LLM mocking for real backend integration\n"
+                        },
+                        {
+                          "text": "🎯 Starting Real-time Processing Test...\n"
+                        },
+                        {
+                          "text": "Initial graph state: Graph-StatistikenGesamte Knoten0Gesamte Kanten0Dokumente0Konzepte0Entitäten0\n"
+                        },
+                        {
+                          "text": "✅ Real-time upload started\n"
+                        },
+                        {
+                          "text": "✅ Document uploaded for real-time processing with mocked response\n"
+                        },
+                        {
+                          "text": "Updated graph state: Graph-StatistikenGesamte Knoten100Gesamte Kanten0Dokumente0Konzepte0Entitäten69\n"
+                        },
+                        {
+                          "text": "✅ Real-time Processing Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Setup Real-time Monitoring",
+                          "duration": 301
+                        },
+                        {
+                          "title": "Upload Document with Live Monitoring",
+                          "duration": 449
+                        },
+                        {
+                          "title": "Verify Live Graph Updates",
+                          "duration": 2935
+                        }
+                      ],
+                      "startTime": "2025-06-30T20:05:40.367Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-1c4d8574342bb23dc1c1",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 591,
+              "column": 7
+            },
+            {
+              "title": "Error Recovery Journey Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2256,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔧 Setting up comprehensive LLM mocking for real backend integration\n"
+                        },
+                        {
+                          "text": "🎯 Starting Error Recovery Test...\n"
+                        },
+                        {
+                          "text": "✅ Network error prevented by route blocking (no UI error needed)\n"
+                        },
+                        {
+                          "text": "✅ Error Recovery Journey Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Network Interruption Simulation",
+                          "duration": 880
+                        },
+                        {
+                          "title": "Error Recovery Mechanism",
+                          "duration": 17
+                        }
+                      ],
+                      "startTime": "2025-06-30T20:05:45.253Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-4499c82f0f3beaa617a6",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 641,
+              "column": 7
+            },
+            {
+              "title": "Accessibility Compliance Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2758,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔧 Setting up comprehensive LLM mocking for real backend integration\n"
+                        },
+                        {
+                          "text": "🎯 Starting Accessibility Compliance Test...\n"
+                        },
+                        {
+                          "text": "✅ Home Page basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Chat Interface basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Document Upload basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Graph Visualization basic accessibility verified\n"
+                        },
+                        {
+                          "text": "✅ Basic Accessibility Compliance Test PASSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Basic Accessibility: Home Page",
+                          "duration": 310
+                        },
+                        {
+                          "title": "Basic Accessibility: Chat Interface",
+                          "duration": 360
+                        },
+                        {
+                          "title": "Basic Accessibility: Document Upload",
+                          "duration": 227
+                        },
+                        {
+                          "title": "Basic Accessibility: Graph Visualization",
+                          "duration": 629
+                        }
+                      ],
+                      "startTime": "2025-06-30T20:05:47.515Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1c337f278154b339f7d3-f4b402c014249a59be48",
+              "file": "user-journey-complete-workflow.spec.ts",
+              "line": 685,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-06-30T20:05:04.176Z",
+    "duration": 46205.808,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

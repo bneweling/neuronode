@@ -1135,7 +1135,7 @@ Dokumentieren Sie während der Implementierung die Entscheidungen hinter den Pro
 ## Punkt 1: Neo4j-Schema Definition für Document-Knoten
 
 ### 1.1 Schema-Erweiterung definieren
-**Datei:** `ki-wissenssystem/src/storage/schema.cypher` (neu erstellen)
+**Datei:** `neuronode/src/storage/schema.cypher` (neu erstellen)
 
 ```cypher
 // Document Node Schema
@@ -1152,7 +1152,7 @@ CREATE FULLTEXT INDEX document_fulltext_idx IF NOT EXISTS FOR (d:Document) ON EA
 ```
 
 ### 1.2 Schema-Migration Script
-**Datei:** `ki-wissenssystem/scripts/setup/migrate_schema.py` (neu erstellen)
+**Datei:** `neuronode/scripts/setup/migrate_schema.py` (neu erstellen)
 
 ```python
 #!/usr/bin/env python3
@@ -1204,7 +1204,7 @@ if __name__ == "__main__":
 ```
 
 ### 1.3 Neo4j Client erweitern
-**Datei:** `ki-wissenssystem/src/storage/neo4j_client.py` (erweitern)
+**Datei:** `neuronode/src/storage/neo4j_client.py` (erweitern)
 
 ```python
 # Ergänzung der Neo4jClient-Klasse
@@ -1277,7 +1277,7 @@ def link_document_versions(self, new_doc_id: str, old_doc_id: str):
 ## Punkt 2: Document Processor Anpassung
 
 ### 2.1 Metadata-Extraktor erstellen
-**Datei:** `ki-wissenssystem/src/document_processing/metadata_extractor.py` (neu erstellen)
+**Datei:** `neuronode/src/document_processing/metadata_extractor.py` (neu erstellen)
 
 ```python
 """
@@ -1404,7 +1404,7 @@ class DocumentMetadataExtractor:
 ```
 
 ### 2.2 Document Processor erweitern
-**Datei:** `ki-wissenssystem/src/document_processing/document_processor.py` (erweitern)
+**Datei:** `neuronode/src/document_processing/document_processor.py` (erweitern)
 
 ```python
 # Ergänzungen für die DocumentProcessor-Klasse
@@ -1487,7 +1487,7 @@ class DocumentProcessor:
 ## Punkt 3: Pydantic-Modelle für robustes LLM-Response-Parsing
 
 ### 3.1 LLM Response Models definieren
-**Datei:** `ki-wissenssystem/src/models/llm_models.py` (neu erstellen)
+**Datei:** `neuronode/src/models/llm_models.py` (neu erstellen)
 
 ```python
 """
@@ -1579,7 +1579,7 @@ class ContextualImplementation(BaseModel):
 ```
 
 ### 3.2 LLM-Parser mit Pydantic
-**Datei:** `ki-wissenssystem/src/utils/llm_parser.py` (neu erstellen)
+**Datei:** `neuronode/src/utils/llm_parser.py` (neu erstellen)
 
 ```python
 """
@@ -1747,7 +1747,7 @@ class LLMParser:
 ## Punkt 4: Volltextindizes für Performance
 
 ### 4.1 Index-Erstellungs-Script
-**Datei:** `ki-wissenssystem/scripts/setup/create_indexes.py` (neu erstellen)
+**Datei:** `neuronode/scripts/setup/create_indexes.py` (neu erstellen)
 
 ```python
 #!/usr/bin/env python3
@@ -1902,7 +1902,7 @@ if __name__ == "__main__":
 ```
 
 ### 4.2 Performance-Monitoring
-**Datei:** `ki-wissenssystem/src/monitoring/performance_monitor.py` (neu erstellen)
+**Datei:** `neuronode/src/monitoring/performance_monitor.py` (neu erstellen)
 
 ```python
 """
@@ -2032,7 +2032,7 @@ Basierend auf der Workflow-Analyse implementieren wir eine **hybride A2A-Archite
 **Alternative:** RabbitMQ für Enterprise-Setup
 
 #### 1.2 Queue-Integration implementieren
-**Datei:** `ki-wissenssystem/src/messaging/__init__.py` (neu erstellen)
+**Datei:** `neuronode/src/messaging/__init__.py` (neu erstellen)
 
 ```python
 """
@@ -2135,7 +2135,7 @@ event_publisher = EventPublisher(redis.from_url("redis://localhost:6379"))
 ```
 
 #### 1.3 Document Worker implementieren
-**Datei:** `ki-wissenssystem/src/workers/document_worker.py` (neu erstellen)
+**Datei:** `neuronode/src/workers/document_worker.py` (neu erstellen)
 
 ```python
 """
@@ -2233,7 +2233,7 @@ async def process_document_async(task_data: Dict[str, Any]) -> Dict[str, Any]:
 ```
 
 #### 1.4 API-Endpunkte für Async Processing
-**Datei:** `ki-wissenssystem/src/api/main.py` (erweitern)
+**Datei:** `neuronode/src/api/main.py` (erweitern)
 
 ```python
 from messaging import message_queue
@@ -2296,7 +2296,7 @@ async def list_user_tasks(user_id: str = "default"):
 ### 2. Event-Driven Architecture für Graph Gardener
 
 #### 2.1 Event-Driven Graph Gardener
-**Datei:** `ki-wissenssystem/src/workers/graph_worker.py` (neu erstellen)
+**Datei:** `neuronode/src/workers/graph_worker.py` (neu erstellen)
 
 ```python
 """
@@ -2428,7 +2428,7 @@ if __name__ == "__main__":
 ### 3. Worker-Management & Deployment
 
 #### 3.1 Worker-Start-Scripts
-**Datei:** `ki-wissenssystem/scripts/workers/start_workers.sh` (neu erstellen)
+**Datei:** `neuronode/scripts/workers/start_workers.sh` (neu erstellen)
 
 ```bash
 #!/bin/bash
@@ -2439,7 +2439,7 @@ PROJECT_ROOT="$(cd "$WORKERS_DIR/../.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
-echo "🚀 Starting KI-Wissenssystem Workers..."
+echo "🚀 Starting Neuronode Workers..."
 
 # Redis Server starten (falls nicht läuft)
 if ! pgrep -x "redis-server" > /dev/null; then
@@ -2474,7 +2474,7 @@ echo $GRAPH_WORKER_PID > /tmp/ki_graph_worker.pid
 ```
 
 #### 3.2 Docker Compose Erweiterung
-**Datei:** `ki-wissenssystem/docker-compose.yml` (erweitern)
+**Datei:** `neuronode/docker-compose.yml` (erweitern)
 
 ```yaml
 version: '3.8'
@@ -2533,7 +2533,7 @@ volumes:
 ### 4. Monitoring & Observability
 
 #### 4.1 Queue Monitoring Dashboard
-**Datei:** `ki-wissenssystem/src/monitoring/queue_monitor.py` (neu erstellen)
+**Datei:** `neuronode/src/monitoring/queue_monitor.py` (neu erstellen)
 
 ```python
 """
@@ -2669,7 +2669,7 @@ Diese Architektur verwandelt Ihr System von einem monolithischen Prozess in eine
 **Lösung:** S3-kompatibles Object Storage für Worker-File-Access
 
 ### S3 File Storage Implementierung
-**Datei:** `ki-wissenssystem/src/storage/file_storage.py` (neu erstellen)
+**Datei:** `neuronode/src/storage/file_storage.py` (neu erstellen)
 
 ```python
 """
@@ -2698,7 +2698,7 @@ class FileStorageClient:
                 aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
                 region_name=os.getenv('AWS_DEFAULT_REGION', 'eu-west-1')
             )
-            self.bucket_name = os.getenv('S3_BUCKET_NAME', 'ki-wissenssystem-documents')
+            self.bucket_name = os.getenv('S3_BUCKET_NAME', 'neuronode-documents')
             self._ensure_bucket_exists()
         else:
             # Lokaler Storage für Development
@@ -2830,7 +2830,7 @@ storage_client = FileStorageClient(
 ```
 
 ## Fix 3: Enhanced API mit File Storage Integration
-**Datei:** `ki-wissenssystem/src/api/main.py` (aktualisierte Version)
+**Datei:** `neuronode/src/api/main.py` (aktualisierte Version)
 
 ```python
 from storage.file_storage import storage_client
@@ -2885,7 +2885,7 @@ async def upload_document_async(
 ```
 
 ## Fix 4: Worker mit File Storage Integration
-**Datei:** `ki-wissenssystem/src/workers/document_worker.py` (aktualisierte Version)
+**Datei:** `neuronode/src/workers/document_worker.py` (aktualisierte Version)
 
 ```python
 from storage.file_storage import storage_client
@@ -2975,7 +2975,7 @@ FILE_STORAGE_TYPE=s3
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_DEFAULT_REGION=eu-west-1
-S3_BUCKET_NAME=ki-wissenssystem-documents
+S3_BUCKET_NAME=neuronode-documents
 
 # Redis Configuration
 REDIS_URL=redis://redis:6379

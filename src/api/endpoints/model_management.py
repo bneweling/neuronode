@@ -1,6 +1,6 @@
 # ===================================================================
 # MODEL MANAGEMENT ROUTER - ENTERPRISE EDITION
-# KI-Wissenssystem - LiteLLM v1.72.6 Admin API Integration
+# Neuronode - LiteLLM v1.72.6 Admin API Integration
 # ===================================================================
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
