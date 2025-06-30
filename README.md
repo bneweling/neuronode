@@ -167,8 +167,29 @@ Deployment: Docker Compose + Nginx + SSL ✅
 Monitoring: Custom Metrics + Health Checks + Audit Logs ✅
 Testing: Jest + Playwright + Pytest (100% E2E Coverage) ✅
 ```
+---
+
+## 💡 Anwendungsbeispiele & Fragestellungen
+
+Das KI-Wissenssystem ist darauf ausgelegt, komplexe Anfragen zu Sicherheitsstandards, Compliance-Dokumenten und technischen Best Practices zu beantworten. Es nutzt seine hybriden RAG-Fähigkeiten (Graph- und Vektorsuche), um präzise und kontextbezogene Antworten aus den integrierten Dokumenten zu generieren. Hier sind einige konkrete Beispiele, wie Sie das System nutzen können:
+
+### Beispiel 1: Cross-Compliance-Analyse
+*   **Szenario:** Sie möchten die Beziehung zwischen einem spezifischen BSI IT-Grundschutz-Baustein und den Anforderungen der ISO 27001 verstehen, um Compliance-Lücken zu identifizieren oder Überschneidungen zu nutzen.
+*   **Frage an das System:** "Welche ISO 27001 Controls sind relevant für BSI APP.6.A3 zur sicheren Beschaffung von Software?"
+*   **Erwarteter Nutzen:** Das System durchsucht beide Dokumente, erkennt die spezifizierte BSI-Anforderung (APP.6.A3) und identifiziert daraufhin passende oder sich überlappende Controls aus dem Annex A der ISO 27001, um Ihnen eine strukturierte Antwort und mögliche Referenzen zu liefern.
+
+### Beispiel 2: Technologie-spezifische Best Practices
+*   **Szenario:** Ein Entwicklerteam muss Multi-Faktor-Authentisierung (MFA) in einer Microsoft Exchange-Umgebung implementieren und sucht nach umfassenden Best Practices, die sowohl allgemeine IT-Betriebsanweisungen als auch spezifische Exchange-Sicherheitsrichtlinien berücksichtigen.
+*   **Frage an das System:** "Welche Best Practices für Multi-Faktor-Authentisierung (MFA) finden sich in den Dokumenten, insbesondere im Kontext von Microsoft Exchange und allgemeinen IT-Betrieb?"
+*   **Erwarteter Nutzen:** Das System extrahiert und synthetisiert relevante Informationen zu MFA aus verschiedenen BSI-Bausteinen (z.B. `ORP.4 Identitäts- und Berechtigungsmanagement`, `APP.5.2 Microsoft Exchange und Outlook`, `OPS.1.1.1 Allgemeiner IT-Betrieb`) und liefert eine konsolidierte, handlungsleitende Antwort, die operative und anwendungsspezifische Aspekte vereint.
+
+### Beispiel 3: Bedrohungs- und Kontroll-Zuordnung
+*   **Szenario:** Ein Security Architect bewertet die Risiken für eingebettete Systeme in einer Produktionsumgebung und benötigt eine schnelle Übersicht der größten Bedrohungen und der zugehörigen Kontrollmaßnahmen gemäß BSI.
+*   **Frage an das System:** "Was sind die größten Gefährdungen für eingebettete Systeme laut BSI und welche Kontrollen werden vorgeschlagen, um diese zu mindern?"
+*   **Erwarteter Nutzen:** Das System analysiert den BSI SYS.4.3-Baustein (Eingebettete Systeme), identifiziert die beschriebene Gefährdungslage und verknüpft diese direkt mit den relevanten Anforderungen und Kontrollmaßnahmen aus demselben Dokument, um einen klaren Überblick über Risiken und deren Minderung zu geben.
 
 ---
+
 
 ## 📈 Entwicklungsfortschritt & Roadmap
 
