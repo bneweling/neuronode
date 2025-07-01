@@ -1,0 +1,116 @@
+# Neuronode Enterprise Backend - Minimale Top-Level Dependencies
+# Diese Datei enthält nur direkt importierte/verwendete Bibliotheken
+# Erstellt: 1. Februar 2025 - K10 Dependency Hardening
+
+# === CORE WEB FRAMEWORK ===
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+gunicorn==23.0.0
+
+# === DATABASE LAYER ===
+neo4j==5.26.0
+redis==5.2.1
+psycopg2-binary==2.9.10
+asyncpg>=0.29.0
+
+# === VECTOR DATABASE & AI ===
+chromadb==0.5.23
+sentence-transformers==3.3.1
+transformers==4.46.3
+
+# === LLM INTEGRATION (Enterprise) ===
+litellm==1.72.6
+openai>=1.68.2
+anthropic==0.40.0
+google-generativeai==0.8.3
+
+# === HTTP & NETWORKING ===
+httpx==0.28.1
+requests==2.32.3
+aiohttp==3.11.9
+
+# === ENTERPRISE MONITORING ===
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0
+
+# === LOGGING & OBSERVABILITY ===
+structlog==24.4.0
+python-json-logger==2.0.7
+loguru==0.7.2
+sentry-sdk[fastapi]==2.19.2
+
+# === SECURITY & AUTHENTICATION ===
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==44.0.0
+pyjwt==2.9.0
+bcrypt==4.2.1
+
+# === RATE LIMITING ===
+slowapi==0.1.9
+
+# === PERFORMANCE & SERIALIZATION ===
+orjson==3.10.12
+ujson==5.10.0
+msgpack==1.1.0
+
+# === CONFIGURATION ===
+environs==11.2.0
+python-dotenv==1.0.1
+
+# === DATA PROCESSING ===
+pandas==2.2.3
+numpy==2.2.1
+
+# === DOCUMENT PROCESSING ===
+pypdf>=5.0.0
+python-docx==1.1.2
+python-pptx==1.0.2
+openpyxl==3.1.5
+xmltodict==0.14.2
+beautifulsoup4>=4.12.0
+
+# === MEDIA PROCESSING ===
+Pillow==11.1.0
+python-magic==0.4.27
+
+# === TASK QUEUE ===
+celery[redis]==5.4.0
+kombu==5.4.2
+
+# === CACHING ===
+redis-om==0.3.2
+
+# === API VALIDATION ===
+python-multipart==0.0.19
+email-validator==2.2.0
+
+# === UTILITIES ===
+tenacity==9.0.0
+click==8.1.8
+typer==0.15.1
+rich==13.9.4
+tabulate==0.9.0
+
+# === ASYNC FILE I/O ===
+aiofiles>=24.0.0
+
+# === ENTERPRISE BACKUP ===
+boto3==1.35.84
+azure-storage-blob==12.24.0
+
+# === ENTERPRISE SEARCH ===
+elasticsearch==8.17.0
+
+# === CONFIGURATION FORMATS ===
+PyYAML==6.0.2
+toml==0.10.2
+
+# === LEGACY LANGCHAIN (To be phased out) ===
+# NOTE: Diese werden durch LiteLLM/Custom Solutions ersetzt
+langchain>=0.3.0
+langchain-openai>=0.3.0
+langchain-anthropic>=0.2.0
+langchain-google-genai>=2.0.0 

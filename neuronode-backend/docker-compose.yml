@@ -16,7 +16,7 @@ services:
       - neo4j_import:/var/lib/neo4j/import
       - neo4j_plugins:/plugins
     networks:
-      - ki-network
+      - neuronode-network
     healthcheck:
       test: ["CMD", "neo4j", "status"]
       interval: 30s
@@ -35,12 +35,12 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
     networks:
-      - ki-network
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 5
+      - neuronode-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -50,78 +50,37 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - ki-network
+      - neuronode-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  api:
-    build: .
-    container_name: neuronode-api
+  # ===================================================================
+  # POSTGRESQL DATABASE FOR LITELLM
+  # Required for: model storage, audit logs, rate limiting, budgets
+  # ===================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: neuronode-postgres
     ports:
-      - "8080:8080"
+      - "5432:5432"
     environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=password
-      - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8000
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - POSTGRES_DB=litellm_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - ki-network
-    depends_on:
-      neo4j:
-        condition: service_healthy
-      chromadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - neuronode-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d litellm_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    container_name: neuronode-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    networks:
-      - ki-network
-    depends_on:
-      - api
-
-  # Backend Service
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8080"
-    environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8000
-      - REDIS_HOST=redis
-      - LITELLM_PROXY_URL=http://litellm-proxy:4000
-    depends_on:
-      - neo4j
-      - chromadb
-      - redis
-      - litellm-proxy
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./src:/app/src
-    networks:
-      - ki-network
 
   # ===================================================================
   # LITELLM PROXY - ENTERPRISE CENTRAL LLM HUB
@@ -134,12 +93,9 @@ services:
     ports:
       - "4000:4000"    # Main LiteLLM API endpoint
       - "4001:4001"    # Prometheus metrics endpoint
+    env_file:
+      - .env.litellm    # API Keys werden aus separater Datei geladen
     environment:
-      # ===== API KEYS =====
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      
       # ===== PERFORMANCE OPTIMIZATIONS (v1.72.0+) =====
       - USE_AIOHTTP_TRANSPORT=true           # 2x RPS improvement
       - EXPERIMENTAL_ENABLE_MULTI_INSTANCE_RATE_LIMITING=true
@@ -161,16 +117,11 @@ services:
       - PROMETHEUS_PORT=4001
       - TRACK_END_USERS_PROMETHEUS=false    # Prevent metrics bloat
       
-      # ===== MASTER KEY (LOADED FROM ENVIRONMENT) =====
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-ki-system-master-2025}
-      
       # ===== UI AUTHENTICATION (per Documentation) =====
       - UI_USERNAME=admin
-      - UI_PASSWORD=${UI_PASSWORD:-litellm-enterprise-admin-2025}
       
       # ===== PRODUCTION SECURITY CONFIGURATION =====
       - DISABLE_AUTH=false                   # ✅ PRODUCTION SECURITY ENABLED
-      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY:-sk-salt-ki-system-secure-2025}
       - LITELLM_MODE=PRODUCTION               # Disables load_dotenv for security
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
@@ -182,7 +133,7 @@ services:
       "--detailed_debug"
     ]
     networks:
-      - ki-network
+      - neuronode-network
     depends_on:
       - redis
       - postgres
@@ -195,38 +146,58 @@ services:
       start_period: 60s
 
   # ===================================================================
-  # LITELLM WEB UI - INTEGRATED IN PROXY (per Documentation)
-  # UI läuft auf http://localhost:4000/ui (kein separater Container nötig)
-  # Konfiguration: UI_USERNAME und UI_PASSWORD im litellm-proxy service
+  # NEURONODE BACKEND SERVICE
+  # Handles document processing, graph operations, and API endpoints
   # ===================================================================
-
-  # ===================================================================
-  # POSTGRESQL DATABASE FOR LITELLM
-  # Required for: model storage, audit logs, rate limiting, budgets
-  # ===================================================================
-  postgres:
-    image: postgres:15-alpine
-    container_name: neuronode-postgres
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neuronode-backend
     ports:
-      - "5432:5432"
+      - "8001:8080"
     environment:
-      - POSTGRES_DB=litellm_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      # Database connections
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      
+      # LiteLLM integration (NO API KEYS HERE!)
+      - LITELLM_PROXY_URL=http://litellm-proxy:4000
+      - LITELLM_MASTER_KEY=sk-ki-system-master-2025
+      
+      # Application settings
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - ENABLE_METRICS=true
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      litellm-proxy:
+        condition: service_healthy
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./src:/app/src
     networks:
-      - ki-network
+      - neuronode-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d litellm_db"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-    restart: unless-stopped
 
 networks:
-  ki-network:
+  neuronode-network:
     driver: bridge
 
 volumes:

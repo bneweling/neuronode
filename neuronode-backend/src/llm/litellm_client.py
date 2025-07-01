@@ -114,28 +114,27 @@ class LiteLLMConfig:
     enable_prometheus_metrics: bool = True
     track_end_users: bool = False  # v1.72.2+ prevents metrics bloat
     
-    # Model Mappings (Purpose-Based Aliases)
+    # 🎯 TASK-BASED ALIASES für Profile-System
+    # Mapping: Internal Task Types → LiteLLM Task-Aliases
+    # LiteLLM model_group_alias mapped diese zu aktuellen Smart-Aliases
     model_aliases: Dict[str, str] = field(default_factory=lambda: {
-        # Classification Models
-        "classification-primary": "classification-primary",
-        "classification-fallback": "classification-fallback",
+        # Core Task Aliases (Profile-System kompatibel)
+        "classification": "classification",         # → model_group_alias → classification_premium/balanced/etc.
+        "extraction": "extraction",                 # → model_group_alias → extraction_premium/balanced/etc.  
+        "synthesis": "synthesis",                   # → model_group_alias → synthesis_premium/balanced/etc.
+        "validation_primary": "validation_primary", # → model_group_alias → validation_primary_premium/balanced/etc.
+        "validation_secondary": "validation_secondary", # → model_group_alias → validation_secondary_premium/balanced/etc.
         
-        # Extraction Models
-        "extraction-primary": "extraction-primary", 
-        "extraction-fallback": "extraction-fallback",
+        # Embedding Aliases
+        "embeddings": "embeddings",                 # → model_group_alias → embeddings_primary
+        "embeddings_fast": "embeddings_fast",       # → model_group_alias → embeddings_fast
         
-        # Analysis Models
-        "analysis-primary": "analysis-primary",
-        "analysis-premium": "analysis-premium",
-        
-        # Synthesis Models
-        "synthesis-primary": "synthesis-primary",
-        "synthesis-premium": "synthesis-premium",
-        "synthesis-fast": "synthesis-fast",
-        
-        # Embedding Models
-        "embedding-primary": "embedding-primary",
-        "embedding-fast": "embedding-fast"
+        # Legacy Aliases (Backward Compatibility während Migration)
+        "classification-primary": "classification",     # Migration: classification-primary → classification  
+        "extraction-primary": "extraction",             # Migration: extraction-primary → extraction
+        "synthesis-primary": "synthesis",               # Migration: synthesis-primary → synthesis
+        "embedding-primary": "embeddings",              # Migration: embedding-primary → embeddings
+        "embedding-fast": "embeddings_fast"             # Migration: embedding-fast → embeddings_fast
     })
 
 class RequestPriorityLevel(Enum):
@@ -487,8 +486,76 @@ class LiteLLMClient:
     # ===================================================================
     
     def _resolve_model_alias(self, model: str) -> str:
-        """Resolve purpose-based model alias to actual model name"""
+        """
+        Resolve Task-Alias zu LiteLLM Task-Alias für Profile-System
+        
+        Flow: Internal Model → Task-Alias → LiteLLM model_group_alias → Smart-Alias → Provider Model
+        """
         return self.config.model_aliases.get(model, model)
+    
+    def get_task_alias(self, task_type: str) -> str:
+        """
+        Mapped TaskType zu Task-Alias für LiteLLM Profile-Routing
+        
+        Nutzt Task-Aliases statt Smart-Aliases für Profile-basierte Model-Zuordnung.
+        LiteLLM model_group_alias routet automatisch zu korrektem Smart-Alias basierend auf aktivem Profil.
+        
+        Args:
+            task_type: TaskType (z.B. "classification", "extraction")
+            
+        Returns:
+            Task-Alias für LiteLLM (z.B. "classification")
+        """
+        # Direct Task-Alias Mapping (Profile-System kompatibel)
+        task_mapping = {
+            "classification": "classification",
+            "extraction": "extraction", 
+            "synthesis": "synthesis",
+            "validation_primary": "validation_primary",
+            "validation_secondary": "validation_secondary",
+            
+            # Legacy TaskType enum names (falls verwendet)
+            "CLASSIFICATION": "classification",
+            "EXTRACTION": "extraction",
+            "SYNTHESIS": "synthesis", 
+            "VALIDATION_PRIMARY": "validation_primary",
+            "VALIDATION_SECONDARY": "validation_secondary",
+            
+            # Embedding Tasks
+            "embeddings": "embeddings",
+            "embeddings_fast": "embeddings_fast"
+        }
+        
+        return task_mapping.get(task_type, "classification")  # Default fallback
+    
+    async def complete_with_task_type(self, task_type: str, messages: list, **kwargs) -> Union[LLMResponse, AsyncGenerator[LLMStreamResponse, None]]:
+        """
+        Convenience method für Task-basierte Completion
+        
+        Nutzt Task-Aliases für Profile-basierte Model-Routing.
+        Das aktive Profil bestimmt welches Smart-Alias verwendet wird.
+        
+        Args:
+            task_type: TaskType (z.B. "classification", "extraction") 
+            messages: Chat messages
+            **kwargs: Zusätzliche LiteLLM Parameter
+            
+        Returns:
+            LLMResponse oder AsyncGenerator für Streaming
+        """
+        # Resolve Task-Alias für Profile-System
+        task_alias = self.get_task_alias(task_type)
+        
+        # Create LLMRequest mit Task-Alias
+        from ..models.llm_models import LLMRequest
+        
+        request = LLMRequest(
+            model=task_alias,  # Nutze Task-Alias (z.B. "classification")
+            messages=messages,
+            **kwargs
+        )
+        
+        return await self.complete(request, **kwargs)
     
     async def _enqueue_request(self, request_id: str, priority: RequestPriorityLevel):
         """Enqueue request based on priority (v1.71.1+ feature)"""

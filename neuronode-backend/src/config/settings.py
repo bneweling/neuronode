@@ -12,10 +12,10 @@ class ModelProfile(Enum):
     OPENAI_ONLY = "openai_only"
 
 class Settings(BaseSettings):
-    # LLM API Keys
-    openai_api_key: str
-    anthropic_api_key: str
-    google_api_key: str
+    # LLM API Keys (optional for testing)
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    google_api_key: Optional[str] = None
     
     # Database
     neo4j_uri: str = "bolt://localhost:7687"
@@ -43,8 +43,28 @@ class Settings(BaseSettings):
     # LiteLLM Proxy Configuration
     litellm_proxy_url: str = "http://localhost:4000"  # Default for development
     
+    # Additional runtime environment variables  
+    environment: Optional[str] = "development"
+    api_host: Optional[str] = "0.0.0.0"
+    api_port: Optional[int] = 8001
+    jwt_secret_key: Optional[str] = "neuronode-jwt-secret-change-in-production"
+    jwt_algorithm: Optional[str] = "HS256"
+    jwt_access_token_expire_minutes: Optional[int] = 30
+    redis_host: Optional[str] = "redis"
+    redis_port: Optional[int] = 6379
+    litellm_master_key: Optional[str] = "sk-ki-system-master-2025"
+    log_level: Optional[str] = "INFO"
+    enable_metrics: Optional[bool] = True
+    enable_audit_logs: Optional[bool] = True
+    debug: Optional[bool] = False
+    reload: Optional[bool] = True
+
     # Pydantic v2 configuration
-    model_config = ConfigDict(env_file=".env", protected_namespaces=('settings_',))
+    model_config = ConfigDict(
+        env_file=".env", 
+        protected_namespaces=('settings_',),
+        extra='ignore'  # Ignore extra fields instead of raising validation errors
+    )
     
     def get_model_config(self) -> Dict[str, Any]:
         """Get model configuration based on current profile"""

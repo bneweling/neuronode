@@ -1,0 +1,16 @@
+# Neuronode Enterprise Backend - Development Dependencies
+# Erstellt: 1. Februar 2025 - K10 Dependency Hardening
+
+# === DEPENDENCY MANAGEMENT ===
+pip-tools>=7.0.0
+
+# === TESTING FRAMEWORK ===
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# === DEVELOPMENT TOOLS ===
+ipython==8.30.0
+
+# === PROCESS MANAGEMENT ===
+supervisor==4.2.5 

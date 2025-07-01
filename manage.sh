@@ -98,7 +98,7 @@ check_prerequisites() {
         log_info "Install: https://python.org/"
     else
         local python_cmd=$(command -v python3 || command -v python)
-        log_info "Python: $($python_cmd --version)"
+        log_info "Python: $("$python_cmd" --version)"
     fi
     
     # Check required directories

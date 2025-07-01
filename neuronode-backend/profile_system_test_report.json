@@ -1,0 +1,128 @@
+{
+  "total_tests": 24,
+  "passed_tests": 16,
+  "failed_tests": 8,
+  "test_details": [
+    {
+      "test": "GET /admin/profiles/list - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "GET /admin/profiles/status - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "GET /admin/profiles/validate - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "GET /admin/profiles/config - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "Profile settings exist",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "model_group_alias exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Profile premium exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Profile balanced exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Profile cost_effective exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Profile specialized exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Profile ultra_fast exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias classification exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias extraction exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias synthesis exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias validation_primary exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias validation_secondary exists",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "POST /admin/profiles/switch (profile: balanced) - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "POST /admin/profiles/switch (profile: premium) - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "POST /admin/profiles/switch (profile: cost_effective) - HTTP Status",
+      "status": "FAILED",
+      "message": "HTTP 404: "
+    },
+    {
+      "test": "ProfileManager.get_current_profile() works",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias for classification",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias for extraction",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "Task alias for synthesis",
+      "status": "PASSED",
+      "message": "OK"
+    },
+    {
+      "test": "E2E Profile switch successful",
+      "status": "FAILED",
+      "message": "Switch failed with status 404"
+    }
+  ],
+  "timestamp": "2025-07-01T18:59:11.414817"
+}

@@ -42,6 +42,8 @@ from src.utils.error_handler import (
     error_handler, handle_exceptions, format_http_error_response,
     retry_with_backoff
 )
+from .endpoints import auth, model_management
+from .endpoints.profile_management import router as profile_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -289,6 +291,12 @@ from src.api.endpoints.model_management import router as model_management_router
 app.include_router(
     model_management_router,
     tags=["Model Management"]
+)
+
+# Import and include profile management router
+app.include_router(
+    profile_router,
+    tags=["Profile Management"]
 )
 
 # Initialize components on startup
