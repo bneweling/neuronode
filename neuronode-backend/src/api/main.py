@@ -327,33 +327,62 @@ async def continuous_graph_gardening():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring"""
+    """Enterprise health check endpoint with comprehensive validation"""
     health_status = {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "components": {},
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "enterprise_features": {
+            "auto_schema_initialization": True,
+            "auto_data_loading": True,
+            "self_healing": True,
+            "comprehensive_validation": True
+        }
     }
     
-    # Check Neo4j
+    # Enhanced Neo4j health check with database validation
     try:
         if neo4j_client:
-            with neo4j_client.driver.session() as session:
-                result = session.run("RETURN 1")
-                result.single()
-            health_status["components"]["neo4j"] = {
-                "status": "healthy",
-                "message": "Connected"
-            }
+            # Get comprehensive health status from Neo4j client
+            neo4j_health = neo4j_client.get_health_status()
+            
+            if neo4j_health["is_functional"]:
+                health_status["components"]["neo4j"] = {
+                    "status": "healthy",
+                    "message": "Connected and functional",
+                    "details": {
+                        "schema_status": neo4j_health["schema_status"],
+                        "total_nodes": sum(neo4j_health["node_counts"].values()),
+                        "total_relationships": sum(neo4j_health["relationship_counts"].values()),
+                        "node_types": neo4j_health["node_counts"],
+                        "relationship_types": neo4j_health["relationship_counts"]
+                    }
+                }
+            elif neo4j_health["is_connected"] and not neo4j_health["is_empty"]:
+                health_status["components"]["neo4j"] = {
+                    "status": "degraded",
+                    "message": "Connected but limited functionality",
+                    "details": neo4j_health
+                }
+                health_status["status"] = "degraded"
+            else:
+                health_status["components"]["neo4j"] = {
+                    "status": "unhealthy",
+                    "message": "Not functional",
+                    "details": neo4j_health
+                }
+                health_status["status"] = "degraded"
         else:
             health_status["components"]["neo4j"] = {
                 "status": "unhealthy", 
                 "message": "Not initialized"
             }
+            health_status["status"] = "degraded"
     except Exception as e:
         health_status["components"]["neo4j"] = {
             "status": "unhealthy",
-            "message": str(e)
+            "message": f"Health check failed: {str(e)}"
         }
         health_status["status"] = "degraded"
     

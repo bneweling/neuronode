@@ -161,6 +161,12 @@ show_help() {
     echo -e "    ${GREEN}dev:full${NC}        Start full development environment"
     echo -e "    ${GREEN}dev:litellm${NC}     Start LiteLLM service only"
     echo ""
+    echo -e "${BOLD}🗄️ DATABASE MANAGEMENT:${NC}"
+    echo -e "    ${GREEN}db:setup${NC}        Initialize database with enterprise features"
+    echo -e "    ${GREEN}db:validate${NC}     Validate database health and functionality"
+    echo -e "    ${GREEN}db:stats${NC}        Show comprehensive database statistics"
+    echo -e "    ${GREEN}db:reset${NC}        Reset database (DESTRUCTIVE - requires confirmation)"
+    echo ""
     echo -e "${BOLD}🔧 MAINTENANCE:${NC}"
     echo -e "    ${GREEN}clean${NC}           Clean up Docker resources"
     echo -e "    ${GREEN}clean:deep${NC}      Deep clean (images, volumes, networks)"
@@ -309,13 +315,36 @@ cmd_health() {
 }
 
 cmd_health_internal() {
-    log_step "Checking system health..."
+    log_step "Checking enterprise system health..."
     local healthy=true
     
-    # Backend health check
-    log_info "Checking backend service..."
+    # Enhanced backend health check with database validation
+    log_info "Checking backend service with enterprise validation..."
     if curl -s --max-time 10 "$BACKEND_URL/health" > /dev/null 2>&1; then
-        log_success "✅ Backend: Healthy"
+        # Get detailed health information
+        health_response=$(curl -s --max-time 10 "$BACKEND_URL/health" | jq '.')
+        
+        # Check if Neo4j is functional (not just connected)
+        neo4j_status=$(echo "$health_response" | jq -r '.components.neo4j.status' 2>/dev/null || echo "unknown")
+        neo4j_functional=$(echo "$health_response" | jq -r '.components.neo4j.details.schema_status' 2>/dev/null || echo "unknown")
+        
+        if [ "$neo4j_status" = "healthy" ] && [ "$neo4j_functional" = "complete" ]; then
+            log_success "✅ Backend: Healthy (Enterprise Ready)"
+            
+            # Show database statistics if available
+            total_nodes=$(echo "$health_response" | jq -r '.components.neo4j.details.total_nodes' 2>/dev/null)
+            total_rels=$(echo "$health_response" | jq -r '.components.neo4j.details.total_relationships' 2>/dev/null)
+            if [ "$total_nodes" != "null" ] && [ "$total_nodes" != "" ]; then
+                log_info "   📊 Database: $total_nodes nodes, $total_rels relationships"
+            fi
+        elif [ "$neo4j_status" = "healthy" ] || [ "$neo4j_status" = "degraded" ]; then
+            log_warn "⚠️ Backend: Connected but database needs initialization"
+            log_info "   💡 Run './manage.sh db:setup' to initialize the database"
+            healthy=false
+        else
+            log_error "❌ Backend: Database not functional"
+            healthy=false
+        fi
     else
         log_error "❌ Backend: Unhealthy ($BACKEND_URL/health)"
         healthy=false
@@ -330,13 +359,13 @@ cmd_health_internal() {
         healthy=false
     fi
     
-    # Neo4j health check
-    log_info "Checking Neo4j service..."
+    # Neo4j direct connection check
+    log_info "Checking Neo4j direct connection..."
     cd $BACKEND_DIR
-    if docker-compose exec -T neo4j cypher-shell "RETURN 'healthy' as status" > /dev/null 2>&1; then
-        log_success "✅ Neo4j: Healthy"
+    if docker-compose exec -T neo4j cypher-shell -u neo4j -p password "RETURN 'healthy' as status" > /dev/null 2>&1; then
+        log_success "✅ Neo4j: Connected"
     else
-        log_error "❌ Neo4j: Unhealthy"
+        log_error "❌ Neo4j: Connection failed"
         healthy=false
     fi
     cd ..
@@ -512,6 +541,111 @@ create_production_deployment() {
     else
         log_error "Production compose file not found"
         exit 1
+    fi
+}
+
+# ===================================================================
+# DATABASE MANAGEMENT COMMANDS
+# ===================================================================
+
+cmd_db_setup() {
+    log_step "🛠️ Enterprise Database Setup"
+    cd $BACKEND_DIR
+    
+    log_info "Initializing Neo4j database with enterprise features..."
+    if python3 scripts/setup/enterprise_db_setup.py; then
+        log_success "✅ Database setup completed successfully"
+        
+        # Run health check to validate
+        log_info "Validating database setup..."
+        if cmd_health_internal; then
+            log_success "🎉 Database is now enterprise-ready!"
+        else
+            log_warn "⚠️ Database setup completed but health check shows issues"
+        fi
+    else
+        log_error "❌ Database setup failed"
+        log_info "💡 Check logs for details or try manual setup"
+        cd ..
+        return 1
+    fi
+    cd ..
+}
+
+cmd_db_validate() {
+    log_step "🔍 Database Validation"
+    cd $BACKEND_DIR
+    
+    log_info "Running comprehensive database validation..."
+    if python3 scripts/setup/enterprise_db_setup.py --validate-only; then
+        log_success "✅ Database validation passed - System is production ready!"
+    else
+        log_error "❌ Database validation failed"
+        log_info "💡 Run './manage.sh db:setup' to initialize the database"
+        cd ..
+        return 1
+    fi
+    cd ..
+}
+
+cmd_db_reset() {
+    log_step "🔄 Database Reset (DESTRUCTIVE)"
+    
+    # Safety confirmation
+    log_warn "⚠️ WARNING: This will DELETE ALL database data!"
+    log_warn "   This operation cannot be undone."
+    echo -n "Type 'YES' to continue: "
+    read confirm
+    
+    if [ "$confirm" != "YES" ]; then
+        log_info "❌ Operation cancelled"
+        return 1
+    fi
+    
+    cd $BACKEND_DIR
+    log_info "Performing database reset..."
+    if python3 scripts/setup/enterprise_db_setup.py --force-reload; then
+        log_success "✅ Database reset completed"
+        log_info "🎯 Database has been reinitialized with sample data"
+    else
+        log_error "❌ Database reset failed"
+        cd ..
+        return 1
+    fi
+    cd ..
+}
+
+cmd_db_stats() {
+    log_step "📊 Database Statistics"
+    
+    # Get detailed health info from API
+    if curl -s --max-time 10 "$BACKEND_URL/health" > /dev/null 2>&1; then
+        log_info "Fetching database statistics..."
+        health_response=$(curl -s --max-time 10 "$BACKEND_URL/health")
+        
+        # Parse and display statistics
+        echo "$health_response" | jq -r '
+            if .components.neo4j.details then
+                "📈 Neo4j Database Statistics:",
+                "   Total Nodes: " + (.components.neo4j.details.total_nodes | tostring),
+                "   Total Relationships: " + (.components.neo4j.details.total_relationships | tostring),
+                "",
+                "🏷️ Node Types:",
+                (.components.neo4j.details.node_types | to_entries[] | "   " + .key + ": " + (.value | tostring)),
+                "",
+                "🔗 Relationship Types:",
+                (.components.neo4j.details.relationship_types | to_entries[] | "   " + .key + ": " + (.value | tostring))
+            else
+                "❌ Unable to fetch database statistics - Backend may not be running"
+            end
+        ' 2>/dev/null || {
+            log_warn "⚠️ Unable to parse statistics - using fallback method"
+            log_info "Backend response: $health_response"
+        }
+    else
+        log_error "❌ Cannot fetch statistics - Backend not responding"
+        log_info "💡 Run './manage.sh up' to start the system first"
+        return 1
     fi
 }
 
@@ -946,6 +1080,12 @@ main() {
         health)     cmd_health ;;
         status)     cmd_status ;;
         monitor)    cmd_monitor ;;
+        
+        # Database Management
+        db:setup)           cmd_db_setup ;;
+        db:validate)        cmd_db_validate ;;
+        db:stats)           cmd_db_stats ;;
+        db:reset)           cmd_db_reset ;;
         
         # Build & Deployment
         build)              cmd_build ;;
