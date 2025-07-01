@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import logging
 
-from ..models import UserPayload
-from ...auth.dependencies import get_current_admin_user
+from ...auth.jwt_handler import UserPayload
+from ...auth.dependencies import get_admin_user
 from ...llm.profile_manager import get_profile_manager, ProfileManager, ProfileMetadata
 from ...utils.error_handler import error_handler
 
@@ -55,7 +55,7 @@ class ProfileValidationResponse(BaseModel):
 router = APIRouter(
     prefix="/admin/profiles",
     tags=["Profile Management"],
-    dependencies=[Depends(get_current_admin_user)]
+    dependencies=[Depends(get_admin_user)]
 )
 
 # ===================================================================
@@ -67,7 +67,7 @@ async def switch_profile(
     request: ProfileSwitchRequest,
     background_tasks: BackgroundTasks,
     profile_manager: ProfileManager = Depends(get_profile_manager),
-    current_user: UserPayload = Depends(get_current_admin_user)
+    current_user: UserPayload = Depends(get_admin_user)
 ):
     """
     Wechselt das aktive Model-Profil
@@ -330,7 +330,7 @@ async def get_profile_configuration(
 @router.post("/reload")
 async def reload_profile_router(
     profile_manager: ProfileManager = Depends(get_profile_manager),
-    current_user: UserPayload = Depends(get_current_admin_user)
+    current_user: UserPayload = Depends(get_admin_user)
 ):
     """
     Triggert LiteLLM Router Hot-Reload
@@ -369,15 +369,5 @@ async def log_profile_switch(user_id: str, from_profile: str, to_profile: str, t
         logger.error(f"Failed to log profile switch audit: {e}")
 
 # Error Handler Integration
-@router.exception_handler(HTTPException)
-async def profile_http_exception_handler(request, exc):
-    """Custom Exception Handler für Profile-Management"""
-    logger.error(f"Profile API Exception: {exc.status_code} - {exc.detail}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": "Profile Management Error",
-            "detail": exc.detail,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    ) 
+# Note: Exception handlers are registered at the app level, not router level
+# The get_current_user and error_handler.log_error handle exceptions appropriately 

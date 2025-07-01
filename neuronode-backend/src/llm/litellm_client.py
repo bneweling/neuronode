@@ -795,7 +795,7 @@ def get_litellm_client() -> LiteLLMClient:
     if _litellm_client is None:
         # ✅ PRODUCTION SECURITY: NO HARDCODED FALLBACKS
         proxy_url = getattr(settings, 'LITELLM_PROXY_URL', 'http://litellm-proxy:4000')
-        master_key = getattr(settings, 'LITELLM_MASTER_KEY', None)
+        master_key = getattr(settings, 'litellm_master_key', None)
         
         if not master_key:
             raise ValueError("LITELLM_MASTER_KEY must be set in environment variables")

@@ -95,7 +95,7 @@ class LiteLLMAdminClient:
     
     def __init__(self):
         self.base_url = getattr(settings, 'LITELLM_PROXY_URL', 'http://localhost:4000')
-        self.master_key = getattr(settings, 'LITELLM_MASTER_KEY', 'sk-ki-system-master-2025')
+        self.master_key = getattr(settings, 'litellm_master_key', 'sk-ki-system-master-2025')
         self.timeout = 30
     
     async def get_available_models(self) -> List[Dict[str, Any]]:

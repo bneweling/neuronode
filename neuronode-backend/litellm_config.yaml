@@ -333,6 +333,94 @@ model_list:
     supports_function_calling: true
     tpm: 200000
   model_name: validation_secondary_ultra_fast
+
+# ===================================================================
+# EMBEDDING MODELS - ENTERPRISE EDITION
+# Profile-based embedding model assignments for vector operations
+# ===================================================================
+
+- litellm_params:
+    api_key: os.environ/GEMINI_API_KEY
+    model: gemini/text-embedding-004
+  model_info:
+    cost_per_token: 1.3e-07
+    mode: embedding
+    input_cost_per_token: 1.3e-07
+    output_vector_size: 768
+    max_input_tokens: 2048
+    rpm: 1500
+    tpm: 1500000
+  model_name: embeddings_premium
+
+- litellm_params:
+    api_key: os.environ/OPENAI_API_KEY
+    model: openai/text-embedding-3-large
+  model_info:
+    cost_per_token: 1.3e-07
+    mode: embedding
+    input_cost_per_token: 1.3e-07
+    output_vector_size: 3072
+    max_input_tokens: 8191
+    rpm: 5000
+    tpm: 5000000
+  model_name: embeddings_balanced
+
+- litellm_params:
+    api_key: os.environ/OPENAI_API_KEY
+    model: openai/text-embedding-3-small
+  model_info:
+    cost_per_token: 2.0e-08
+    mode: embedding
+    input_cost_per_token: 2.0e-08
+    output_vector_size: 1536
+    max_input_tokens: 8191
+    rpm: 5000
+    tpm: 5000000
+  model_name: embeddings_cost_effective
+
+- litellm_params:
+    api_key: os.environ/GEMINI_API_KEY
+    model: gemini/text-embedding-004
+  model_info:
+    cost_per_token: 1.3e-07
+    mode: embedding
+    input_cost_per_token: 1.3e-07
+    output_vector_size: 768
+    max_input_tokens: 2048
+    rpm: 1500
+    tpm: 1500000
+  model_name: embeddings_specialized
+
+- litellm_params:
+    api_key: os.environ/OPENAI_API_KEY
+    model: openai/text-embedding-ada-002
+  model_info:
+    cost_per_token: 1.0e-07
+    mode: embedding
+    input_cost_per_token: 1.0e-07
+    output_vector_size: 1536
+    max_input_tokens: 8191
+    rpm: 3000
+    tpm: 1000000
+  model_name: embeddings_ultra_fast
+
+# ===================================================================
+# EMBEDDING ALIASES - PROFILE SYSTEM INTEGRATION
+# Map generic embedding requests to specific profile-based models
+# ===================================================================
+
+- litellm_params:
+    api_key: os.environ/GEMINI_API_KEY
+    model: gemini/text-embedding-004
+  model_info:
+    cost_per_token: 1.3e-07
+    mode: embedding
+    input_cost_per_token: 1.3e-07
+    output_vector_size: 768
+    max_input_tokens: 2048
+    rpm: 1500
+    tpm: 1500000
+  model_name: embeddings  # Default embedding alias
 - litellm_params:
     api_key: os.environ/OPENAI_API_KEY
     model: openai/text-embedding-3-large
@@ -362,6 +450,7 @@ profile_settings:
         synthesis: synthesis_balanced
         validation_primary: validation_primary_balanced
         validation_secondary: validation_secondary_balanced
+        embeddings: embeddings_balanced
       performance_level: high
     cost_effective:
       cost_level: low
@@ -372,6 +461,7 @@ profile_settings:
         synthesis: synthesis_cost_effective
         validation_primary: validation_primary_cost_effective
         validation_secondary: validation_secondary_cost_effective
+        embeddings: embeddings_cost_effective
       performance_level: good
     premium:
       cost_level: high
@@ -382,6 +472,7 @@ profile_settings:
         synthesis: synthesis_premium
         validation_primary: validation_primary_premium
         validation_secondary: validation_secondary_premium
+        embeddings: embeddings_premium
       performance_level: maximum
     specialized:
       cost_level: medium
@@ -392,6 +483,7 @@ profile_settings:
         synthesis: synthesis_specialized
         validation_primary: validation_primary_specialized
         validation_secondary: validation_secondary_specialized
+        embeddings: embeddings_specialized
       performance_level: high
     ultra_fast:
       cost_level: low
@@ -402,6 +494,7 @@ profile_settings:
         synthesis: synthesis_ultra_fast
         validation_primary: validation_primary_ultra_fast
         validation_secondary: validation_secondary_ultra_fast
+        embeddings: embeddings_ultra_fast
       performance_level: good
   current_profile: specialized
   profile_switch_history:
@@ -441,6 +534,7 @@ router_settings:
     synthesis: synthesis_specialized
     validation_primary: validation_primary_specialized
     validation_secondary: validation_secondary_specialized
+    embeddings: embeddings_specialized
   profile_management:
     api_endpoints:
       get_status: /admin/profiles/status
