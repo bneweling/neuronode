@@ -1,13 +1,28 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// Cached server snapshot to prevent infinite loops
+// Cached server snapshot to prevent infinite loops - STABLE references
+const EMPTY_ACTIONS = {
+  addMessage: () => {},
+  createNewChat: () => '',
+  switchChat: () => {},
+  deleteChat: () => {},
+  renameChat: () => {},
+  getChatHistory: () => [],
+  getAllChats: () => [],
+  getCurrentChat: () => null,
+  updateChatMetadata: () => {},
+  clearAllChats: () => {},
+  exportChat: () => '',
+  importChat: () => false
+} as const
+
 const SERVER_SNAPSHOT = {
   sessions: {},
   currentChatId: null,
   isInitialized: false,
-  actions: {} as any
-}
+  actions: EMPTY_ACTIONS
+} as const
 
 // Import data validation interface
 interface ImportData {

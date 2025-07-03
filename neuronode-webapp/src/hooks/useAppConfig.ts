@@ -73,8 +73,10 @@ export function useAppConfig(): UseAppConfigReturn {
 
   const checkHealth = useCallback(async (): Promise<boolean> => {
     await checkHealthStatus()
-    return isHealthy
-  }, [checkHealthStatus, isHealthy])
+    // Verwende eine lokale variable anstatt state dependency
+    const healthy = await configManager.checkHealth()
+    return healthy
+  }, [checkHealthStatus])
 
   const reset = useCallback(() => {
     configManager.reset()

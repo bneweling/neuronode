@@ -209,11 +209,15 @@ export default function GraphVisualization() {
   }, 300)
   
   const debouncedNodeClick = useDebounce((nodeId: string) => {
-    if (!graphData) return
+    if (!graphData || !graphData.nodes) return
     
     const node = graphData.nodes.find(n => n.id === nodeId)
     if (node) {
-      setSelectedNode(node)
+      // Stelle sicher, dass properties existiert
+      setSelectedNode({
+        ...node,
+        properties: node.properties || {}
+      })
     }
   }, 150)
 
@@ -376,6 +380,15 @@ export default function GraphVisualization() {
                 'border-color': theme.palette.primary.main,
                 'opacity': 1,
                 'z-index': 999
+              }
+            },
+            {
+              selector: '.highlighted-neighbor',
+              style: {
+                'border-width': 3,
+                'border-color': theme.palette.secondary.main,
+                'opacity': 0.8,
+                'z-index': 900
               }
             },
             {
@@ -543,7 +556,7 @@ export default function GraphVisualization() {
 
   // === LIVE UPDATE HANDLERS ===
   const handleLiveNodeAdded = useCallback((nodeData: GraphNode) => {
-    if (!cyRef.current || !graphData) return
+    if (!cyRef.current || !graphData || !graphData.nodes) return
     
     try {
       const newNode = cyRef.current.add({
@@ -575,7 +588,7 @@ export default function GraphVisualization() {
   }, [graphData, actions])
 
   const handleLiveRelationshipCreated = useCallback((edgeData: GraphEdge) => {
-    if (!cyRef.current || !graphData) return
+    if (!cyRef.current || !graphData || !graphData.edges) return
     
     try {
       const newEdge = cyRef.current.add({
@@ -683,7 +696,7 @@ export default function GraphVisualization() {
   }
 
   const getNodeConnections = (nodeId: string) => {
-    if (!graphData) return []
+    if (!graphData || !graphData.edges) return []
     return graphData.edges.filter(edge => 
       edge.source === nodeId || edge.target === nodeId
     )
@@ -902,14 +915,23 @@ export default function GraphVisualization() {
                   </AccordionSummary>
                   <AccordionDetails>
                     <List dense>
-                      {Object.entries(selectedNode.properties).map(([key, value]) => (
-                        <ListItem key={key}>
+                      {selectedNode.properties && Object.entries(selectedNode.properties).length > 0 ? (
+                        Object.entries(selectedNode.properties).map(([key, value]) => (
+                          <ListItem key={key}>
+                            <ListItemText 
+                              primary={key}
+                              secondary={String(value)}
+                            />
+                          </ListItem>
+                        ))
+                      ) : (
+                        <ListItem>
                           <ListItemText 
-                            primary={key}
-                            secondary={String(value)}
+                            primary="Keine Eigenschaften verfügbar"
+                            secondary="Dieser Knoten hat keine zusätzlichen Eigenschaften"
                           />
                         </ListItem>
-                      ))}
+                      )}
                     </List>
                   </AccordionDetails>
                 </Accordion>
@@ -1031,18 +1053,19 @@ export default function GraphVisualization() {
                     <ListItem>
                       <ListItemText 
                         primary="Verbindungsqualität"
-                        secondary={
-                          <Chip 
-                            label={wsConnectionStats.connectionQuality}
-                            color={
-                              wsConnectionStats.connectionQuality === 'excellent' ? 'success' :
-                              wsConnectionStats.connectionQuality === 'good' ? 'primary' :
-                              wsConnectionStats.connectionQuality === 'poor' ? 'warning' : 'error'
-                            }
-                            size="small"
-                          />
-                        }
+                        secondary={wsConnectionStats.connectionQuality}
                       />
+                      <Box sx={{ ml: 1 }}>
+                        <Chip 
+                          label={wsConnectionStats.connectionQuality}
+                          color={
+                            wsConnectionStats.connectionQuality === 'excellent' ? 'success' :
+                            wsConnectionStats.connectionQuality === 'good' ? 'primary' :
+                            wsConnectionStats.connectionQuality === 'poor' ? 'warning' : 'error'
+                          }
+                          size="small"
+                        />
+                      </Box>
                     </ListItem>
                     <ListItem>
                       <ListItemText 

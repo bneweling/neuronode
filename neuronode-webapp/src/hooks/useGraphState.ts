@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useGraphApi } from './useGraphApi'
 
 // === GRAPH CACHING TYPES & CONFIGURATION ===
@@ -308,8 +308,14 @@ class GraphCacheManager {
   }
 }
 
-// Global cache instance
-const graphCache = new GraphCacheManager()
+// Global cache instance - singleton pattern to prevent multiple instances
+let graphCacheInstance: GraphCacheManager | null = null
+const getGraphCache = () => {
+  if (!graphCacheInstance) {
+    graphCacheInstance = new GraphCacheManager()
+  }
+  return graphCacheInstance
+}
 
 /**
  * Enhanced Enterprise Graph State Management Hook with Intelligent Caching
@@ -346,7 +352,7 @@ export const useGraphState = (): UseGraphStateReturn => {
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-      const cachedData = graphCache.getCachedData()
+      const cachedData = getGraphCache().getCachedData()
       if (cachedData) {
         console.log('Graph data loaded from cache')
         setGraphState({
@@ -375,7 +381,7 @@ export const useGraphState = (): UseGraphStateReturn => {
       
       if (data) {
         // Cache the new data
-        graphCache.setCachedData(data)
+        getGraphCache().setCachedData(data)
         
         // Success state
         setGraphState({
@@ -434,7 +440,7 @@ export const useGraphState = (): UseGraphStateReturn => {
   // Stable action: Update graph data (for live updates, also updates cache)
   const updateGraphData = useCallback((data: GraphData) => {
     // Update cache with new data
-    graphCache.setCachedData(data)
+    getGraphCache().setCachedData(data)
     
     setGraphState(prev => ({
       ...prev,
@@ -446,29 +452,31 @@ export const useGraphState = (): UseGraphStateReturn => {
 
   // Cache management actions
   const invalidateCache = useCallback(() => {
-    graphCache.invalidateCache()
+    getGraphCache().invalidateCache()
     console.log('Graph cache invalidated')
   }, [])
 
   const clearCache = useCallback(() => {
-    graphCache.clearCache()
+    getGraphCache().clearCache()
     console.log('Graph cache cleared')
   }, [])
 
   const configureCache = useCallback((config: Partial<GraphCacheConfig>) => {
-    graphCache.configure(config)
+    getGraphCache().configure(config)
     console.log('Graph cache configuration updated:', config)
   }, [])
 
-  // Handle API errors from useGraphApi
-  if (apiError && graphState.status === 'loading') {
-    setGraphState(prev => ({
-      ...prev,
-      status: 'error',
-      error: apiError,
-      isInitialized: true
-    }))
-  }
+  // Handle API errors from useGraphApi in useEffect to prevent infinite renders
+  useEffect(() => {
+    if (apiError && graphState.status === 'loading') {
+      setGraphState(prev => ({
+        ...prev,
+        status: 'error',
+        error: apiError,
+        isInitialized: true
+      }))
+    }
+  }, [apiError, graphState.status])
 
   // Enhanced stable actions object with cache support
   const actions: GraphActions = {
@@ -488,7 +496,7 @@ export const useGraphState = (): UseGraphStateReturn => {
   const hasError = graphState.status === 'error'
 
   // Get current cache statistics
-  const cacheStats = graphCache.getStats()
+  const cacheStats = getGraphCache().getStats()
 
   return {
     graphState,

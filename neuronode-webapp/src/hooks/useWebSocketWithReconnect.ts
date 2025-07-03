@@ -232,8 +232,10 @@ export const useWebSocketWithReconnect = (
           wsRef.current.close()
         }
         
-        // Trigger reconnection
-        scheduleReconnect()
+        // Trigger reconnection with delay to prevent race conditions
+        setTimeout(() => {
+          scheduleReconnect()
+        }, 100)
       }, configRef.current.timeoutDuration)
 
       // Event handlers
@@ -263,7 +265,10 @@ export const useWebSocketWithReconnect = (
         // Only attempt reconnection if we were previously connected
         // or if the connection failed unexpectedly
         if (wasConnected || event.code !== 1000) { // 1000 = normal closure
-          scheduleReconnect()
+          // Verwende setTimeout um state update race conditions zu vermeiden
+          setTimeout(() => {
+            scheduleReconnect()
+          }, 100)
         }
       }
 
@@ -286,9 +291,12 @@ export const useWebSocketWithReconnect = (
       console.error('Failed to create WebSocket connection:', error)
       setConnectionState('failed')
       updateStats('failure')
-      scheduleReconnect()
+      // Verzögere Reconnect um race conditions zu vermeiden
+      setTimeout(() => {
+        scheduleReconnect()
+      }, 100)
     }
-  }, [url, onMessage, onOpen, onClose, onError, cleanup, updateStats, connectionState])
+  }, [url, onMessage, onOpen, onClose, onError, cleanup, updateStats]) // Entfernt connectionState aus Dependencies
 
   /**
    * Schedule reconnection with exponential backoff
@@ -381,7 +389,7 @@ export const useWebSocketWithReconnect = (
     return () => {
       cleanup()
     }
-  }, [autoConnect, connect, cleanup])
+  }, [autoConnect]) // Entfernt connect und cleanup aus Dependencies um infinite loops zu vermeiden
 
   // Computed values
   const isConnected = connectionState === 'connected'
