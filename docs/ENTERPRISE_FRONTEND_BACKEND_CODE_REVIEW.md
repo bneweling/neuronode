@@ -56,7 +56,7 @@ Der Service kommuniziert via REST und **WebSocket** (Live-Updates). Authenticati
 
 | Endpoint | Typ | Befund | Risiko | Empfehlung |
 |----------|-----|--------|--------|------------|
-| **`GET /api/graph`** | REST | Liefert kompletten Graph „auf einen Schlag“ (Nodes + Edges) – kein Paging, keine Filter. | Hoher RAM- & Net-Traffic, Browser-Freeze bei > 20k Nodes | 1. Chunking (`skip`/`limit`) + Streaming (`yield`)  2. Versionierte Graph-Snapshots 3. Compression (`gzip`, `brotli`). |
+| **`GET /api/graph`** | REST | Liefert kompletten Graph "auf einen Schlag" (Nodes + Edges) – kein Paging, keine Filter. | Hoher RAM- & Net-Traffic, Browser-Freeze bei > 20k Nodes | 1. Chunking (`skip`/`limit`) + Streaming (`yield`)  2. Versionierte Graph-Snapshots 3. Compression (`gzip`, `brotli`). |
 | **`GET /api/documents/{id}`** | REST | Validierung minimal (nur `id`). | 400 / 500 Fehler nicht einheitlich | `pydantic v2` Schemas, Fehlerobjekt RFC 9457. |
 | **`POST /api/chat/completions`** | REST | Rate-Limiting nur clientseitig | Abuse-Gefahr, Cloud-Kosten | **FastAPI-Limiter** (Redis) 10 req/min Pro JWT. |
 | **`/ws/graph`** | WS | Kein **Ping/Pong**, kein Auth-Refresh, keine QoS-Topics | Client Time-outs, leere Frames | 1. `starlette.websockets.WebSocket.accept(subprotocol="json")`  2. Heart-beat `ping` alle 15 s  3. JWT-Refresh-Token im Query-String vermeiden – stattdessen `headers["Authorization"]`. |
@@ -71,7 +71,7 @@ Der Service kommuniziert via REST und **WebSocket** (Live-Updates). Authenticati
 
 ### 3.4 WebSocket & Realtime
 
-* Implementiert in `src/monitoring/…` – sendet „graph_optimized“, „node_added“ Events.  
+* Implementiert in `src/monitoring/…` – sendet "graph_optimized", "node_added" Events.  
 * **Backpressure** fehlt → große Graph-Updates können Client überfluten.
 * **Reconnect**-Versuche serverseitig nicht berücksichtigt.  
 
@@ -106,7 +106,120 @@ Der Service kommuniziert via REST und **WebSocket** (Live-Updates). Authenticati
 
 ---
 
-## 4  Guided Fix Roadmap
+## 4  Workflow-Logik & Datenfluss (LiteLLM ✕ Neo4j ✕ Docker ✕ NodeJS)
+
+Dieses Kapitel analysiert den **End-to-End-Prozess** – vom Dokument-Upload bis zur Chat-Antwort – mit besonderem Fokus auf Performance, Zuverlässigkeit und Erweiterbarkeit.
+
+### 4.1 High-Level Sequenzdiagramm
+1. **Datei-Upload** (Client `FileUploadZone`)
+   → `POST /api/documents/upload` (FastAPI)
+   → `document_processing.document_processor`
+   → Chunking → Embedding (LiteLLM / OpenAI-API) → Persistenz (`ChromaDB`, `Neo4j`).
+2. **Graph-Optimierung** (async Job → Docker-Worker `graph_gardener.py`)
+   → erstellt/aktualisiert Beziehungen   → wirft WS-Event `graph_optimized`.
+3. **Live-Update** (Server)
+   → `WS /ws/graph` sendet batched Diffs
+   → Client verarbeitet via `useWebSocketWithReconnect` und aktualisiert `useGraphState` + Cytoscape.
+4. **Chat-Request** (Client `ChatInterface`)
+   → `POST /api/chat/completions`  (FastAPI)  
+   → `orchestration.query_orchestrator`  
+   → Retrieval (`hybrid_retriever` / Vector-Store) + Augmentation  
+   → `llm/profile_manager` wählt Modellprofil  
+   → `LiteLLMClient` ↔ LLM-Provider  
+   → Streaming-Antwort → Client (Server-Sent Events)  
+   → Persistenz in `chatStore` (Zustand).
+5. **Monitoring & QA**
+   → `monitoring.ai_services_monitor` sammelt LLM-Metriken  
+   → `quality_assurance` Pipeline vergleicht Golden-Sets.
+
+> **Kritische Schnittstellen:** Upload-→-Embedding + Graph-Update (CPU / GPU-Last) und Chat-Response (LLM Latenz).
+
+### 4.2 Workflow-Gaps & Risiken
+| Phase | Befund | Risiko | Abhilfe |
+|-------|--------|--------|---------|
+| Upload → Chunker | Kein Duplicate-Check (SHA-256) | Doppelte DB-Einträge | Hash-Index + Idempotency-Key |
+| Embedding Queue | Sync-Aufruf blockiert API-Thread | Timeouts > 30 s | Background-Task (Celery / RQ) + Status-API |
+| Graph Gardener | Cypher Batch ohne Retry | Teilweise inkonsistenter Graph | Neo4j-Transaction Retry + Unit-of-Work |
+| WS Broadcast | Kein Backpressure | Memory-Leak Server | `aiohttp-websocket` with `max_queue` + Drop Strategy |
+| Chat Orchestrator | Prompt-Injection Filter rudimentär | Jailbreaks möglich | Regex → LLM-Guard (GPTGuard) + Role-Policies |
+| Monitoring | Berichte manuell getriggert | Blind-Spots | Cron-Job + Prometheus PushGateway |
+
+### 4.3 Docker & Runtime Flow
+* **Compose-Stacks**: `docker-compose.yml` (Dev) vs. `docker-compose.production.yml` (Prod) – differt bei Volumes & Env-Files.
+* **BuildKit**: Mehrstufiges Build für FastAPI & Next.js, aber **kein** Cache-Mount → lange CI-Laufzeit.
+* **LiteLLM Adapter** läuft aktuell **im selben Container** wie API → skalierungslimitierend.  **→ Split in Sidecar**.
+* **Neo4j**: Speichergrenze nicht gesetzt → OOM-Kill bei Big Graphs.  **→ `NEO4J_dbms_memory_heap_max__size` setzen**.
+
+---
+
+## 5  Frontend UX & Design-Review (Material UI ✕ Cytoscape ✕ Next.js)
+
+### 5.1 Design-Prinzipien & derzeitiger Stand
+| Prinzip | Bewertung | Verbesserung |
+|---------|-----------|--------------|
+| **Konsistentes Design-System** | Material UI 5 verwendet, aber `sx`-inline vs. `styled` gemischt | Einheitliche **ThemeProvider**-Layer, Tokens (`palette`, `spacing`) zentral definieren |
+| **Responsiveness** | Grid-Layout gut, Cytoscape Canvas jedoch fixe Höhe | `useResizeObserver` → dynamische Canvas-Größe; Breakpoints XS → XXL testen |
+| **Dark-Mode** | ThemeContext vorhanden, aber `matchMedia` SSR-unsafe | Theme-Switch in `useEffect` + Persistenz in LocalStorage |
+| **Barrierefreiheit (a11y)** | Farbkontrast nicht geprüft, ARIA-Labels teilw. fehlen | `@mui/material` `Tooltip` + `aria-label` Props, Lighthouse-Audit |
+| **Internationalisierung (i18n)** | Strings hard-coded (de/en gemischt) | **next-intl** / **react-i18next** einführen |
+| **Progressive Loading** | Skeletons nur teilweise; Graph lädt "weiß" | Material UI `Skeleton` + `Suspense` Fallbacks global |
+| **State-Management** | Zustand global, Persist-Version fehlt (s.o.) | Versionierte Migrations + DevTools-Middleware |
+| **Error Handling** | `GlobalErrorToast` + ErrorBoundary vorhanden, aber HTTP-Status nicht gemappt | Axios-Interceptor / Fetch-Wrapper mit zentrale `ApiErrorContext` |
+
+### 5.2 Noch fehlende/zu verbessernde Features
+1. **Root Layout (App Router)** – `app/layout.tsx` fehlt noch **Viewport-MetaData**, **Emotion Cache Provider** und **ThemeProvider**.
+2. **SEO / Metadata** – `metadata` export in Page-Files; Open-Graph Images.
+3. **Graph-UX**
+   * **Mini-Map** für Large-Graphs (Cytoscape Ext `cytoscape-navigator`).
+   * **Legend/Filter Panel** (Node-Type Checkboxen).
+   * **Search-Highlight** Farbcodierung statt nur Fade.
+4. **User Onboarding** – Guided Tour (`react-joyride`).
+5. **Settings‐Page** – Features-Toggle (Demo vs. Prod), Theme, LLM-Profile.
+6. **Offline Support / PWA** – `next-pwa` Plugin; Service-Worker Caching.
+7. **Analytics** – Consent-basierte Telemetrie (PostHog) um UX-Flaschenhälse zu identifizieren.
+
+### 5.3 Performance-Hotspots
+| Komponente | Bottleneck | Fix |
+|------------|-----------|-----|
+| Cytoscape Canvas | initiales Layout (cola) > 2 s bei 5k Nodes | **fcose** Layout + `requestIdleCallback` chunking |
+| GraphVisualization | 1 170 LOC, Re-Render bei jeder State-Änderung | Memoisierung (`useMemo`, `useCallback`), `react-window` für Sidebar Lists |
+| Global CSS | Mehrere ungenutzte Klassen, 120 kB | PurgeCSS / `@next/font` |
+
+---
+
+## 6  Code-Hygiene & Security-Hardening
+
+### 6.1 Quellcode-Sauberkeit
+| Check | Befund | Empfehlung |
+|-------|--------|------------|
+| **`console.log` / `print`** | > 60 Vorkommen in TS/JS sowie zahlreiche `print()` in Python-CLI | • Nutzen Sie [`debug`](https://github.com/visionmedia/debug) bzw. `pino` (Node) und `structlog` (Python).<br>• **Terser**/SWC `drop_console` in Prod-Build aktivieren. |
+| **`any`-Typen** | Hunderte `any`-Typen, via `eslint-disable` umgangen | • Striktes `@typescript-eslint/no-explicit-any` enforced.<br>• `zod` / Pydantic-Schemas nutzen, um Typ-Erzwingung zu erleichtern. |
+| **TODO/FIXME** | Diverse Legacy-Kommentare in Extractors, Graph-Gardener, Profile-Manager | • Jeder TODO → Jira-Ticket; CI-Fail bei neuen TODOs (eslint-rule). |
+| **Dead Code** | Legacy Migrations (`structured_extractor.py` importiert Legacy-Client) | • Entfernen oder als *legacy* Modul kennzeichnen. |
+
+### 6.2 Secrets & Konfiguration
+| Problem | Auswirkung | Maßnahme |
+|---------|-----------|----------|
+| Default-Passwörter in `docker-compose.production.yml` (`password_change_me`) | Produktions-Brute-Force | • `.env.prod` + Docker Secrets; CI-Fail falls Placeholder vorhanden. |
+| `LITELLM_MASTER_KEY` Hart-codiert in `model_management.py` | Schlüssel-Leak | ENV-Variable & Vault-Loader. |
+| API-Keys-Beispiele im Repo (README) | Social-Engineering | Scrubber-Script in pre-commit, Git-Leaks-Scan in CI. |
+| `process.env.NEXT_PUBLIC_*` direkt im Frontend | Key-Leak via HTML | Nur Public-Werte expose; Sensible Keys per Server Actions/Proxy. |
+
+### 6.3 Dependency & Container Security
+* **npm audit** zeigt bekannte CVEs in `webpack-dev-server`, `ansi-html` → patchen oder `npm audit fix`.
+* **pip-audit**: CVE-2024-38647 in `PyYAML` < 6.1 → Update.
+* **Docker**: Basis-Images aktuell? `python:3.12-slim` statt `3.10` verwenden, `node:20-alpine`.
+* **Image-Scanning**: Trivy / Grype in CI; Fail on High/Critical.
+
+### 6.4 Static Analysis & CI Gates
+1. **ESLint Strict**: `yarn lint --max-warnings 0`  
+2. **Mypy** für Backend (optional `pyright`).  
+3. **Bandit** & **Semgrep** Regeln (Python/TS).  
+4. **Pre-Commit Hooks**: Black/ruff + `typescript-eslint` + `lint-staged`.
+
+---
+
+## 7  Guided Fix Roadmap
 
 1. **Build stabilisieren**
    ```bash
@@ -121,10 +234,12 @@ Der Service kommuniziert via REST und **WebSocket** (Live-Updates). Authenticati
    * Playwright E2E für `/graph`
    * Jest + React-Testing-Library für `useGraphState`
 7. **CI-Pipeline** (ESLint, `next build`, `docker build`, `pytest`).
+8. **Code-Hygiene Sprint** – Entferne `console.log`, tippe `any`, schließe TODOs.
+9. **Security Hardening** – Secrets-Scan, Docker Secrets, Key Rotation.
 
 ---
 
-## 5  Dokumentations-Links & Best-Practices
+## 8  Dokumentations-Links & Best-Practices
 
 * **Next.js**
   * App-Router Installation ▶️ <https://nextjs.org/docs/app/getting-started/installation>
@@ -137,7 +252,7 @@ Der Service kommuniziert via REST und **WebSocket** (Live-Updates). Authenticati
 
 ---
 
-## 6  Zusammenfassung
+## 9  Zusammenfassung
 
 Durch gezieltes **Refactoring**, konsequente **SSR-Sicherheit** sowie **Lazy-Loading** schwerer Bibliotheken (Cytoscape) können die Build- und Runtime-Probleme nachhaltig behoben werden. Die vorliegenden Empfehlungen ermöglichen einen **verlässlich kompilierenden** und **hochperformanten** Enterprise-Tech-Stack.
 
