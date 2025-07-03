@@ -1,17 +1,18 @@
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import { StrictMode } from 'react'
 
-import GlobalErrorToast from '@/components/error/GlobalErrorToast'
 import AppLayout from '@/components/layout/AppLayout'
 import { ApiErrorContextProvider } from '@/contexts/ApiErrorContext'
 import { CustomThemeProvider } from '@/contexts/ThemeContext'
 import './globals.css'
 
+const inter = Inter({ subsets: ['latin'] })
+
 export const metadata: Metadata = {
-  title: "Neuronode",
-  description: "Intelligentes Wissensmanagement mit modernster Technologie",
-  keywords: ["KI", "Wissenssystem", "Chat", "Graph", "Dokumenten-Upload"],
-  authors: [{ name: "Neuronode Team" }],
+  title: 'Neuronode - KI-Wissenssystem',
+  description: 'Intelligente Wissensverarbeitung mit KI',
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -21,17 +22,29 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <body>
-        <AppRouterCacheProvider>
+      <head>
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
+      </head>
+      <body className={inter.className}>
+        <StrictMode>
           <CustomThemeProvider>
             <ApiErrorContextProvider>
               <AppLayout>
                 {children}
               </AppLayout>
-              <GlobalErrorToast />
             </ApiErrorContextProvider>
           </CustomThemeProvider>
-        </AppRouterCacheProvider>
+        </StrictMode>
       </body>
     </html>
   )

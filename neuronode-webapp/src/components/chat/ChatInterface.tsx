@@ -12,7 +12,11 @@ import {
   MoreVert as MoreVertIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  AccountTree as GraphIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  FilterList as FilterIcon,
 } from '@mui/icons-material'
 import {
   Box,
@@ -22,9 +26,7 @@ import {
   List,
   ListItem,
   Avatar,
-  Chip,
   CircularProgress,
-
   IconButton,
   ListItemButton,
   ListItemText,
@@ -35,21 +37,33 @@ import {
   Slide,
   useTheme,
   useMediaQuery,
+  Tooltip,
 } from '@mui/material'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
-import { ExplanationGraph } from '@/components/chat/ExplanationGraph'
-import InlineErrorDisplay from '@/components/error/InlineErrorDisplay'
 import GraphVisualization from '@/components/graph/GraphVisualization'
-import { useChatApiError } from '@/hooks/useChatApi'
-import { useChatManager, type Message } from '@/hooks/useChatManager'
+import { useChatApi } from '@/hooks/useChatApi'
+import { useChatSearch } from '@/hooks/useChatSearch'
 import { getAPIClient } from '@/lib/serviceFactory'
+import { 
+  useChatStore, 
+  useChatActions, 
+  useCurrentChat, 
+  useAllChats,
+  useIsStoreInitialized,
+  type Message 
+} from '@/stores/chatStore'
 
 function ChatInterfaceCore() {
-  // Chat Management Hook
-  const chatManager = useChatManager()
+  // === ENTERPRISE CHAT STORE INTEGRATION ===
+  // Replace useChatManager with persistent store
+  const currentChat = useCurrentChat()
+  const allChats = useAllChats()
+  const actions = useChatActions()
+  const isStoreInitialized = useIsStoreInitialized()
+  const currentChatId = useChatStore((state) => state.currentChatId)
   
-  // UI State
+  // UI State (kept local as these are ephemeral)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [graphViewOpen, setGraphViewOpen] = useState(false)
   const [hasGraphBeenShown, setHasGraphBeenShown] = useState(false)
@@ -57,26 +71,34 @@ function ChatInterfaceCore() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
   const [selectedChatForMenu, setSelectedChatForMenu] = useState<string | null>(null)
   
-  // K3.1.3 Enhanced Error Handling with Global Error Context
+  // === CHAT SEARCH INTEGRATION ===
+  const {
+    searchQuery,
+    searchResults,
+    searchOptions,
+    searchHistory,
+    isSearching,
+    searchStats,
+    search,
+    clearSearch,
+    updateOptions,
+    hasResults,
+    hasQuery,
+    totalMatches,
+    searchedChats,
+    getSuggestions
+  } = useChatSearch()
+  
+  // Enhanced Error Handling
   const {
     isLoading,
     executeWithErrorHandling,
     clearError
-  } = useChatApiError({
+  } = useChatApi({
     onError: (backendError) => {
       console.error('Chat API Error:', backendError)
-      // Handle specific error types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((backendError as any)?.error_code === 'LLM_API_QUOTA_EXCEEDED') {
-        // Auto-retry will be handled by the hook
-        console.log('LLM quota exceeded, auto-retry initiated...')
-      }
-    },
-    onRetry: (retryCount) => {
-      console.log(`Chat retry attempt #${retryCount}`)
     },
     onSuccess: () => {
-      // Clear any existing errors when successful
       console.log('Chat message sent successfully')
     }
   })
@@ -85,12 +107,23 @@ function ChatInterfaceCore() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  // Current chat messages
-  const messages = chatManager.currentChat?.messages || []
+  // === INITIALIZATION ===
+  // Create initial chat if store is empty
+  useEffect(() => {
+    if (isStoreInitialized && allChats.length === 0) {
+      console.log('Creating initial chat session...')
+      actions.createNewChat('Willkommen')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStoreInitialized, allChats.length])
+
+  // Get current messages from store
+  const messages = currentChat?.messages || []
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -108,56 +141,63 @@ function ChatInterfaceCore() {
     )
   }
 
+  // === STABLE MESSAGE SENDING ===
   const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim() || isLoading || !chatManager.currentChat) return
+    if (!inputValue.trim() || isLoading || !currentChatId) return
 
+    const messageContent = inputValue.trim()
+    setInputValue('') // Clear input immediately for better UX
+    
+    // Create user message
     const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputValue.trim(),
+      id: `user_${Date.now()}`,
+      content: messageContent,
       role: 'user',
       timestamp: new Date()
     }
 
-    // Add user message to current chat
-    chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
-    const messageContent = inputValue.trim()
-    setInputValue('')
+    // Add user message to store
+    actions.addMessage(currentChatId, userMessage)
     
     // Clear any existing errors
     clearError()
 
     try {
-      // K3.1 Enhanced API call with intelligent error handling
+      // Enhanced API call with intelligent error handling
       const response = await executeWithErrorHandling(
         async () => {
           const apiClient = getAPIClient()
           return await apiClient.sendMessage(messageContent)
         },
         {
-          retryable: true, // Chat messages are generally retryable
+          retryable: true,
           context: 'chat-message'
         }
       )
 
       // Handle successful response
       if (response) {
-        // Use backend decision first, fallback to keyword analysis
         const backendGraphRelevant = response.metadata?.graph_relevant || false
         const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
         const hasGraphData = backendGraphRelevant || keywordGraphRelevant
         
         const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: `assistant_${Date.now()}`,
           content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
           role: 'assistant',
           timestamp: new Date(),
           hasGraphData,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          explanationGraph: response.metadata?.explanation_graph as any
+          explanationGraph: response.metadata?.explanation_graph as Message['explanationGraph'],
+          metadata: {
+            tokens_used: response.metadata?.tokens_used,
+            response_time: response.metadata?.response_time,
+            model_used: response.metadata?.model_used,
+            graph_relevant: backendGraphRelevant
+          }
         }
 
-        // Add assistant message to current chat
-        chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
+        // Add assistant message to store
+        actions.addMessage(currentChatId, assistantMessage)
 
         // Show graph view if response has graph-relevant content
         if (hasGraphData) {
@@ -166,31 +206,68 @@ function ChatInterfaceCore() {
         }
       }
     } catch (error) {
-      // Error handling is managed by executeWithErrorHandling, but ensure proper state cleanup
       console.warn('Chat message sending completed with potential errors:', error)
     }
-  }, [inputValue, isLoading, chatManager, executeWithErrorHandling, clearError])
+  }, [inputValue, isLoading, currentChatId, actions, executeWithErrorHandling, clearError])
 
+  // === CHAT MANAGEMENT ACTIONS ===
   const handleNewChat = () => {
-    chatManager.createNewChat()
+    const newChatId = actions.createNewChat(`Chat ${allChats.length + 1}`)
     setSidebarOpen(false)
+    console.log('Created new chat:', newChatId)
   }
 
   const handleDeleteChat = (chatId: string) => {
-    if (chatManager.chatSessions.length === 1) return
-    chatManager.deleteChat(chatId)
+    if (allChats.length === 1) return
+    actions.deleteChat(chatId)
     handleMenuClose()
   }
 
   const handleRenameChat = (chatId: string, newName: string) => {
-    chatManager.renameChat(chatId, newName)
+    actions.renameChat(chatId, newName)
   }
 
   const handleSwitchChat = (chatId: string) => {
-    chatManager.switchToChat(chatId)
+    actions.switchChat(chatId)
     setSidebarOpen(false)
   }
 
+  const handleExportChat = (chatId: string) => {
+    const exportData = actions.exportChat(chatId)
+    if (exportData) {
+      const blob = new Blob([exportData], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `chat-export-${chatId}-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+    handleMenuClose()
+  }
+
+  const handleImportChat = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const data = e.target?.result as string
+      if (actions.importChat(data)) {
+        console.log('Chat imported successfully')
+      } else {
+        console.error('Failed to import chat')
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // === MENU HANDLERS ===
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
     setMenuAnchor(event.currentTarget)
     setSelectedChatForMenu(chatId)
@@ -202,6 +279,7 @@ function ChatInterfaceCore() {
     setSelectedChatForMenu(null)
   }
 
+  // === EFFECTS ===
   // Handle outside click to close sidebar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -214,6 +292,7 @@ function ChatInterfaceCore() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [sidebarOpen])
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom()
   }, [messages.length])
@@ -222,21 +301,20 @@ function ChatInterfaceCore() {
   useEffect(() => {
     const handlePendingMessage = (event: CustomEvent) => {
       const pendingMessage = event.detail.message
-      if (pendingMessage && !isLoading && chatManager.currentChat) {
+      if (pendingMessage && !isLoading && currentChatId) {
         setInputValue(pendingMessage)
         
         const userMessage: Message = {
-          id: Date.now().toString(),
+          id: `pending_${Date.now()}`,
           content: pendingMessage,
           role: 'user',
           timestamp: new Date()
         }
 
-        chatManager.addMessageToChat(chatManager.currentChatId, userMessage)
+        actions.addMessage(currentChatId, userMessage)
         clearError()
 
         const sendPendingMessage = async () => {
-          // K3.1 Enhanced API call for pending messages
           const response = await executeWithErrorHandling(
             async () => {
               const apiClient = getAPIClient()
@@ -249,20 +327,22 @@ function ChatInterfaceCore() {
           )
 
           if (response) {
-            // Use backend decision first, fallback to keyword analysis
             const backendGraphRelevant = response.metadata?.graph_relevant || false
             const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
             const hasGraphData = backendGraphRelevant || keywordGraphRelevant
             
             const assistantMessage: Message = {
-              id: (Date.now() + 1).toString(),
+              id: `pending_assistant_${Date.now()}`,
               content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
               role: 'assistant',
               timestamp: new Date(),
-              hasGraphData
+              hasGraphData,
+              metadata: {
+                graph_relevant: backendGraphRelevant
+              }
             }
 
-            chatManager.addMessageToChat(chatManager.currentChatId, assistantMessage)
+            actions.addMessage(currentChatId, assistantMessage)
 
             if (hasGraphData) {
               setGraphViewOpen(true)
@@ -270,7 +350,6 @@ function ChatInterfaceCore() {
             }
           }
           
-          // Clear input only after processing is complete
           setInputValue('')
         }
 
@@ -283,7 +362,8 @@ function ChatInterfaceCore() {
     return () => {
       window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
     }
-  }, [isLoading, chatManager, executeWithErrorHandling, clearError])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, currentChatId, executeWithErrorHandling, clearError])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -292,6 +372,7 @@ function ChatInterfaceCore() {
     }
   }
 
+  // === UI HELPER FUNCTIONS ===
   const getMessageAvatar = (role: string) => {
     switch (role) {
       case 'user':
@@ -332,6 +413,23 @@ function ChatInterfaceCore() {
     })
   }
 
+  // === LOADING STATE ===
+  if (!isStoreInitialized) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}
+      >
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Chat wird initialisiert...</Typography>
+      </Box>
+    )
+  }
+
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }} data-testid="chat-container">
       {/* Chat Management Sidebar */}
@@ -349,11 +447,58 @@ function ChatInterfaceCore() {
         }}
       >
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
             <Typography variant="h6" fontWeight="600">
               Chat-Verlauf
             </Typography>
+            <Tooltip title="Chat importieren">
+              <IconButton
+                size="small"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <UploadIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
+          
+          {/* Enhanced Chat Search */}
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Chats durchsuchen..."
+              value={searchQuery}
+              onChange={(e) => search(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                endAdornment: hasQuery && (
+                  <IconButton
+                    size="small"
+                    onClick={clearSearch}
+                    sx={{ mr: -0.5 }}
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                )
+              }}
+              sx={{ mb: 1 }}
+            />
+            
+            {/* Search Stats & Options */}
+            {hasQuery && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  {isSearching ? 'Suche...' : `${totalMatches} Treffer in ${searchedChats} Chats${searchStats.searchTime > 0 ? ` (${searchStats.searchTime}ms)` : ''}`}
+                </Typography>
+                {searchOptions.caseSensitive || searchOptions.wholeWords || !searchOptions.searchInMetadata ? (
+                  <Typography variant="caption" color="primary" sx={{ ml: 1 }}>
+                    • Filter aktiv
+                  </Typography>
+                ) : null}
+              </Box>
+            )}
+          </Box>
+          
           <Button
             fullWidth
             variant="contained"
@@ -363,47 +508,139 @@ function ChatInterfaceCore() {
           >
             Neuer Chat
           </Button>
+          <Typography variant="caption" color="text.secondary">
+            {allChats.length} gespeicherte Chats
+          </Typography>
         </Box>
 
         <List sx={{ flex: 1, overflow: 'auto' }}>
-          {chatManager.chatSessions
-            .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
-            .map((chat) => (
-            <ListItem key={chat.id} disablePadding>
-              <ListItemButton
-                selected={chat.id === chatManager.currentChatId}
-                onClick={() => handleSwitchChat(chat.id)}
-                sx={{
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
+          {/* Show search results if searching, otherwise show all chats */}
+          {hasQuery && hasResults ? (
+            // Search Results
+            searchResults.map((result) => (
+              <ListItem key={result.chat.id} disablePadding>
+                <ListItemButton
+                  selected={result.chat.id === currentChatId}
+                  onClick={() => handleSwitchChat(result.chat.id)}
+                  sx={{
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      }
                     }
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ color: 'inherit' }}>
-                  <ChatIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={chat.name}
-                  secondary={
-                    <Box component="span" sx={{ color: 'inherit', opacity: 0.7 }}>
-                      {formatDate(chat.lastActivity)}
-                    </Box>
-                  }
-                />
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleMenuOpen(e, chat.id)}
-                  sx={{ color: 'inherit' }}
+                  }}
                 >
-                  <MoreVertIcon />
-                </IconButton>
-              </ListItemButton>
+                  <ListItemIcon sx={{ color: 'inherit' }}>
+                    <ChatIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {result.chat.title}
+                        </Typography>
+                        <Typography variant="caption" color="primary" sx={{ bgcolor: 'primary.light', px: 0.5, borderRadius: 0.5 }}>
+                          {result.matchingMessages.length} Treffer • Relevanz: {result.relevanceScore}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={
+                      <Box component="span" sx={{ color: 'inherit', opacity: 0.7 }}>
+                        <Typography variant="caption" component="span" sx={{ display: 'block' }}>
+                          {formatDate(result.chat.lastActivity)}
+                        </Typography>
+                        {result.matchingMessages.slice(0, 2).map((match, index) => (
+                          <Typography 
+                            key={index}
+                            variant="caption" 
+                            component="span"
+                            sx={{ 
+                              display: 'block',
+                              fontStyle: 'italic',
+                              textOverflow: 'ellipsis',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            "...{match.context.slice(0, 40)}..."
+                          </Typography>
+                        ))}
+                      </Box>
+                    }
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, result.chat.id)}
+                    sx={{ color: 'inherit' }}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </ListItemButton>
+              </ListItem>
+            ))
+          ) : hasQuery && !hasResults ? (
+            // No search results
+            <ListItem>
+              <ListItemText
+                primary={
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <SearchIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Keine Treffer für "{searchQuery}"
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Versuchen Sie andere Suchbegriffe
+                    </Typography>
+                  </Box>
+                }
+              />
             </ListItem>
-          ))}
+          ) : (
+            // All chats (normal view)
+            allChats.map((chat) => (
+              <ListItem key={chat.id} disablePadding>
+                <ListItemButton
+                  selected={chat.id === currentChatId}
+                  onClick={() => handleSwitchChat(chat.id)}
+                  sx={{
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      }
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit' }}>
+                    <ChatIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={chat.title}
+                    secondary={
+                      <Box component="span" sx={{ color: 'inherit', opacity: 0.7 }}>
+                        <Typography variant="caption" component="span" sx={{ display: 'block' }}>
+                          {formatDate(chat.lastActivity)}
+                        </Typography>
+                        <Typography variant="caption" component="span" sx={{ display: 'block' }}>
+                          {chat.messages.length - 1} Nachrichten
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, chat.id)}
+                    sx={{ color: 'inherit' }}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </ListItemButton>
+              </ListItem>
+            ))
+          )}
         </List>
       </Box>
 
@@ -444,58 +681,29 @@ function ChatInterfaceCore() {
           
           <Box flex={1}>
             <Typography variant="h6" fontWeight="600">
-              {chatManager.currentChat?.name || 'Chat'}
+              {currentChat?.title || 'Chat'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {messages.length - 1} Nachrichten
+              {messages.length - 1} Nachrichten • Persistent gespeichert
             </Typography>
           </Box>
 
           {hasGraphBeenShown && (
-            <IconButton
-              onClick={() => setGraphViewOpen(!graphViewOpen)}
-              color={graphViewOpen ? "primary" : "default"}
-              data-testid="graph-toggle-button"
-              sx={{
-                bgcolor: graphViewOpen ? 'primary.main' : 'transparent',
-                color: graphViewOpen ? 'primary.contrastText' : 'inherit',
-                '&:hover': {
-                  bgcolor: graphViewOpen ? 'primary.dark' : 'action.hover',
-                },
-                position: 'relative'
-              }}
-              title={graphViewOpen ? "Graph-Ansicht schließen" : "Vollständige Graph-Ansicht öffnen"}
-            >
-              <GraphIcon />
-              {/* Indikator für verfügbare Graph-Daten */}
-              <Box
+            <Tooltip title={graphViewOpen ? 'Graph ausblenden' : 'Graph anzeigen'}>
+              <IconButton
+                onClick={() => setGraphViewOpen(!graphViewOpen)}
                 sx={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: 'success.main',
-                  animation: graphViewOpen ? 'none' : 'pulse 2s infinite'
+                  bgcolor: graphViewOpen ? 'primary.main' : 'transparent',
+                  color: graphViewOpen ? 'primary.contrastText' : 'inherit',
                 }}
-              />
-            </IconButton>
+              >
+                <IconButton />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
 
-        {/* K3.1.3 Global Error Display - Shows errors for 'chat' source */}
-        <InlineErrorDisplay 
-          source="chat" 
-          variant="banner"
-          showRetryButton={true}
-          onRetry={() => {
-            // Retry logic handled by InlineErrorDisplay component
-            console.log('Chat error retry requested')
-          }}
-        />
-
-        {/* Messages */}
+        {/* Messages Area */}
         <Paper
           elevation={0}
           sx={{
@@ -557,88 +765,41 @@ function ChatInterfaceCore() {
                           ? '1px solid rgba(255, 255, 255, 0.1)'
                           : '1px solid rgba(0, 0, 0, 0.08)',
                     position: 'relative',
-                    '&::before': message.role === 'user' ? {
-                      content: '""',
-                      position: 'absolute',
-                      bottom: 0,
-                      right: -8,
-                      width: 0,
-                      height: 0,
-                      borderLeft: '8px solid transparent',
-                      borderTop: '8px solid',
-                      borderTopColor: (theme) => 
-                        theme.palette.mode === 'dark' ? '#764ba2' : '#42a5f5'
-                    } : {
-                      content: '""',
-                      position: 'absolute',
-                      bottom: 0,
-                      left: -8,
-                      width: 0,
-                      height: 0,
-                      borderRight: '8px solid transparent',
-                      borderTop: '8px solid',
-                      borderTopColor: (theme) => 
-                        theme.palette.mode === 'dark' ? 'rgba(42, 42, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'
-                    }
                   }}
                 >
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}
+                  >
                     {message.content}
                   </Typography>
                   
-                  {/* Explanation Graph für Assistant-Nachrichten mit Graph-Daten */}
-                  {message.role === 'assistant' && message.explanationGraph && (
-                    <ExplanationGraph 
-                      graphData={message.explanationGraph}
-                      height={300}
-                      title="📊 Antwort-Erklärung"
-                    />
-                  )}
-                  
-                  {/* Graph-Hinweis für weitere Exploration */}
-                  {message.role === 'assistant' && message.hasGraphData && !message.explanationGraph && (
-                    <Box sx={{ 
-                      mt: 2, 
-                      p: 2, 
-                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                      borderRadius: 1,
-                      border: '1px solid rgba(25, 118, 210, 0.2)'
-                    }}>
-                      <Typography variant="body2" sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        color: 'primary.main'
-                      }}>
-                        <GraphIcon sx={{ mr: 1, fontSize: '1.2em' }} />
-                        💡 Diese Antwort enthält Graph-Daten. Öffnen Sie die Graph-Ansicht für eine detaillierte Visualisierung.
-                      </Typography>
-                    </Box>
-                  )}
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
-                    <Typography
-                      variant="caption"
-                      sx={{
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
                         opacity: 0.7,
-                        color: 'inherit'
+                        fontSize: '0.75rem'
                       }}
                     >
                       {formatTime(message.timestamp)}
                     </Typography>
+                    
                     {message.hasGraphData && (
-                      <Chip
-                        icon={<GraphIcon />}
-                        label="Graph"
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ ml: 1 }}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                          Graph verfügbar
+                        </Typography>
+                      </Box>
                     )}
                   </Box>
                 </Box>
               </ListItem>
             ))}
+            
             {isLoading && (
               <ListItem sx={{ justifyContent: 'center' }}>
                 <CircularProgress size={24} />
@@ -670,7 +831,7 @@ function ChatInterfaceCore() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Nachricht eingeben..."
+            placeholder="Nachricht eingeben... (Alle Nachrichten werden automatisch gespeichert)"
             disabled={isLoading}
             variant="outlined"
             size="small"
@@ -729,7 +890,7 @@ function ChatInterfaceCore() {
         <MenuItem
           onClick={() => {
             const newName = prompt('Neuer Name:', 
-              chatManager.chatSessions.find(c => c.id === selectedChatForMenu)?.name
+              allChats.find(c => c.id === selectedChatForMenu)?.title
             )
             if (newName && selectedChatForMenu) {
               handleRenameChat(selectedChatForMenu, newName)
@@ -744,11 +905,23 @@ function ChatInterfaceCore() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            if (selectedChatForMenu && chatManager.chatSessions.length > 1) {
+            if (selectedChatForMenu) {
+              handleExportChat(selectedChatForMenu)
+            }
+          }}
+        >
+          <ListItemIcon>
+            <DownloadIcon />
+          </ListItemIcon>
+          <ListItemText>Exportieren</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (selectedChatForMenu && allChats.length > 1) {
               handleDeleteChat(selectedChatForMenu)
             }
           }}
-          disabled={chatManager.chatSessions.length <= 1}
+          disabled={allChats.length <= 1}
         >
           <ListItemIcon>
             <DeleteIcon />
@@ -757,39 +930,27 @@ function ChatInterfaceCore() {
         </MenuItem>
       </Menu>
 
-      {/* Graph Toggle Button */}
-      {graphViewOpen && (
-        <Box 
-          position="fixed" 
-          bottom={16} 
-          right={16} 
-          zIndex={1000}
-        >
-          <Button
-            variant="contained"
-            startIcon={<GraphIcon />}
-            onClick={() => setGraphViewOpen(false)}
-            data-testid="graph-toggle-button"
-            sx={{
-              bgcolor: 'secondary.main',
-              color: 'secondary.contrastText',
-              '&:hover': {
-                bgcolor: 'secondary.dark',
-              },
-              boxShadow: 3
-            }}
-          >
-            Graph ausblenden
-          </Button>
-        </Box>
-      )}
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleImportChat}
+      />
     </Box>
   )
 }
 
 /**
- * K3.1.3 ChatInterface with Optimized Global Error Architecture
- * Removed ErrorBoundary wrapper in favor of inline error display and global error context
+ * Enterprise ChatInterface with Persistent State Management
+ * 
+ * Features:
+ * - Full chat persistence with localStorage
+ * - Import/Export functionality
+ * - Enhanced metadata tracking
+ * - Stable state management
+ * - StrictMode compliance
  */
 export default function ChatInterface() {
   return <ChatInterfaceCore />

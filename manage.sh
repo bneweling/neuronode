@@ -231,7 +231,15 @@ cmd_up() {
     
     # Start frontend if requested
     if [ "$1" = "--with-frontend" ]; then
-        cmd_dev_frontend &
+        log_info "Starting frontend in background..."
+        if cmd_dev_frontend > /tmp/frontend.log 2>&1 &
+        then
+            log_success "Frontend development server starting..."
+            log_info "Frontend logs: tail -f /tmp/frontend.log"
+        else
+            log_error "Failed to start frontend development server"
+            log_info "Check frontend dependencies: cd $FRONTEND_DIR && npm install --legacy-peer-deps"
+        fi
     fi
     
     log_step "Waiting for services to be ready..."
@@ -841,13 +849,30 @@ cmd_dev_frontend() {
     log_step "Starting frontend development server..."
     cd $FRONTEND_DIR
     
-    # Install dependencies if needed
-    if [ ! -d "node_modules" ]; then
-        log_info "Installing dependencies..."
-        npm install
+    # Check and install dependencies robustly
+    if [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/next" ]; then
+        log_info "Installing frontend dependencies..."
+        if ! npm install --legacy-peer-deps; then
+            log_error "Frontend dependency installation failed"
+            log_info "You may need to resolve dependency conflicts manually"
+            cd ..
+            return 1
+        fi
+        log_success "Frontend dependencies installed successfully"
+    else
+        log_info "Frontend dependencies already installed"
+    fi
+    
+    # Verify Next.js is available
+    if [ ! -f "node_modules/.bin/next" ]; then
+        log_error "Next.js not found after installation"
+        log_info "Try: cd $FRONTEND_DIR && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps"
+        cd ..
+        return 1
     fi
     
     # Start development server
+    log_info "Starting Next.js development server..."
     npm run dev
     cd ..
 }
