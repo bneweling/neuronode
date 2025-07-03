@@ -185,6 +185,42 @@ Dieses Kapitel analysiert den **End-to-End-Prozess** – vom Dokument-Upload bis
 | GraphVisualization | 1 170 LOC, Re-Render bei jeder State-Änderung | Memoisierung (`useMemo`, `useCallback`), `react-window` für Sidebar Lists |
 | Global CSS | Mehrere ungenutzte Klassen, 120 kB | PurgeCSS / `@next/font` |
 
+### 5.4 Visuelle Design-Richtlinien & Farbpalette
+
+Um den Eindruck einer **Enterprise-grade** Anwendung zu vermitteln, braucht es ein konsistentes, barrierefreies und ästhetisch ansprechendes UI – vergleichbar mit dem Dashboard-Beispiel im bereitgestellten Screenshot.
+
+| Thema | Aktueller Stand | Soll-Zustand |
+|-------|----------------|--------------|
+| **Brand Palette** | Default MUI `primary=#1976d2`, `secondary=#9c27b0`; Cytoscape verwendet zufällige Node-Farben | Definierte **Design Tokens** (Light & Dark):<br>• `primary = #5B8DEF`<br>• `secondary = #845EF7`<br>• `success   = #2ECC71`<br>• `warning   = #F5A623`<br>• `error     = #E04F5F`<br>• `grey[50-900]` nach MUI-Scale<br>⇒ In `theme.palette` hinterlegen; Cytoscape‐Nodes per Type-Mapping einfärben. |
+| **Kontraste** | Teilweise < 3:1 (hellgraue Texte auf weiß) | **WCAG 2.1 AA**: Mind. 4.5:1 für normalen Text, 3:1 für Großschrift.<br>⇒ Lighthouse-Audit & `@mui/material/useTheme().palette.augmentColor` verwenden. |
+| **Typografie** | MUI Default Roboto, Größen inkonsistent (`14px → 18px`) | **Typo Scale** (1.125): h1 = 32, h2 = 28, h3 = 24, body1 = 16, caption = 12; Alle via `theme.typography` zentral. |
+| **Spacing & Grid** | Grid-Abstände manuell via `sx={{ p:1 }}` | 8-pt Spacing-System: Padding/Gap nur via Theme Spacing (`theme.spacing(1)` == 8px). |
+| **Iconografie** | MUI Icons gemischt, Inaktiv-Farben zu blass | Primär- und Sekundärfarben nutzen; State Icons (error/warning) farblich differenzieren. |
+| **Charts** | ApexCharts Default Farben | `theme.palette.chart` definieren + `ApexThemeProvider`. |
+| **Loading States** | Nur einfache Spinner | **Skeletons** und **Progress Bars** (siehe Screenshot) einführen. |
+
+> **Implementierung:**
+> 1. `createTheme` in `src/theme/index.ts` exportieren (Light & Dark).  
+> 2. `ThemeProvider` + `CssBaseline` in `app/layout.tsx`.  
+> 3. Storybook (Chromatic) zur visuellen Regression.
+
+### 5.5 Nutzer- & Rollenmanagement (RBAC & SSO-Readiness)
+
+| Aspekt | Aktueller Stand | Empfehlung |
+|--------|----------------|------------|
+| **User CRUD** | Nicht vorhanden – nur JWT ohne DB-Persistenz | FastAPI-Users oder eigene `users` Tabelle (id, email, hashed_pw, is_active). |
+| **Rollen** | Hartcodierte `@requires_role('admin')` Checks | RBAC Tabelle (`roles`, `user_roles`, `permissions`). |
+| **Password Policy** | Keine | Argon2id Hashing, OWASP Länge ≥ 12, Rate-Limit auf `/login`. |
+| **Session Mgmt** | Access-Token 15 min, kein Refresh im Client | Implement Refresh-Token + Rotation (httpOnly Cookie). |
+| **SSO-Option** | Fehlend | Design für OIDC/OAuth2 (Keycloak, Auth0) – Backend als **OAuth Client**, Frontend NextAuth.
+| **Frontend Auth-Guard** | Nur optionales Redirect | Höhere-Ordner-Komponente `withAuth(Role[])`, Route Guards. |
+
+> **Road-Ahead:**
+> • **Phase 1**: FastAPI-Users Integration (DB Modelle, Alembic Migration).  
+> • **Phase 2**: JWT → Access + Refresh Flow, `SameSite=strict` Cookies.  
+> • **Phase 3**: RBAC Seed (`admin`, `editor`, `viewer`), Decorator Refactor.  
+> • **Phase 4**: NextAuth + Keycloak PoC, then Gradual Rollout.
+
 ---
 
 ## 6  Code-Hygiene & Security-Hardening
@@ -219,23 +255,25 @@ Dieses Kapitel analysiert den **End-to-End-Prozess** – vom Dokument-Upload bis
 
 ---
 
-## 7  Guided Fix Roadmap
+## 7  Guided Fix Roadmap  _(Detailiert)_
 
-1. **Build stabilisieren**
-   ```bash
-   # Temporär ohne Turbopack
-   NEXT_TELEMETRY_DISABLED=1 npm run dev -- --turbo=false
-   ```
-2. **Cache-Bug fixen** (`useGraphState`)
-3. **Cytoscape Lazy Load** & Component-Split
-4. **Persist-Store Migration**
-5. **SSR-Safety Pass** (`grep -R "window." src | xargs sed -n '…'`)
-6. **Automatisierte Tests**
-   * Playwright E2E für `/graph`
-   * Jest + React-Testing-Library für `useGraphState`
-7. **CI-Pipeline** (ESLint, `next build`, `docker build`, `pytest`).
-8. **Code-Hygiene Sprint** – Entferne `console.log`, tippe `any`, schließe TODOs.
-9. **Security Hardening** – Secrets-Scan, Docker Secrets, Key Rotation.
+1. **Turbopack ⇒ SWC** – Dev-Server stabilisieren.  
+2. **Cache-Bug** in `useGraphState` beheben.  
+3. **Cytoscape Lazy-Load + Code-Splitting** (`dynamic import`).  
+4. **Persist-Store Migration** (Zustand v4, Version 2).  
+5. **SSR-Safety Pass** (Window/DOM Access).  
+6. **Visual Redesign Sprint**  
+   • Theme Tokens definieren, Color-Palette gem. §5.4.  
+   • Global CSS Purge & Typography Scale.  
+   • Implement Skeletons/Progress UI.  
+7. **Auth & RBAC** (Phase 1-3 oben).  
+8. **SSO PoC** Keycloak + NextAuth (Phase 4).  
+9. **Code-Hygiene Sprint** – console.log, any, TODOs.  
+10. **Security Hardening** – Secrets-Scan, CVE-Patching, Docker-Scan.  
+11. **Observability Stack** – OTEL, Prometheus, Grafana Dashboards.  
+12. **CI/CD Upgrade** – Parallel `next build`, `pytest`, Trivy Scan, Lighthouse CI.  
+13. **Regression & Load-Testing** – Playwright, Locust.  
+14. **Go-Live Readiness Review** – Checklist & Chaos-Monkey dry-run.
 
 ---
 
