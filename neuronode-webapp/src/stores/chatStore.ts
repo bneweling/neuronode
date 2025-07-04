@@ -1,29 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// Cached server snapshot to prevent infinite loops - STABLE references
-const EMPTY_ACTIONS = {
-  addMessage: () => {},
-  createNewChat: () => '',
-  switchChat: () => {},
-  deleteChat: () => {},
-  renameChat: () => {},
-  getChatHistory: () => [],
-  getAllChats: () => [],
-  getCurrentChat: () => null,
-  updateChatMetadata: () => {},
-  clearAllChats: () => {},
-  exportChat: () => '',
-  importChat: () => false
-} as const
-
-const SERVER_SNAPSHOT = {
-  sessions: {},
-  currentChatId: null,
-  isInitialized: false,
-  actions: EMPTY_ACTIONS
-} as const
-
 // Import data validation interface
 interface ImportData {
   version: string
@@ -35,7 +12,7 @@ interface ImportData {
 export interface ValidationError {
   field: string
   message: string
-  value?: any
+  value?: unknown
 }
 
 // Enhanced Message interface with enterprise features
@@ -120,16 +97,20 @@ interface ChatState {
 /**
  * Validates if an object is a valid Message
  */
-const validateMessage = (data: any): data is Message => {
+const validateMessage = (data: unknown): data is Message => {
   if (!data || typeof data !== 'object') return false
   
+  // Cast to any for runtime validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = data as any
+  
   // Required fields
-  if (typeof data.id !== 'string' || !data.id.trim()) return false
-  if (typeof data.content !== 'string') return false
-  if (!['user', 'assistant', 'system'].includes(data.role)) return false
+  if (typeof obj.id !== 'string' || !obj.id.trim()) return false
+  if (typeof obj.content !== 'string') return false
+  if (!['user', 'assistant', 'system'].includes(obj.role)) return false
   
   // Timestamp validation - can be string (from JSON) or Date
-  const timestamp = data.timestamp
+  const timestamp = obj.timestamp
   if (!timestamp) return false
   if (typeof timestamp === 'string') {
     const date = new Date(timestamp)
@@ -139,9 +120,9 @@ const validateMessage = (data: any): data is Message => {
   }
   
   // Optional fields validation
-  if (data.hasGraphData !== undefined && typeof data.hasGraphData !== 'boolean') return false
-  if (data.explanationGraph !== undefined && typeof data.explanationGraph !== 'object') return false
-  if (data.metadata !== undefined && typeof data.metadata !== 'object') return false
+  if (obj.hasGraphData !== undefined && typeof obj.hasGraphData !== 'boolean') return false
+  if (obj.explanationGraph !== undefined && typeof obj.explanationGraph !== 'object') return false
+  if (obj.metadata !== undefined && typeof obj.metadata !== 'object') return false
   
   return true
 }
@@ -149,22 +130,26 @@ const validateMessage = (data: any): data is Message => {
 /**
  * Validates if an object is a valid ChatSession
  */
-const validateChatSession = (data: any): data is ChatSession => {
+const validateChatSession = (data: unknown): data is ChatSession => {
   if (!data || typeof data !== 'object') return false
   
+  // Cast to any for runtime validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = data as any
+  
   // Required fields
-  if (typeof data.id !== 'string' || !data.id.trim()) return false
-  if (typeof data.title !== 'string' || !data.title.trim()) return false
-  if (!Array.isArray(data.messages)) return false
+  if (typeof obj.id !== 'string' || !obj.id.trim()) return false
+  if (typeof obj.title !== 'string' || !obj.title.trim()) return false
+  if (!Array.isArray(obj.messages)) return false
   
   // Validate all messages
-  for (const message of data.messages) {
+  for (const message of obj.messages) {
     if (!validateMessage(message)) return false
   }
   
   // Date validation - can be string (from JSON) or Date
-  const createdAt = data.createdAt
-  const lastActivity = data.lastActivity
+  const createdAt = obj.createdAt
+  const lastActivity = obj.lastActivity
   
   if (!createdAt) return false
   if (typeof createdAt === 'string') {
@@ -183,9 +168,9 @@ const validateChatSession = (data: any): data is ChatSession => {
   }
   
   // Optional metadata validation
-  if (data.metadata !== undefined) {
-    if (typeof data.metadata !== 'object') return false
-    const meta = data.metadata
+  if (obj.metadata !== undefined) {
+    if (typeof obj.metadata !== 'object') return false
+    const meta = obj.metadata
     if (meta.total_messages !== undefined && typeof meta.total_messages !== 'number') return false
     if (meta.total_tokens !== undefined && typeof meta.total_tokens !== 'number') return false
     if (meta.topics !== undefined && !Array.isArray(meta.topics)) return false
@@ -198,19 +183,23 @@ const validateChatSession = (data: any): data is ChatSession => {
 /**
  * Validates if an object is valid import data
  */
-const validateImportData = (data: any): data is ImportData => {
+const validateImportData = (data: unknown): data is ImportData => {
   if (!data || typeof data !== 'object') return false
   
+  // Cast to any for runtime validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = data as any
+  
   // Version validation
-  if (typeof data.version !== 'string' || !data.version.trim()) return false
+  if (typeof obj.version !== 'string' || !obj.version.trim()) return false
   
   // Export timestamp validation
-  if (typeof data.exportedAt !== 'string') return false
-  const exportDate = new Date(data.exportedAt)
+  if (typeof obj.exportedAt !== 'string') return false
+  const exportDate = new Date(obj.exportedAt)
   if (isNaN(exportDate.getTime())) return false
   
   // Chat validation
-  if (!data.chat || !validateChatSession(data.chat)) return false
+  if (!obj.chat || !validateChatSession(obj.chat)) return false
   
   return true
 }
@@ -241,7 +230,7 @@ const sanitizeImportData = (data: ImportData): ChatSession => {
 /**
  * Generates detailed validation errors for debugging
  */
-const getValidationErrors = (data: any): ValidationError[] => {
+const getValidationErrors = (data: unknown): ValidationError[] => {
   const errors: ValidationError[] = []
   
   if (!data || typeof data !== 'object') {
@@ -249,22 +238,26 @@ const getValidationErrors = (data: any): ValidationError[] => {
     return errors
   }
   
-  if (typeof data.version !== 'string' || !data.version.trim()) {
-    errors.push({ field: 'version', message: 'Version must be a non-empty string', value: data.version })
+  // Cast to any for runtime validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = data as any
+  
+  if (typeof obj.version !== 'string' || !obj.version.trim()) {
+    errors.push({ field: 'version', message: 'Version must be a non-empty string', value: obj.version })
   }
   
-  if (typeof data.exportedAt !== 'string') {
-    errors.push({ field: 'exportedAt', message: 'ExportedAt must be a string', value: data.exportedAt })
+  if (typeof obj.exportedAt !== 'string') {
+    errors.push({ field: 'exportedAt', message: 'ExportedAt must be a string', value: obj.exportedAt })
   } else {
-    const exportDate = new Date(data.exportedAt)
+    const exportDate = new Date(obj.exportedAt)
     if (isNaN(exportDate.getTime())) {
-      errors.push({ field: 'exportedAt', message: 'ExportedAt must be a valid date string', value: data.exportedAt })
+      errors.push({ field: 'exportedAt', message: 'ExportedAt must be a valid date string', value: obj.exportedAt })
     }
   }
   
-  if (!data.chat) {
+  if (!obj.chat) {
     errors.push({ field: 'chat', message: 'Chat data is required' })
-  } else if (!validateChatSession(data.chat)) {
+  } else if (!validateChatSession(obj.chat)) {
     errors.push({ field: 'chat', message: 'Chat data structure is invalid' })
   }
   
@@ -327,10 +320,12 @@ export const useChatStore = create<ChatState>()(
                 messages: updatedMessages,
                 lastActivity: new Date(),
                 metadata: {
-                  ...session.metadata,
+                  // Ensure all required fields are properly maintained
                   total_messages: updatedMessages.length,
                   has_graph_data: hasGraphData,
-                  total_tokens: (session.metadata?.total_tokens || 0) + (message.metadata?.tokens_used || 0)
+                  // Optional fields from existing metadata (safe to maintain)
+                  total_tokens: (session.metadata?.total_tokens || 0) + (message.metadata?.tokens_used || 0),
+                  topics: session.metadata?.topics
                 }
               }
             }
@@ -430,8 +425,12 @@ export const useChatStore = create<ChatState>()(
                 [chatId]: {
                   ...session,
                   metadata: {
-                    ...session.metadata,
-                    ...metadata
+                    // Ensure all required fields are maintained
+                    total_messages: session.metadata?.total_messages || session.messages.length,
+                    has_graph_data: session.metadata?.has_graph_data || false,
+                    // Merge optional fields from existing metadata and updates
+                    total_tokens: metadata?.total_tokens ?? session.metadata?.total_tokens,
+                    topics: metadata?.topics ?? session.metadata?.topics
                   },
                   lastActivity: new Date()
                 }
@@ -494,9 +493,12 @@ export const useChatStore = create<ChatState>()(
               title: `${sanitizedChat.title} (Importiert)`,
               lastActivity: new Date(),
               metadata: {
-                ...sanitizedChat.metadata,
+                // Ensure all required fields are properly initialized
                 total_messages: sanitizedChat.messages.length,
-                has_graph_data: sanitizedChat.messages.some(m => m.hasGraphData) || false
+                has_graph_data: sanitizedChat.messages.some(m => m.hasGraphData) || false,
+                // Optional fields from the original metadata (safe to spread)
+                total_tokens: sanitizedChat.metadata?.total_tokens,
+                topics: sanitizedChat.metadata?.topics
               }
             }
             
@@ -539,8 +541,6 @@ export const useChatStore = create<ChatState>()(
         sessions: state.sessions,
         currentChatId: state.currentChatId
       }),
-      // Add getServerSnapshot for SSR compatibility (cached to prevent infinite loops)
-      getServerSnapshot: () => SERVER_SNAPSHOT,
       onRehydrateStorage: () => (state) => {
         // Initialize with default chat if no sessions exist
         if (state && Object.keys(state.sessions).length === 0) {
@@ -566,23 +566,45 @@ export const useChatStore = create<ChatState>()(
       skipHydration: false,
       version: 1
     }
+      )
   )
-)
 
 // Enhanced hook for chat store actions
 export const useChatActions = () => useChatStore((state) => state.actions)
 
-// Selector hooks for better performance
-export const useCurrentChat = () => useChatStore((state) => 
-  state.currentChatId ? state.sessions[state.currentChatId] : null
-)
+// Cache for sorted chats to prevent unnecessary re-renders
+let sortedChatsCache: ChatSession[] | null = null
+let lastSessionsHash: string | null = null
 
-export const useAllChats = () => useChatStore((state) => 
-  Object.values(state.sessions).sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
-)
+// Optimized selector hooks that prevent infinite re-renders
+export const useCurrentChat = (): ChatSession | null => {
+  return useChatStore((state) => {
+    return state.currentChatId ? state.sessions[state.currentChatId] || null : null
+  })
+}
 
-export const useChatHistory = (chatId: string) => useChatStore((state) => 
-  state.sessions[chatId]?.messages || []
-)
+export const useAllChats = (): ChatSession[] => {
+  return useChatStore((state) => {
+    // Create a hash of the sessions to detect changes
+    const sessionIds = Object.keys(state.sessions).sort()
+    const currentHash = sessionIds.join(',') + JSON.stringify(sessionIds.map(id => state.sessions[id].lastActivity.getTime()))
+    
+    // Only recalculate if sessions have actually changed
+    if (lastSessionsHash !== currentHash || !sortedChatsCache) {
+      const sessions = Object.values(state.sessions)
+      sortedChatsCache = sessions.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
+      lastSessionsHash = currentHash
+    }
+    
+    return sortedChatsCache
+  })
+}
+
+export const useChatHistory = (chatId: string): Message[] => {
+  return useChatStore((state) => {
+    // Return messages directly instead of calling action function
+    return state.sessions[chatId]?.messages || []
+  })
+}
 
 export const useIsStoreInitialized = () => useChatStore((state) => state.isInitialized) 

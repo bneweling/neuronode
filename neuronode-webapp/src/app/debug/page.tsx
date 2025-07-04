@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Container, Typography, Card, CardContent, List, ListItem, ListItemText, Box, Button } from '@mui/material'
+import { useEffect, useState } from 'react'
+
 
 interface ErrorInfo {
   message: string
   filename: string
   lineno: number
   colno: number
-  error: any
+  error: string | Error | null
   timestamp: string
 }
 
@@ -17,6 +18,9 @@ export default function DebugPage() {
   const [consoleErrors, setConsoleErrors] = useState<string[]>([])
 
   useEffect(() => {
+    // Only initialize in development
+    if (process.env.NODE_ENV !== 'development') return
+
     // Sammle window.onerror events
     const originalOnError = window.onerror
     window.onerror = (message, filename, lineno, colno, error) => {
@@ -25,7 +29,7 @@ export default function DebugPage() {
         filename: String(filename),
         lineno: lineno || 0,
         colno: colno || 0,
-        error: error?.stack || error,
+        error: error?.stack || error || null,
         timestamp: new Date().toISOString()
       }])
       
@@ -68,6 +72,20 @@ export default function DebugPage() {
   const clearErrors = () => {
     setErrors([])
     setConsoleErrors([])
+  }
+
+  // 🔒 Security: Only available in development
+  if (process.env.NODE_ENV !== 'development') {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Debug Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Debug dashboard is only available in development mode.
+        </Typography>
+      </Container>
+    )
   }
 
   return (

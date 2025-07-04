@@ -6,6 +6,7 @@ import { useCallback, useRef } from 'react'
  * Verhindert eine Flut von API-Calls bei schnellen User-Interaktionen
  * durch Verzögerung der Ausführung um die angegebene Delay-Zeit.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
   delay: number

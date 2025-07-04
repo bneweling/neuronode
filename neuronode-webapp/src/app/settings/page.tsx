@@ -112,7 +112,7 @@ export default function SettingsPage() {
 
       <Grid container spacing={3}>
         {/* Mode Selection */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid xs={12} md={4}>
           <Card elevation={2} sx={{ height: '100%' }}>
             <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
@@ -155,7 +155,7 @@ export default function SettingsPage() {
         </Grid>
 
         {/* Connection Settings */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid xs={12} md={4}>
           <Card elevation={2} sx={{ height: '100%' }}>
             <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
@@ -206,7 +206,7 @@ export default function SettingsPage() {
         </Grid>
 
         {/* Theme Settings */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid xs={12} md={4}>
           <Card elevation={2} sx={{ height: '100%' }}>
             <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
@@ -256,7 +256,7 @@ export default function SettingsPage() {
         </Grid>
 
         {/* System Status */}
-        <Grid size={{ xs: 12 }}>
+        <Grid xs={12}>
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -264,7 +264,7 @@ export default function SettingsPage() {
               </Typography>
 
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid xs={12} md={4}>
                   <Typography variant="subtitle2" gutterBottom>
                     Services
                   </Typography>
@@ -283,7 +283,7 @@ export default function SettingsPage() {
                   </List>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid xs={12} md={4}>
                   <Typography variant="subtitle2" gutterBottom>
                     Performance
                   </Typography>
@@ -313,7 +313,7 @@ export default function SettingsPage() {
                   </Box>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid xs={12} md={4}>
                   <Typography variant="subtitle2" gutterBottom>
                     Konfiguration
                   </Typography>
@@ -329,7 +329,7 @@ export default function SettingsPage() {
         </Grid>
 
         {/* Actions */}
-        <Grid size={{ xs: 12 }}>
+        <Grid xs={12}>
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" gutterBottom>

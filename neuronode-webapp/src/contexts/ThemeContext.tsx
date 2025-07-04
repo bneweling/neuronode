@@ -4,6 +4,8 @@ import { CssBaseline } from '@mui/material'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
+import { lightPalette, darkPalette } from '@/theme/tokens'
+
 type ThemeMode = 'light' | 'dark' | 'system'
 
 interface ThemeContextType {
@@ -59,25 +61,12 @@ export function CustomThemeProvider({ children }: CustomThemeProviderProps) {
 
   const isDark = mode === 'dark' || (mode === 'system' && systemPrefersDark)
 
+  const paletteTokens = isDark ? darkPalette : lightPalette
+
   const theme = createTheme({
     palette: {
       mode: isDark ? 'dark' : 'light',
-      primary: {
-        main: '#1976d2',
-        light: '#42a5f5',
-        dark: '#1565c0',
-      },
-      secondary: {
-        main: '#dc004e',
-      },
-      background: {
-        default: isDark ? '#121212' : '#fafafa',
-        paper: isDark ? '#1e1e1e' : '#ffffff',
-      },
-      text: {
-        primary: isDark ? '#ffffff' : '#000000',
-        secondary: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-      },
+      ...paletteTokens,
     },
     shape: {
       borderRadius: 12,

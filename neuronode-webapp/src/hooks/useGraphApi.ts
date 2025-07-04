@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
-import { useApiError } from './useApiError'
+
 import { getAPIClient } from '@/lib/serviceFactory'
+
+import { useApiError } from './useApiError'
 
 interface GraphNode {
   id: string
@@ -80,9 +82,12 @@ export function useGraphApi() {
               id: node.id,
               label: node.label,
               type: (node.type as 'document' | 'concept' | 'entity') || 'concept',
-              properties: node.properties
+              properties: node.properties || {}
             })),
-            edges: response.edges
+            edges: response.edges.map(edge => ({
+              ...edge,
+              weight: edge.weight || 1
+            }))
           }
           
           return transformedData
@@ -134,9 +139,8 @@ export function useGraphApi() {
     const result = await executeWithErrorHandling(
       async () => {
         try {
-          const apiClient = getAPIClient()
           // Simulate node expansion API call
-          // In real implementation: await apiClient.expandGraphNode(nodeId)
+          // In real implementation: await getAPIClient().expandGraphNode(nodeId)
           console.log(`Expanding node: ${nodeId}`)
           
           // Return incremental graph data
@@ -148,7 +152,7 @@ export function useGraphApi() {
               { id: `e_${nodeId}_expand`, source: nodeId, target: `${nodeId}_child_1`, label: 'contains', weight: 0.8 }
             ]
           }
-        } catch (error) {
+        } catch {
           const expandError = new Error(`Fehler beim Erweitern von Knoten ${nodeId}`)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ;(expandError as any).error_code = 'GRAPH_EXPAND_FAILED'

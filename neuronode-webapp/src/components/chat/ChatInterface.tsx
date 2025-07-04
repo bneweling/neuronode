@@ -16,7 +16,6 @@ import {
   Upload as UploadIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterIcon,
 } from '@mui/icons-material'
 import {
   Box,
@@ -39,7 +38,7 @@ import {
   useMediaQuery,
   Tooltip,
 } from '@mui/material'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
 import GraphVisualization from '@/components/graph/GraphVisualization'
 import { useChatApi } from '@/hooks/useChatApi'
@@ -76,17 +75,14 @@ function ChatInterfaceCore() {
     searchQuery,
     searchResults,
     searchOptions,
-    searchHistory,
     isSearching,
     searchStats,
     search,
     clearSearch,
-    updateOptions,
     hasResults,
     hasQuery,
     totalMatches,
     searchedChats,
-    getSuggestions
   } = useChatSearch()
   
   // Enhanced Error Handling
@@ -113,17 +109,23 @@ function ChatInterfaceCore() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   // === INITIALIZATION ===
-  // Create initial chat if store is empty
+  // Create initial chat if store is empty - use stable selector
+  const chatCount = useChatStore((state) => Object.keys(state.sessions).length)
+  
   useEffect(() => {
-    if (isStoreInitialized && allChats.length === 0) {
+    if (isStoreInitialized && chatCount === 0) {
       console.log('Creating initial chat session...')
       actions.createNewChat('Willkommen')
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStoreInitialized, allChats.length])
+  }, [isStoreInitialized, chatCount, actions])
 
   // Get current messages from store
   const messages = currentChat?.messages || []
+
+  // Memoized sorted chats list - only recalculates when sessions change
+  const sortedChats = useMemo(() => {
+    return allChats.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
+  }, [allChats])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -179,7 +181,7 @@ function ChatInterfaceCore() {
       if (response) {
         const backendGraphRelevant = response.metadata?.graph_relevant || false
         const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
-        const hasGraphData = backendGraphRelevant || keywordGraphRelevant
+        const hasGraphData: boolean = Boolean(backendGraphRelevant || keywordGraphRelevant)
         
         const assistantMessage: Message = {
           id: `assistant_${Date.now()}`,
@@ -189,10 +191,10 @@ function ChatInterfaceCore() {
           hasGraphData,
           explanationGraph: response.metadata?.explanation_graph as Message['explanationGraph'],
           metadata: {
-            tokens_used: response.metadata?.tokens_used,
-            response_time: response.metadata?.response_time,
-            model_used: response.metadata?.model_used,
-            graph_relevant: backendGraphRelevant
+            tokens_used: response.metadata?.tokens_used as number | undefined,
+            response_time: response.metadata?.response_time as number | undefined,
+            model_used: response.metadata?.model_used as string | undefined,
+            graph_relevant: Boolean(backendGraphRelevant)
           }
         }
 
@@ -212,13 +214,13 @@ function ChatInterfaceCore() {
 
   // === CHAT MANAGEMENT ACTIONS ===
   const handleNewChat = () => {
-    const newChatId = actions.createNewChat(`Chat ${allChats.length + 1}`)
+    const newChatId = actions.createNewChat(`Chat ${chatCount + 1}`)
     setSidebarOpen(false)
     console.log('Created new chat:', newChatId)
   }
 
   const handleDeleteChat = (chatId: string) => {
-    if (allChats.length === 1) return
+    if (chatCount === 1) return
     actions.deleteChat(chatId)
     handleMenuClose()
   }
@@ -329,7 +331,7 @@ function ChatInterfaceCore() {
           if (response) {
             const backendGraphRelevant = response.metadata?.graph_relevant || false
             const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
-            const hasGraphData = backendGraphRelevant || keywordGraphRelevant
+            const hasGraphData: boolean = Boolean(backendGraphRelevant || keywordGraphRelevant)
             
             const assistantMessage: Message = {
               id: `pending_assistant_${Date.now()}`,
@@ -338,7 +340,7 @@ function ChatInterfaceCore() {
               timestamp: new Date(),
               hasGraphData,
               metadata: {
-                graph_relevant: backendGraphRelevant
+                graph_relevant: Boolean(backendGraphRelevant)
               }
             }
 
@@ -564,7 +566,7 @@ function ChatInterfaceCore() {
                               whiteSpace: 'nowrap'
                             }}
                           >
-                            "...{match.context.slice(0, 40)}..."
+                            "                            &quot;...{match.context.slice(0, 40)}...&quot;"
                           </Typography>
                         ))}
                       </Box>
@@ -588,7 +590,7 @@ function ChatInterfaceCore() {
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                     <SearchIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="body2" color="text.secondary">
-                      Keine Treffer für "{searchQuery}"
+                      Keine Treffer für &quot;{searchQuery}&quot;
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Versuchen Sie andere Suchbegriffe
@@ -598,8 +600,8 @@ function ChatInterfaceCore() {
               />
             </ListItem>
           ) : (
-            // All chats (normal view)
-            allChats.map((chat) => (
+            // All chats (normal view) - use memoized sorted list
+            sortedChats.map((chat) => (
               <ListItem key={chat.id} disablePadding>
                 <ListItemButton
                   selected={chat.id === currentChatId}
@@ -889,8 +891,9 @@ function ChatInterfaceCore() {
       >
         <MenuItem
           onClick={() => {
+            const sessions = useChatStore.getState().sessions
             const newName = prompt('Neuer Name:', 
-              allChats.find(c => c.id === selectedChatForMenu)?.title
+              sessions[selectedChatForMenu || '']?.title
             )
             if (newName && selectedChatForMenu) {
               handleRenameChat(selectedChatForMenu, newName)
@@ -917,11 +920,11 @@ function ChatInterfaceCore() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            if (selectedChatForMenu && allChats.length > 1) {
+            if (selectedChatForMenu && chatCount > 1) {
               handleDeleteChat(selectedChatForMenu)
             }
           }}
-          disabled={allChats.length <= 1}
+          disabled={chatCount <= 1}
         >
           <ListItemIcon>
             <DeleteIcon />

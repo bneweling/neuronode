@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+
 import { useGraphApi } from './useGraphApi'
 
 // === GRAPH CACHING TYPES & CONFIGURATION ===
@@ -28,6 +29,9 @@ interface GraphCacheStats {
   oldestEntry: number
   newestEntry: number
 }
+
+// Type for cache parameters that can be serialized
+type CacheParams = Record<string, unknown>
 
 // Default cache configuration
 const DEFAULT_CACHE_CONFIG: GraphCacheConfig = {
@@ -115,7 +119,7 @@ class GraphCacheManager {
   /**
    * Generate cache key based on parameters
    */
-  private generateCacheKey(params: any = {}): string {
+  private generateCacheKey(params: CacheParams = {}): string {
     const paramString = JSON.stringify(params)
     return `graph_${btoa(paramString).slice(0, 16)}`
   }
@@ -140,7 +144,6 @@ class GraphCacheManager {
   private cleanup(): void {
     if (!this.config.autoCleanup) return
 
-    const now = Date.now()
     let removed = 0
 
     for (const [key, entry] of this.cache.entries()) {
@@ -198,7 +201,7 @@ class GraphCacheManager {
   /**
    * Get cached data
    */
-  getCachedData(params: any = {}): GraphData | null {
+  getCachedData(params: CacheParams = {}): GraphData | null {
     this.cleanup()
     
     const key = this.generateCacheKey(params)
@@ -237,7 +240,7 @@ class GraphCacheManager {
   /**
    * Set cached data
    */
-  setCachedData(data: GraphData, params: any = {}, customTTL?: number): void {
+  setCachedData(data: GraphData, params: CacheParams = {}, customTTL?: number): void {
     const key = this.generateCacheKey(params)
     const now = Date.now()
     
@@ -263,7 +266,7 @@ class GraphCacheManager {
   /**
    * Invalidate specific cache entry
    */
-  invalidateCache(params: any = {}): void {
+  invalidateCache(params: CacheParams = {}): void {
     const key = this.generateCacheKey(params)
     const removed = this.cache.delete(key)
     
@@ -472,7 +475,7 @@ export const useGraphState = (): UseGraphStateReturn => {
       setGraphState(prev => ({
         ...prev,
         status: 'error',
-        error: apiError,
+        error: apiError as unknown as Error,
         isInitialized: true
       }))
     }

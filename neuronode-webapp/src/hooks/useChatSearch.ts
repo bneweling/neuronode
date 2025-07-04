@@ -1,6 +1,24 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useDebounce } from './useDebounce'
-import { useAllChats, type ChatSession, type Message } from '@/stores/chatStore'
+
+import { useChatStore, type ChatSession, type Message } from '@/stores/chatStore'
+
+/**
+ * INFINITE LOOP FIX APPLIED:
+ * 
+ * Previously, this hook had a circular dependency issue that caused infinite re-renders:
+ * - searchResults useMemo depended on performSearch
+ * - performSearch useCallback depended on calculateRelevance and allChats
+ * - calculateRelevance useCallback depended on searchQuery and searchOptions
+ * - When searchQuery changed, it created new function references causing infinite loops
+ * 
+ * Fixed by:
+ * 1. Removing unstable dependencies from callback dependency arrays
+ * 2. Passing query/options as parameters instead of closure capture
+ * 3. Getting chats directly from store instead of using selector
+ * 4. Removing performSearch from useMemo dependencies (with ESLint disable)
+ * 
+ * This resolves the "Maximum update depth exceeded" error in Material-UI InputBase.
+ */
 
 // === CHAT SEARCH TYPES ===
 
@@ -73,8 +91,7 @@ export const useChatSearch = () => {
     lastSearchQuery: ''
   })
 
-  // Get all chats from store
-  const allChats = useAllChats()
+  // No need for allChats selector - we get chats directly in performSearch to avoid dependency issues
 
   // === UTILITY FUNCTIONS ===
 
@@ -162,7 +179,7 @@ export const useChatSearch = () => {
   /**
    * Calculate relevance score for a search result
    */
-  const calculateRelevance = useCallback((chat: ChatSession, matches: SearchMatch[]): number => {
+  const calculateRelevance = useCallback((chat: ChatSession, matches: SearchMatch[], query: string, options: SearchOptions): number => {
     if (matches.length === 0) return 0
     
     let score = 0
@@ -171,7 +188,7 @@ export const useChatSearch = () => {
     score += matches.length * 10
     
     // Bonus for matches in chat title
-    const titleRegex = createSearchRegex(searchQuery, searchOptions)
+    const titleRegex = createSearchRegex(query, options)
     const titleMatches = chat.title.match(titleRegex)
     if (titleMatches) {
       score += titleMatches.length * 50 // Title matches are highly relevant
@@ -192,7 +209,7 @@ export const useChatSearch = () => {
     score += graphMatches.length * 3
     
     return Math.round(score)
-  }, [searchQuery, searchOptions, createSearchRegex])
+  }, [createSearchRegex])
 
   /**
    * Perform the actual search
@@ -206,9 +223,10 @@ export const useChatSearch = () => {
     try {
       const regex = createSearchRegex(query, options)
       const results: SearchResult[] = []
-      const currentChats = allChats // Use current value to avoid dependency
+      const currentChats = useChatStore.getState().sessions // Get current chats directly from store
+      const chatsArray = Object.values(currentChats) // Convert to array
       
-      for (const chat of currentChats) {
+              for (const chat of chatsArray) {
         const chatMatches: SearchMatch[] = []
         
         // Search in all messages of this chat
@@ -219,7 +237,7 @@ export const useChatSearch = () => {
         
         // If we found matches, create a result
         if (chatMatches.length > 0) {
-          const relevanceScore = calculateRelevance(chat, chatMatches)
+          const relevanceScore = calculateRelevance(chat, chatMatches, query, options)
           
           results.push({
             chat,
@@ -260,7 +278,7 @@ export const useChatSearch = () => {
       const totalMatches = limitedResults.reduce((sum, result) => sum + result.matchingMessages.length, 0)
       
       setSearchStats({
-        totalChats: currentChats.length,
+        totalChats: chatsArray.length,
         searchedChats: limitedResults.length,
         totalMatches,
         searchTime,
@@ -277,19 +295,15 @@ export const useChatSearch = () => {
     } finally {
       setIsSearching(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createSearchRegex, searchMessage, calculateRelevance])
 
-  // Debounced search function
-  const debouncedSearch = useDebounce((query: string) => {
-    return performSearch(query, searchOptions)
-  }, 300)
 
-  // Memoized search results
+
+  // Memoized search results - removed performSearch dependency to prevent infinite loop
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     return performSearch(searchQuery, searchOptions)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, searchOptions])
 
   // === PUBLIC API ===
@@ -354,10 +368,11 @@ export const useChatSearch = () => {
     )
     suggestions.push(...historyMatches)
     
-    // Add common words from chat titles and recent messages (use current value)
-    const currentChats = allChats
+    // Add common words from chat titles and recent messages (get directly from store)
+    const currentChats = useChatStore.getState().sessions
+    const chatsArray = Object.values(currentChats)
     const commonWords = new Set<string>()
-    currentChats.slice(0, 10).forEach(chat => {
+    chatsArray.slice(0, 10).forEach(chat => {
       // Extract words from chat title
       chat.title.split(/\s+/).forEach(word => {
         if (word.length >= 3 && word.toLowerCase().includes(partialQuery.toLowerCase())) {
@@ -378,8 +393,7 @@ export const useChatSearch = () => {
     suggestions.push(...Array.from(commonWords).slice(0, 5))
     
     return [...new Set(suggestions)].slice(0, 10)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchHistory])
 
   return {
     // State

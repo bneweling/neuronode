@@ -4,6 +4,7 @@ import { Box } from '@mui/material'
 import { useEffect } from 'react'
 
 import ChatInterface from '@/components/chat/ChatInterface'
+import ChatErrorBoundary from '@/components/error/ChatErrorBoundary'
 
 export default function ChatPage() {
   useEffect(() => {
@@ -24,7 +25,9 @@ export default function ChatPage() {
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
-      <ChatInterface />
+      <ChatErrorBoundary>
+        <ChatInterface />
+      </ChatErrorBoundary>
     </Box>
   )
 } 

@@ -32,7 +32,7 @@ export interface WebSocketHookReturn {
   connect: () => void
   disconnect: () => void
   reconnect: () => void
-  send: (data: any) => boolean
+  send: (data: string | object) => boolean
   configure: (config: Partial<ReconnectionConfig>) => void
 }
 
@@ -296,6 +296,7 @@ export const useWebSocketWithReconnect = (
         scheduleReconnect()
       }, 100)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, onMessage, onOpen, onClose, onError, cleanup, updateStats]) // Entfernt connectionState aus Dependencies
 
   /**
@@ -355,7 +356,7 @@ export const useWebSocketWithReconnect = (
   /**
    * Send data through WebSocket
    */
-  const send = useCallback((data: any): boolean => {
+  const send = useCallback((data: string | object): boolean => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket not connected, cannot send data')
       return false
@@ -389,6 +390,7 @@ export const useWebSocketWithReconnect = (
     return () => {
       cleanup()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoConnect]) // Entfernt connect und cleanup aus Dependencies um infinite loops zu vermeiden
 
   // Computed values

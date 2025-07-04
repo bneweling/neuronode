@@ -78,8 +78,12 @@ interface DocumentAnalysis {
 interface DocumentAnalysisResponse extends DocumentAnalysis {
   status?: string
   message?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  [key: string]: unknown
+}
+
+// Type for document metadata that can contain various properties
+interface DocumentMetadata {
+  [key: string]: unknown
 }
 
 interface UploadResponse {
@@ -91,8 +95,7 @@ interface UploadResponse {
   document_type?: string
   num_chunks?: number
   num_controls?: number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata?: any
+  metadata?: DocumentMetadata
   processing_duration?: number
   quality_score?: number
   extracted_entities?: string[]
@@ -106,8 +109,7 @@ interface ProcessingResult {
   document_type?: string
   num_chunks?: number
   num_controls?: number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata?: any
+  metadata?: DocumentMetadata
   processing_duration?: number
   quality_score?: number
   extracted_entities?: string[]
@@ -142,7 +144,8 @@ function FileUploadZoneCore() {
   const {
     executeWithErrorHandling
   } = useDocumentApiError({
-    onError: (backendError) => {
+    onError: (error: unknown) => {
+      const backendError = error as BackendError
       console.error('Document Processing Error:', {
         error_code: backendError.error_code,
         message: backendError.message,
@@ -280,116 +283,6 @@ function FileUploadZoneCore() {
     }
   }, [executeWithErrorHandling])
 
-  const uploadSingleFile = useCallback(async (uploadFile: UploadFile) => {
-    setFiles(prev => prev.map(f => 
-      f.id === uploadFile.id 
-        ? { ...f, status: 'uploading', progress: 0, error: undefined, backendError: undefined }
-        : f
-    ))
-
-    // Upload-Progress simulieren bis 30%
-    const uploadInterval = setInterval(() => {
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id && f.progress < 30
-          ? { ...f, progress: Math.min(f.progress + 5, 30) }
-          : f
-      ))
-    }, 100)
-
-    // K3.1 Enhanced upload with intelligent error handling
-    const response = await executeWithErrorHandling(
-      async () => {
-        const apiClient = getAPIClient()
-        const formData = new FormData()
-        formData.append('file', uploadFile.file)
-        return await apiClient.uploadDocument(formData) as UploadResponse
-      },
-      {
-        retryable: true, // Document uploads can be retried
-        context: `document-upload-${uploadFile.file.name}`
-      }
-    )
-
-    clearInterval(uploadInterval)
-
-    if (response && (response.success || response.status)) {
-      // K8: Real Backend Integration - Handle both mock and real backend responses
-      // Real backend doesn't return 'success' field, but has 'status' field
-      if (response.status === 'processing' && response.task_id) {
-        // Background processing - Status überwachen
-        setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id 
-            ? { 
-                ...f, 
-                status: 'processing',
-                progress: 40,
-                taskId: response.task_id
-              }
-            : f
-        ))
-        
-        await monitorProcessing(uploadFile.id, response.task_id)
-      } else if (response.status === 'completed' || response.status === 'upload_only' || response.status === 'processed_simple') {
-        // K8: Erweiterte Success-Detection für Real Backend Integration
-        // 'completed' = vollständige Verarbeitung erfolgreich
-        // 'upload_only' = Upload erfolgreich, Verarbeitung eingeschränkt
-        // 'processed_simple' = Einfache Verarbeitung erfolgreich (Fallback)
-        setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id 
-            ? { 
-                ...f, 
-                status: 'success' as const,
-                progress: 100,
-                result: {
-                  filename: response.filename || uploadFile.file.name,
-                  status: response.status || 'completed',
-                  document_type: response.document_type || 'unknown',
-                  num_chunks: response.num_chunks || 0,
-                  num_controls: response.num_controls || 0,
-                  metadata: response.metadata || {},
-                  processing_duration: response.processing_duration,
-                  quality_score: response.quality_score,
-                  extracted_entities: response.extracted_entities,
-                  graph_nodes_created: response.graph_nodes_created,
-                  graph_relationships_created: response.graph_relationships_created
-                }
-              }
-            : f
-        ))
-      } else {
-        // Handle other status values (error cases)
-        const errorMessage = response.metadata?.message || response.error || 'Upload fehlgeschlagen'
-        setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id 
-            ? { 
-                ...f, 
-                status: 'error', 
-                progress: 0,
-                error: errorMessage,
-                canRetry: true,
-                retryCount: (f.retryCount || 0)
-              }
-            : f
-        ))
-      }
-    } else {
-      // Handle case where response is null or malformed
-      const errorMessage = 'Keine Antwort vom Server erhalten'
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { 
-              ...f, 
-              status: 'error', 
-              progress: 0,
-              error: errorMessage,
-              canRetry: true,
-              retryCount: (f.retryCount || 0)
-            }
-          : f
-      ))
-    }
-  }, [executeWithErrorHandling])
-
   const monitorProcessing = useCallback(async (fileId: string, taskId: string) => {
     const maxAttempts = 60 // 5 Minuten
     let attempts = 0
@@ -498,6 +391,117 @@ function FileUploadZoneCore() {
 
     checkStatus()
   }, [executeWithErrorHandling])
+
+  const uploadSingleFile = useCallback(async (uploadFile: UploadFile) => {
+    setFiles(prev => prev.map(f => 
+      f.id === uploadFile.id 
+        ? { ...f, status: 'uploading', progress: 0, error: undefined, backendError: undefined }
+        : f
+    ))
+
+    // Upload-Progress simulieren bis 30%
+    const uploadInterval = setInterval(() => {
+      setFiles(prev => prev.map(f => 
+        f.id === uploadFile.id && f.progress < 30
+          ? { ...f, progress: Math.min(f.progress + 5, 30) }
+          : f
+      ))
+    }, 100)
+
+    // K3.1 Enhanced upload with intelligent error handling
+    const response = await executeWithErrorHandling(
+      async () => {
+        const apiClient = getAPIClient()
+        const formData = new FormData()
+        formData.append('file', uploadFile.file)
+        return await apiClient.uploadDocument(formData) as UploadResponse
+      },
+      {
+        retryable: true, // Document uploads can be retried
+        context: `document-upload-${uploadFile.file.name}`
+      }
+    )
+
+    clearInterval(uploadInterval)
+
+    if (response && (response.success || response.status)) {
+      // K8: Real Backend Integration - Handle both mock and real backend responses
+      // Real backend doesn't return 'success' field, but has 'status' field
+      if (response.status === 'processing' && response.task_id) {
+        // Background processing - Status überwachen
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'processing',
+                progress: 40,
+                taskId: response.task_id
+              }
+            : f
+        ))
+        
+        await monitorProcessing(uploadFile.id, response.task_id)
+      } else if (response.status === 'completed' || response.status === 'upload_only' || response.status === 'processed_simple') {
+        // K8: Erweiterte Success-Detection für Real Backend Integration
+        // 'completed' = vollständige Verarbeitung erfolgreich
+        // 'upload_only' = Upload erfolgreich, Verarbeitung eingeschränkt
+        // 'processed_simple' = Einfache Verarbeitung erfolgreich (Fallback)
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'success' as const,
+                progress: 100,
+                result: {
+                  filename: response.filename || uploadFile.file.name,
+                  status: response.status || 'completed',
+                  document_type: response.document_type || 'unknown',
+                  num_chunks: response.num_chunks || 0,
+                  num_controls: response.num_controls || 0,
+                  metadata: response.metadata || {},
+                  processing_duration: response.processing_duration,
+                  quality_score: response.quality_score,
+                  extracted_entities: response.extracted_entities,
+                  graph_nodes_created: response.graph_nodes_created,
+                  graph_relationships_created: response.graph_relationships_created
+                }
+              }
+            : f
+        ))
+      } else {
+        // Handle other status values (error cases)
+        const errorResponse = response as UploadResponse & { error?: string }
+        const errorMessage: string = (response.metadata?.message as string) || errorResponse.error || 'Upload fehlgeschlagen'
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { 
+                ...f, 
+                status: 'error', 
+                progress: 0,
+                error: errorMessage,
+                canRetry: true,
+                retryCount: (f.retryCount || 0)
+              }
+            : f
+        ))
+      }
+    } else {
+      // Handle case where response is null or malformed
+      const errorMessage = 'Keine Antwort vom Server erhalten'
+      setFiles(prev => prev.map(f => 
+        f.id === uploadFile.id 
+          ? { 
+              ...f, 
+              status: 'error', 
+              progress: 0,
+              error: errorMessage,
+              canRetry: true,
+              retryCount: (f.retryCount || 0)
+            }
+          : f
+      ))
+    }
+  }, [executeWithErrorHandling, monitorProcessing])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()

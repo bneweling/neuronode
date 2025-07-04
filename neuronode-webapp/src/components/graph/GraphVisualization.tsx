@@ -36,7 +36,7 @@ import {
   CircularProgress,
   Button,
 } from '@mui/material'
-import type { Core, NodeSingular, EventObject } from 'cytoscape'
+import type { Core, EventObject } from 'cytoscape'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 
 import InlineErrorDisplay from '@/components/error/InlineErrorDisplay'
@@ -60,11 +60,6 @@ interface GraphEdge {
   weight: number
 }
 
-interface GraphData {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
-}
-
 type NodeColor = 'primary' | 'secondary' | 'success' | 'default'
 
 /**
@@ -82,7 +77,7 @@ export default function GraphVisualization() {
   
   // === ENTERPRISE GRAPH STATE ===
   // Single source of truth for graph data - eliminates flicker
-  const { graphState, actions, isLoading, hasData, hasError } = useGraphState()
+  const { graphState, actions, isLoading, hasError } = useGraphState()
   const stats = useGraphStats()
   
   // === UI STATE (Ephemeral - kept local) ===
@@ -96,17 +91,9 @@ export default function GraphVisualization() {
   // Advanced Interactivity State
   const [hoveredElement, setHoveredElement] = useState<{
     type: 'node' | 'edge'
-    data: any
+    data: GraphNode | GraphEdge
     position: { x: number; y: number }
   } | null>(null)
-  const [highlightedElements, setHighlightedElements] = useState<Set<string>>(new Set())
-  
-  // Live Updates State
-  const [liveUpdates, setLiveUpdates] = useState<{
-    type: 'node_added' | 'relationship_created' | 'graph_optimized'
-    data: any
-    timestamp: number
-  }[]>([])
   
   // === REFS ===
   const graphRef = useRef<HTMLDivElement>(null)
@@ -115,23 +102,15 @@ export default function GraphVisualization() {
   
   // === ENHANCED WEBSOCKET WITH RECONNECTION ===
   const {
-    connectionState: wsConnectionState,
     connectionStats: wsConnectionStats,
     isConnected: wsConnected,
     isConnecting: wsConnecting,
     hasFailed: wsHasFailed,
     reconnect: wsReconnect,
-    configure: wsConfigureConnection
   } = useWebSocketWithReconnect('ws://localhost:8001/ws/graph', {
     onMessage: (event) => {
       try {
         const message = JSON.parse(event.data)
-        
-        setLiveUpdates(prev => [...prev.slice(-9), {
-          type: message.type,
-          data: message.data,
-          timestamp: Date.now()
-        }])
         
         // Handle live updates
         switch (message.type) {
@@ -193,8 +172,6 @@ export default function GraphVisualization() {
       }
     })
     
-    setHighlightedElements(matchingNodes)
-    
     // Apply visual highlighting
     cyRef.current.elements().forEach((element) => {
       const elementId = element.data('id')
@@ -234,6 +211,7 @@ export default function GraphVisualization() {
     return () => {
       setIsMounted(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // CRITICAL: Empty dependency array - runs only once!
 
   // === CYTOSCAPE INITIALIZATION (STABLE) ===
@@ -311,12 +289,13 @@ export default function GraphVisualization() {
                 'font-size': isDarkMode ? 13 : 12,
                 'font-weight': isDarkMode ? 'bold' : 'normal',
                 'text-wrap': 'wrap',
-                'text-max-width': 80,
+                'text-max-width': '80px',
                 'min-zoomed-font-size': 8,
                 'text-opacity': isDarkMode ? 1 : 0.9,
                 'border-width': isDarkMode ? 2 : 1,
                 'border-style': 'solid',
                 'border-opacity': 0.7
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
               } as any
             },
             // Document nodes
@@ -414,7 +393,7 @@ export default function GraphVisualization() {
             initialTemp: 200,
             coolingFactor: 0.95,
             minTemp: 1.0
-          } as any
+          }
         })
 
         // === EVENT HANDLERS (STABLE) ===
@@ -435,7 +414,7 @@ export default function GraphVisualization() {
                 id: nodeData.id,
                 label: nodeData.label,
                 type: nodeData.type,
-                typeIcon: nodeData.type
+                properties: {}
               },
               position: { x: position.x, y: position.y }
             })
@@ -485,11 +464,10 @@ export default function GraphVisualization() {
           const neighbors = node.neighborhood()
           const highlightedIds = new Set([nodeId])
           
-          neighbors.forEach((neighbor) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          neighbors.forEach((neighbor: any) => {
             highlightedIds.add(neighbor.data('id'))
           })
-          
-          setHighlightedElements(highlightedIds)
           
           // Visual styling
           cyRef.current!.elements().forEach((element) => {
@@ -537,6 +515,7 @@ export default function GraphVisualization() {
       }
       setCytoscapeLoaded(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasGraphData, isMounted, theme.palette.mode]) // STABLE DEPENDENCIES
 
   // === SEARCH EFFECT ===
@@ -545,7 +524,6 @@ export default function GraphVisualization() {
       debouncedSearch(searchQuery)
     } else {
       // Clear search highlighting
-      setHighlightedElements(new Set())
       if (cyRef.current) {
         cyRef.current.elements().removeClass('faded highlighted-node')
       }
@@ -659,7 +637,6 @@ export default function GraphVisualization() {
     if (cyRef.current) {
       cyRef.current.fit()
       setSelectedNode(null)
-      setHighlightedElements(new Set())
       cyRef.current.elements().removeClass('faded highlighted-node highlighted-neighbor')
     }
   }
@@ -1126,7 +1103,7 @@ export default function GraphVisualization() {
           {hoveredElement.type === 'node' ? (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                {getNodeIcon(hoveredElement.data.typeIcon)}
+                {getNodeIcon((hoveredElement.data as GraphNode).type)}
                 <Typography variant="body2" fontWeight="bold" sx={{ ml: 1 }}>
                   {hoveredElement.data.label}
                 </Typography>
@@ -1146,7 +1123,7 @@ export default function GraphVisualization() {
                 </Typography>
                 <LinearProgress 
                   variant="determinate" 
-                  value={hoveredElement.data.weight * 100} 
+                  value={(hoveredElement.data as GraphEdge).weight * 100} 
                   sx={{ 
                     flexGrow: 1, 
                     height: 4,
@@ -1155,11 +1132,11 @@ export default function GraphVisualization() {
                   }}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  {Math.round(hoveredElement.data.weight * 100)}%
+                  {Math.round((hoveredElement.data as GraphEdge).weight * 100)}%
                 </Typography>
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                {hoveredElement.data.source} → {hoveredElement.data.target}
+                {(hoveredElement.data as GraphEdge).source} → {(hoveredElement.data as GraphEdge).target}
               </Typography>
             </Box>
           )}

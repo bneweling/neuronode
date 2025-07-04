@@ -170,7 +170,7 @@ export default function StatusPage() {
 
       {/* System Status Cards */}
       <Grid container spacing={3} mb={4}>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid xs={12} md={4}>
           <Card elevation={3}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -190,7 +190,7 @@ export default function StatusPage() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid xs={12} md={8}>
           <Card elevation={3}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -229,7 +229,7 @@ export default function StatusPage() {
             Performance-Metriken
           </Typography>
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid xs={12} sm={6} md={3}>
               <MetricCard
                 title="Antwortzeit"
                 value={Math.round(diagnostics.performance.response_time)}
@@ -237,7 +237,7 @@ export default function StatusPage() {
                 icon={SpeedIcon}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid xs={12} sm={6} md={3}>
               <MetricCard
                 title="DB Latenz"
                 value={Math.round(diagnostics.performance.database_latency)}
@@ -245,7 +245,7 @@ export default function StatusPage() {
                 icon={StorageIcon}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid xs={12} sm={6} md={3}>
               <MetricCard
                 title="Speicher"
                 value={Math.round(diagnostics.performance.memory_usage)}
@@ -253,7 +253,7 @@ export default function StatusPage() {
                 icon={MemoryIcon}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid xs={12} sm={6} md={3}>
               <MetricCard
                 title="CPU"
                 value={Math.round(diagnostics.performance.cpu_usage)}
