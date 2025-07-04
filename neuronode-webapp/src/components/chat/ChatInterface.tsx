@@ -738,11 +738,11 @@ function ChatInterfaceCore() {
                     maxWidth: '70%',
                     p: 2.5,
                     borderRadius: message.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    bgcolor: (theme) => {
+                    background: (theme) => {
                       if (message.role === 'user') {
                         return theme.palette.mode === 'dark' 
                           ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                          : 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                          : 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)'
                       } else {
                         return theme.palette.mode === 'dark'
                           ? 'rgba(42, 42, 42, 0.95)'
@@ -751,7 +751,8 @@ function ChatInterfaceCore() {
                     },
                     color: (theme) => {
                       if (message.role === 'user') {
-                        return '#ffffff'
+                        // User messages: Force white text on blue gradient background
+                        return '#ffffff !important'
                       } else {
                         return theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
                       }
@@ -783,8 +784,9 @@ function ChatInterfaceCore() {
                     <Typography 
                       variant="caption" 
                       sx={{ 
-                        opacity: 0.7,
-                        fontSize: '0.75rem'
+                        opacity: message.role === 'user' ? 0.9 : 0.7,
+                        fontSize: '0.75rem',
+                        color: message.role === 'user' ? '#ffffff' : 'inherit'
                       }}
                     >
                       {formatTime(message.timestamp)}
