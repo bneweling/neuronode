@@ -77,8 +77,7 @@ export default function GraphVisualization() {
   
   // === ENTERPRISE GRAPH STATE ===
   // Single source of truth for graph data - eliminates flicker
-  const { graphState, actions, isLoading, hasError } = useGraphState()
-  const stats = useGraphStats()
+  const { graphData, graphStats, isLoading, error, isError, refetchGraphData, refetchGraphStats } = useGraphState()
   
   // === UI STATE (Ephemeral - kept local) ===
   const [searchQuery, setSearchQuery] = useState('')
@@ -152,8 +151,8 @@ export default function GraphVisualization() {
   
   // === STABLE MEMOIZED VALUES ===
   // Prevent unnecessary re-computations that could trigger flicker
-  const graphData = useMemo(() => graphState.data, [graphState.data])
   const hasGraphData = useMemo(() => Boolean(graphData && graphData.nodes.length > 0), [graphData])
+  const hasError = useMemo(() => Boolean(error), [error])
   
   // === DEBOUNCED HANDLERS ===
   const debouncedSearch = useDebounce((query: string) => {
@@ -188,7 +187,7 @@ export default function GraphVisualization() {
   const debouncedNodeClick = useDebounce((nodeId: string) => {
     if (!graphData || !graphData.nodes) return
     
-    const node = graphData.nodes.find(n => n.id === nodeId)
+    const node = graphData.nodes.find((n: any) => n.id === nodeId)
     if (node) {
       // Stelle sicher, dass properties existiert
       setSelectedNode({
@@ -203,9 +202,9 @@ export default function GraphVisualization() {
     setIsMounted(true)
     
     // Load initial graph data
-    if (graphState.status === 'idle') {
+    if (!graphData && !isLoading && !isError) {
       console.log('Loading initial graph data...')
-      actions.loadGraphData()
+      refetchGraphData()
     }
     
     return () => {
@@ -232,7 +231,7 @@ export default function GraphVisualization() {
         // Create elements from stable data
         const elements = [
           // Nodes
-          ...graphData!.nodes.map(node => ({
+          ...graphData!.nodes.map((node: any) => ({
             data: {
               id: node.id,
               label: node.label,
@@ -242,7 +241,7 @@ export default function GraphVisualization() {
             classes: `node-${node.type}`
           })),
           // Edges
-          ...graphData!.edges.map(edge => ({
+          ...graphData!.edges.map((edge: any) => ({
             data: {
               id: edge.id,
               source: edge.source,
@@ -642,7 +641,8 @@ export default function GraphVisualization() {
   }
 
   const handleRefresh = () => {
-    actions.refreshGraph()
+    refetchGraphData()
+    refetchGraphStats()
   }
 
   // === UI HELPER FUNCTIONS ===
@@ -946,13 +946,13 @@ export default function GraphVisualization() {
                 <ListItem>
                   <ListItemText 
                     primary="Gesamte Knoten"
-                    secondary={stats.totalNodes}
+                    secondary={graphStats?.totalNodes || 0}
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
                     primary="Gesamte Kanten"
-                    secondary={stats.totalEdges}
+                    secondary={graphStats?.totalEdges || 0}
                   />
                 </ListItem>
                 <Divider />
@@ -964,7 +964,7 @@ export default function GraphVisualization() {
                         Dokumente
                       </Box>
                     }
-                    secondary={stats.documentNodes}
+                    secondary={graphStats?.documentNodes || 0}
                   />
                 </ListItem>
                 <ListItem>
@@ -975,7 +975,7 @@ export default function GraphVisualization() {
                         Konzepte
                       </Box>
                     }
-                    secondary={stats.conceptNodes}
+                    secondary={graphStats?.conceptNodes || 0}
                   />
                 </ListItem>
                 <ListItem>
@@ -986,7 +986,7 @@ export default function GraphVisualization() {
                         Entitäten
                       </Box>
                     }
-                    secondary={stats.entityNodes}
+                    secondary={graphStats?.entityNodes || 0}
                   />
                 </ListItem>
               </List>

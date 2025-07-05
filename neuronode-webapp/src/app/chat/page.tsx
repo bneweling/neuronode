@@ -5,9 +5,13 @@ import { useEffect } from 'react'
 
 import ChatInterface from '@/components/chat/ChatInterface'
 import ChatErrorBoundary from '@/components/error/ChatErrorBoundary'
+import { PerformanceMonitor } from '@/lib/performance'
 
 export default function ChatPage() {
   useEffect(() => {
+    // Performance Monitoring
+    PerformanceMonitor.trackPageLoad('ChatPage')
+    
     // Check for pending message from Quick Chat
     const pendingMessage = sessionStorage.getItem('pendingChatMessage')
     if (pendingMessage) {

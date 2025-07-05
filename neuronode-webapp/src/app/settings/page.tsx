@@ -36,6 +36,7 @@ import { useState, useEffect } from 'react'
 
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppConfig } from '@/hooks/useAppConfig'
+import { PerformanceMonitor } from '@/lib/performance'
 
 export default function SettingsPage() {
   const {
@@ -56,6 +57,9 @@ export default function SettingsPage() {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'success' | 'error' | null>(null)
 
   useEffect(() => {
+    // Performance Monitoring
+    PerformanceMonitor.trackPageLoad('SettingsPage')
+    
     setTempApiUrl(config.apiUrl)
   }, [config.apiUrl])
 

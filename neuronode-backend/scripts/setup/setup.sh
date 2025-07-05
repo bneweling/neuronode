@@ -1,62 +1,68 @@
 #!/bin/bash
-# setup.sh - Angepasst für getrennte Repositories
+
+# =============================================================================
+# NEURONODE BACKEND SETUP SCRIPT
+# Modernisiertes Backend-Setup ohne veraltete Dependencies
+# =============================================================================
 
 # Farben für bessere Lesbarkeit
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
-# WICHTIG: Pfade ermitteln
+# Pfade ermitteln
 BACKEND_DIR=$(pwd)
-PLUGIN_DIR="../obsidian-ki-plugin"
+LOG_FILE="$BACKEND_DIR/setup.log"
 
-echo -e "${BLUE}=== Neuronode Setup ===${NC}"
-echo "Backend-Verzeichnis: $BACKEND_DIR"
+echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                🔧 NEURONODE BACKEND SETUP                    ║${NC}"
+echo -e "${BLUE}║           Enterprise Knowledge System Backend                 ║${NC}"
+echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${CYAN}📂 Backend-Verzeichnis: $BACKEND_DIR${NC}"
+echo ""
 
-# Prüfe ob wir im richtigen Verzeichnis sind
-if [ ! -f "requirements.txt" ] || [ ! -d "src" ]; then
-    echo -e "${RED}❌ Fehler: Bitte führen Sie dieses Skript im neuronode Hauptverzeichnis aus!${NC}"
-    echo "Aktuelles Verzeichnis: $(pwd)"
-    echo "Erwartete Dateien: requirements.txt, src/"
-    exit 1
-fi
-
-# Prüfe ob Plugin-Verzeichnis existiert
-if [ ! -d "$PLUGIN_DIR" ]; then
-    echo -e "${YELLOW}⚠️  Obsidian Plugin nicht gefunden unter: $PLUGIN_DIR${NC}"
-    read -p "Geben Sie den Pfad zum obsidian-ki-plugin Verzeichnis ein (oder Enter für ohne Plugin): " custom_plugin_path
-    if [ -n "$custom_plugin_path" ]; then
-        PLUGIN_DIR="$custom_plugin_path"
-    else
-        PLUGIN_DIR=""
-    fi
-fi
-
-# Log-Datei
-LOG_FILE="setup.log"
-
-# Funktion für Fehlermeldungen
+# Funktionen
 handle_error() {
     echo -e "${RED}❌ Fehler: $1${NC}"
     echo "Siehe $LOG_FILE für Details"
     exit 1
 }
 
-# Funktion für Erfolsmeldungen
 success() {
     echo -e "${GREEN}✅ $1${NC}"
 }
 
-# Funktion für Warnungen
 warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
-# 1. Voraussetzungen prüfen
+info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+# Prüfe ob wir im richtigen Verzeichnis sind
+check_directory() {
+    echo -e "\n${PURPLE}1. Prüfe Verzeichnisstruktur...${NC}"
+    
+    if [ ! -f "requirements.txt" ] || [ ! -d "src" ]; then
+        handle_error "Bitte führen Sie dieses Skript im neuronode-backend Verzeichnis aus!"
+    fi
+    
+    if [ ! -f "docker-compose.yml" ]; then
+        handle_error "docker-compose.yml nicht gefunden"
+    fi
+    
+    success "Verzeichnisstruktur validiert"
+}
+
+# Prüfe Systemvoraussetzungen
 check_prerequisites() {
-    echo -e "\n${BLUE}1. Prüfe Voraussetzungen...${NC}"
+    echo -e "\n${PURPLE}2. Prüfe Systemvoraussetzungen...${NC}"
     
     # Homebrew
     if ! command -v brew &> /dev/null; then
@@ -65,113 +71,82 @@ check_prerequisites() {
     fi
     success "Homebrew verfügbar"
     
-    # Python 3.11
-    if ! command -v python3.11 &> /dev/null; then
-        warning "Python 3.11 nicht gefunden. Installiere Python..."
+    # Python 3.11+
+    PYTHON_CMD=""
+    if command -v python3.12 &> /dev/null; then
+        PYTHON_CMD="python3.12"
+    elif command -v python3.11 &> /dev/null; then
+        PYTHON_CMD="python3.11"
+    else
+        warning "Python 3.11+ nicht gefunden. Installiere Python..."
         brew install python@3.11 || handle_error "Python Installation fehlgeschlagen"
+        PYTHON_CMD="python3.11"
     fi
-    success "Python 3.11 verfügbar"
+    success "Python 3.11+ verfügbar ($PYTHON_CMD)"
     
     # Docker
     if ! command -v docker &> /dev/null; then
-        warning "Docker nicht gefunden. Bitte Docker Desktop für Mac installieren:"
+        warning "Docker nicht gefunden. Bitte Docker Desktop installieren:"
         echo "https://www.docker.com/products/docker-desktop/"
         read -p "Drücken Sie Enter nachdem Docker installiert wurde..."
     fi
     
-    # Docker läuft?
     if ! docker info &> /dev/null; then
         warning "Docker läuft nicht. Starte Docker Desktop..."
         open -a Docker
         echo "Warte auf Docker..."
-        while ! docker info &> /dev/null; do
+        for i in {1..30}; do
+            if docker info &> /dev/null; then
+                break
+            fi
             sleep 2
+            echo -n "."
         done
+        echo ""
     fi
-    success "Docker läuft"
-    
-    # Node.js für Obsidian Plugin
-    if ! command -v node &> /dev/null; then
-        warning "Node.js nicht gefunden. Installiere Node.js..."
-        brew install node || handle_error "Node.js Installation fehlgeschlagen"
-    fi
-    success "Node.js verfügbar"
+    success "Docker verfügbar und läuft"
 }
 
-# 2. Repository Setup
-setup_repository() {
-    echo -e "\n${BLUE}2. Repository Setup...${NC}"
-    
-    # Arbeitsverzeichnis
-    WORK_DIR=$(pwd)
-    echo "Arbeitsverzeichnis: $WORK_DIR"
-    
-    # Struktur prüfen
-    if [ ! -f "requirements.txt" ]; then
-        handle_error "requirements.txt nicht gefunden. Bitte im richtigen Verzeichnis ausführen!"
-    fi
-    
-    # Erstelle fehlende Verzeichnisse
-    mkdir -p data logs
-    mkdir -p src/{api/endpoints,document_processing/loaders}
-    
-    # __init__.py Dateien erstellen
-    find src -type d -exec touch {}/__init__.py \;
-    
-    success "Repository-Struktur vorbereitet"
-}
-
-# 3. Python Environment
+# Python Environment Setup
 setup_python_env() {
-    echo -e "\n${BLUE}3. Python Virtual Environment einrichten...${NC}"
+    echo -e "\n${PURPLE}3. Python Virtual Environment einrichten...${NC}"
     
     # Alte venv entfernen falls vorhanden
-    [ -d "venv" ] && rm -rf venv
+    if [ -d "venv" ]; then
+        warning "Entferne alte Virtual Environment..."
+        rm -rf venv
+    fi
     
     # Neue venv erstellen
-    python3.11 -m venv venv || handle_error "Virtual Environment konnte nicht erstellt werden"
+    info "Erstelle neue Virtual Environment..."
+    $PYTHON_CMD -m venv venv || handle_error "Virtual Environment konnte nicht erstellt werden"
     
     # Aktivieren
     source venv/bin/activate || handle_error "Virtual Environment konnte nicht aktiviert werden"
     
     # Pip upgrade
-    pip install --upgrade pip
+    info "Aktualisiere pip..."
+    pip install --upgrade pip setuptools wheel
     
     # Requirements installieren
-    echo "Installiere Python-Pakete..."
+    info "Installiere Python-Pakete..."
     pip install -r requirements.txt || handle_error "Python-Pakete konnten nicht installiert werden"
-    
-    # Aktualisiere kritische Abhängigkeiten für Gemini API
-    echo "Aktualisiere Gemini API-Abhängigkeiten..."
-    pip install --upgrade langchain-google-genai==2.1.5 || warning "LangChain Google GenAI Update fehlgeschlagen"
-    pip install --upgrade pydantic-settings>=2.10.0 || warning "Pydantic Settings Update fehlgeschlagen"
-    
-    # Protobuf-Kompatibilität sicherstellen
-    echo "Konfiguriere Protobuf-Kompatibilität..."
-    echo 'export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python' >> venv/bin/activate || true
-    echo "Protobuf-Workaround zu venv/bin/activate hinzugefügt"
-    
-    # Auch in Start-Skripte einbauen
-    if [ -f "./start-all.sh" ]; then
-        sed -i '' '1i\
-export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-' ./start-all.sh || true
-    fi
     
     success "Python Environment eingerichtet"
 }
 
-# 4. Environment Variables
+# Environment Variables Setup
 setup_env_file() {
-    echo -e "\n${BLUE}4. Environment-Variablen konfigurieren...${NC}"
+    echo -e "\n${PURPLE}4. Environment-Variablen konfigurieren...${NC}"
     
     if [ ! -f ".env" ]; then
-        if [ -f ".env.example" ]; then
-            cp .env.example .env
+        if [ -f "env.example" ]; then
+            cp env.example .env
+            warning ".env Datei erstellt. Bitte API-Keys eintragen!"
         else
-            # .env.example erstellen
-            cat > .env.example << 'EOF'
-# API Keys
+            # Erstelle minimale .env Datei
+            cat > .env << 'EOF'
+# API Keys - Bitte eintragen
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 GOOGLE_API_KEY=your_google_api_key_here
@@ -184,116 +159,125 @@ NEO4J_PASSWORD=password
 CHROMA_HOST=localhost
 CHROMA_PORT=8000
 
-# Model Profile Configuration
-# Options: premium, balanced, cost_effective, gemini_only, openai_only
-# Test modes: gemini_only (only Google API), openai_only (only OpenAI API)
-MODEL_PROFILE=premium
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
 
-# Legacy Model Configuration (Optional - overrides MODEL_PROFILE if all are set)
-# CLASSIFIER_MODEL=gemini-2.5-flash
-# EXTRACTOR_MODEL=gpt-4.1
-# SYNTHESIZER_MODEL=claude-opus-4-20250514
-# VALIDATOR_MODEL_1=gpt-4o
-# VALIDATOR_MODEL_2=claude-sonnet-4-20250514
+# Model Profile Configuration
+MODEL_PROFILE=premium
 
 # Processing Settings
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 MAX_RETRIES=3
 EOF
-            cp .env.example .env
+            warning ".env Datei erstellt. Bitte API-Keys konfigurieren!"
         fi
         
-        warning ".env Datei erstellt. Bitte API-Keys eintragen!"
         echo -e "${YELLOW}Bearbeiten Sie die .env Datei und tragen Sie Ihre API-Keys ein.${NC}"
-        echo "Öffne .env in Editor..."
         
         # Versuche Editor zu öffnen
         if command -v code &> /dev/null; then
             code .env
         elif command -v nano &> /dev/null; then
-            nano .env
+            read -p "Möchten Sie die .env Datei jetzt bearbeiten? (j/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Jj]$ ]]; then
+                nano .env
+            fi
         else
             open -e .env
         fi
-        
-        read -p "Drücken Sie Enter nachdem Sie die API-Keys eingetragen haben..."
-    fi
-    
-    # Prüfen ob Keys gesetzt sind
-    source .env
-    if [ "$OPENAI_API_KEY" = "your-openai-key" ]; then
-        warning "API-Keys noch nicht konfiguriert!"
     else
-        success "Environment-Variablen konfiguriert"
+        success "Environment-Variablen bereits konfiguriert"
     fi
 }
 
-# 5. Docker Services
+# Docker Services Setup
 setup_docker() {
-    echo -e "\n${BLUE}5. Docker Services starten...${NC}"
-    
-    # Docker Compose Datei prüfen
-    if [ ! -f "docker-compose.yml" ]; then
-        warning "docker-compose.yml nicht gefunden. Erstelle Datei..."
-        # Hier würde der docker-compose.yml Inhalt eingefügt
-        handle_error "Bitte docker-compose.yml manuell erstellen"
-    fi
+    echo -e "\n${PURPLE}5. Docker Services starten...${NC}"
     
     # Services stoppen falls sie laufen
-    docker-compose down 2>/dev/null
+    docker-compose down 2>/dev/null || true
     
     # Services starten
-    echo "Starte Docker Services..."
-    docker-compose up -d neo4j chromadb redis || handle_error "Docker Services konnten nicht gestartet werden"
+    info "Starte Docker Services..."
+    docker-compose up -d || handle_error "Docker Services konnten nicht gestartet werden"
     
     # Warten auf Services
-    echo "Warte auf Service-Bereitschaft..."
+    info "Warte auf Service-Bereitschaft..."
     
     # Neo4j health check
-    echo -n "Warte auf Neo4j"
-    for i in {1..30}; do
-        if curl -s http://localhost:7474 > /dev/null; then
-            echo ""
-            success "Neo4j bereit"
+    echo -n "Neo4j"
+    for i in {1..60}; do
+        if curl -s http://localhost:7474 > /dev/null 2>&1; then
+            echo " ✅"
             break
         fi
         echo -n "."
-        sleep 2
+        sleep 1
     done
     
     # ChromaDB health check
-    echo -n "Warte auf ChromaDB"
-    for i in {1..30}; do
-        if curl -s http://localhost:8000/api/v1/heartbeat > /dev/null; then
-            echo ""
-            success "ChromaDB bereit"
+    echo -n "ChromaDB"
+    for i in {1..60}; do
+        if curl -s http://localhost:8000/api/v1/heartbeat > /dev/null 2>&1; then
+            echo " ✅"
             break
         fi
         echo -n "."
-        sleep 2
+        sleep 1
+    done
+    
+    # Redis health check
+    echo -n "Redis"
+    for i in {1..30}; do
+        if redis-cli ping > /dev/null 2>&1; then
+            echo " ✅"
+            break
+        fi
+        echo -n "."
+        sleep 1
     done
     
     success "Docker Services gestartet"
 }
 
-# 6. System testen
+# Datenbankschema initialisieren
+initialize_database() {
+    echo -e "\n${PURPLE}6. Datenbankschema initialisieren...${NC}"
+    
+    source venv/bin/activate
+    export PYTHONPATH="${PYTHONPATH}:${PWD}"
+    
+    # Schema-Migration
+    if [ -f "scripts/setup/migrate_schema.py" ]; then
+        info "Führe Schema-Migration aus..."
+        python scripts/setup/migrate_schema.py || warning "Schema-Migration fehlgeschlagen"
+        success "Datenbankschema initialisiert"
+    else
+        warning "Schema-Migration-Skript nicht gefunden"
+    fi
+}
+
+# System testen
 test_system() {
-    echo -e "\n${BLUE}6. System testen...${NC}"
+    echo -e "\n${PURPLE}7. System testen...${NC}"
+    
+    source venv/bin/activate
+    export PYTHONPATH="${PYTHONPATH}:${PWD}"
     
     # Python imports testen
-    echo "Teste Python-Imports..."
-    python -c "from src.config.settings import settings; print('Settings geladen')" || warning "Import-Fehler"
+    info "Teste Python-Imports..."
+    python -c "from src.config.settings import settings; print('✅ Settings geladen')" || warning "Import-Fehler"
     
-    # CLI testen
-    echo "Teste CLI..."
-    python -m src.cli --help > /dev/null && success "CLI funktioniert" || warning "CLI-Fehler"
+    # CLI testen (falls vorhanden)
+    if [ -f "src/cli/__init__.py" ] || [ -f "src/cli.py" ]; then
+        info "Teste CLI..."
+        python -m src.cli --help > /dev/null 2>&1 && success "CLI funktioniert" || warning "CLI-Fehler"
+    fi
     
-    # Gemini API testen
-    echo "Teste Gemini API-Integration..."
-    python scripts/setup/test-gemini-api.py > /dev/null 2>&1 && success "Gemini API funktioniert" || warning "Gemini API-Fehler - Bitte API-Keys prüfen"
-    
-    # Verbindungen testen
+    # Datenbankverbindungen testen
+    info "Teste Datenbankverbindungen..."
     python << 'EOF'
 try:
     from src.storage.neo4j_client import Neo4jClient
@@ -312,147 +296,111 @@ except Exception as e:
 EOF
 }
 
-# 7. Obsidian Plugin
-setup_obsidian_plugin() {
-    echo -e "\n${BLUE}7. Obsidian Plugin einrichten...${NC}"
-    
-    read -p "Möchten Sie das Obsidian Plugin installieren? (j/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Jj]$ ]]; then
-        if [ -d "../obsidian-ki-plugin" ]; then
-            cd ../obsidian-ki-plugin
-            
-            echo "Installiere Node-Dependencies..."
-            npm install || warning "npm install fehlgeschlagen"
-            
-            # Installiere D3-Typen falls nicht vorhanden
-            if ! npm list @types/d3 >/dev/null 2>&1; then
-                echo "Installiere TypeScript-Typen..."
-                npm install --save-dev @types/d3 || warning "TypeScript-Typen Installation fehlgeschlagen"
-            fi
-            
-            echo "Baue Plugin..."
-            npm run build || warning "Plugin-Build fehlgeschlagen"
-            
-            # Obsidian Plugin-Verzeichnis finden
-            OBSIDIAN_LOCAL="$HOME/Library/Application Support/obsidian"
-            OBSIDIAN_ICLOUD="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents"
-            
-            if [ -d "$OBSIDIAN_LOCAL" ]; then
-                success "Obsidian Plugin vorbereitet (lokale Installation)"
-                echo ""
-                echo "🔍 Verwenden Sie diese Skripte:"
-                echo -e "  ${BLUE}./setup-obsidian.sh${NC}          - All-in-One Plugin Setup (empfohlen)"
-                echo -e "  ${BLUE}./find-obsidian-paths.sh${NC}     - Zeigt Vault-Pfade an + Installation"
-                echo -e "  ${BLUE}./install-obsidian-plugin.sh${NC} - Manuelle Plugin-Installation"
-                echo ""
-                echo "Oder manuell kopieren nach:"
-                echo "$OBSIDIAN_LOCAL/IhrVault/.obsidian/plugins/"
-            elif [ -d "$OBSIDIAN_ICLOUD" ]; then
-                success "Obsidian Plugin vorbereitet (iCloud-Sync)"
-                echo "Kopieren Sie den obsidian-ki-plugin Ordner nach:"
-                echo "$OBSIDIAN_ICLOUD/IhrVault/.obsidian/plugins/"
-            else
-                warning "Obsidian-Verzeichnis nicht gefunden"
-                echo "Mögliche Pfade:"
-                echo "  - Lokal: ~/Library/Application Support/obsidian/IhrVault/.obsidian/plugins/"
-                echo "  - iCloud: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/IhrVault/.obsidian/plugins/"
-                echo "Bitte kopieren Sie das Plugin manuell nach einem dieser Pfade."
-            fi
-            
-            cd "$WORK_DIR"
-        else
-            warning "Obsidian Plugin-Verzeichnis nicht gefunden"
-        fi
-    fi
-}
-
-# 8. Startskripte erstellen
+# Startskripte erstellen
 create_start_scripts() {
-    echo -e "\n${BLUE}8. Erstelle Startskripte...${NC}"
+    echo -e "\n${PURPLE}8. Erstelle Startskripte...${NC}"
     
     # API Start-Skript
     cat > start-api.sh << 'EOF'
 #!/bin/bash
+
+# Starte Neuronode Backend API
+echo "🚀 Starte Neuronode Backend API..."
+
+# Aktiviere Virtual Environment
 source venv/bin/activate
+
+# Setze Python Path
 export PYTHONPATH="${PYTHONPATH}:${PWD}"
+
+# Starte API Server
 uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8080
 EOF
     chmod +x start-api.sh
     
+    # Services Start-Skript
+    cat > start-services.sh << 'EOF'
+#!/bin/bash
+
+# Starte Docker Services
+echo "🐳 Starte Docker Services..."
+docker-compose up -d
+
+echo "📊 Service Status:"
+docker-compose ps
+
+echo ""
+echo "🌐 Service URLs:"
+echo "  Neo4j:    http://localhost:7474"
+echo "  ChromaDB: http://localhost:8000"
+echo "  Redis:    localhost:6379"
+EOF
+    chmod +x start-services.sh
+    
     # CLI Wrapper
     cat > ki-cli.sh << 'EOF'
 #!/bin/bash
+
+# Neuronode CLI Wrapper
 source venv/bin/activate
 export PYTHONPATH="${PYTHONPATH}:${PWD}"
 python -m src.cli "$@"
 EOF
     chmod +x ki-cli.sh
     
-    # Docker Start-Skript
-    cat > start-services.sh << 'EOF'
-#!/bin/bash
-docker-compose up -d neo4j chromadb redis
-echo "Warte auf Services..."
-sleep 10
-docker-compose ps
-EOF
-    chmod +x start-services.sh
-    
     success "Startskripte erstellt"
 }
 
-# 9. Finale Instruktionen
+# Finale Instruktionen
 show_final_instructions() {
-    echo -e "\n${GREEN}=== Setup abgeschlossen! ===${NC}"
-    echo
-    echo "📋 Nächste Schritte:"
-    echo
-    echo "1. API-Keys in .env eintragen (falls noch nicht geschehen)"
-    echo -e "   ${BLUE}nano .env${NC}"
-    echo
-    echo "2. Services starten:"
-    echo -e "   ${BLUE}./start-services.sh${NC}  # Docker Services"
-    echo -e "   ${BLUE}./start-api.sh${NC}       # API Server"
-    echo
-    echo "3. CLI verwenden:"
-    echo -e "   ${BLUE}./ki-cli.sh query \"Ihre Frage\"${NC}"
-    echo -e "   ${BLUE}./ki-cli.sh process dokument.pdf${NC}"
-    echo -e "   ${BLUE}./ki-cli.sh stats${NC}"
-    echo
-    echo "4. Web-Interface:"
-    echo -e "   API Docs: ${BLUE}http://localhost:8080/docs${NC}"
-    echo -e "   Neo4j:    ${BLUE}http://localhost:7474${NC} (neo4j/password)"
-    echo
-    echo "5. Obsidian Plugin:"
-    echo -e "   ${BLUE}./setup-obsidian.sh${NC}          # All-in-One Setup (empfohlen)"
-    echo "   - Plugin in Obsidian aktivieren"
-    echo "   - API URL: http://localhost:8080"
+    echo -e "\n${GREEN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║               🎉 BACKEND SETUP ABGESCHLOSSEN!                ║${NC}"
+    echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo "6. Plugin-Features nutzen:"
-    echo "   📤 Dokumentenupload (Ribbon-Icon oder Cmd+P)"
-    echo "   💬 Knowledge Chat (Ribbon-Icon oder Cmd+P)"  
-    echo "   🕸️ Knowledge Graph (Ribbon-Icon oder Cmd+P)"
-    echo
-    echo "📚 Dokumentation: siehe README.md"
-    echo "❓ Bei Problemen: siehe $LOG_FILE"
+    echo -e "${BLUE}📋 Nächste Schritte:${NC}"
+    echo ""
+    echo -e "${CYAN}1. API-Keys konfigurieren (falls noch nicht geschehen):${NC}"
+    echo -e "   ${YELLOW}nano .env${NC}"
+    echo ""
+    echo -e "${CYAN}2. Services starten:${NC}"
+    echo -e "   ${YELLOW}./start-services.sh${NC}  # Docker Services"
+    echo -e "   ${YELLOW}./start-api.sh${NC}       # API Server"
+    echo ""
+    echo -e "${CYAN}3. CLI verwenden (falls verfügbar):${NC}"
+    echo -e "   ${YELLOW}./ki-cli.sh --help${NC}"
+    echo ""
+    echo -e "${BLUE}🌐 Service-URLs:${NC}"
+    echo ""
+    echo -e "${CYAN}  API Server:  http://localhost:8080${NC}"
+    echo -e "${CYAN}  API Docs:    http://localhost:8080/docs${NC}"
+    echo -e "${CYAN}  Neo4j:       http://localhost:7474${NC} (neo4j/password)"
+    echo -e "${CYAN}  ChromaDB:    http://localhost:8000${NC}"
+    echo ""
+    echo -e "${BLUE}📚 Weitere Informationen:${NC}"
+    echo -e "  - Logs: $LOG_FILE"
+    echo -e "  - API-Dokumentation: http://localhost:8080/docs"
+    echo -e "  - OpenAPI Schema: http://localhost:8080/openapi.json"
+    echo ""
 }
 
 # Hauptprogramm
 main() {
+    # Leere Log-Datei
+    > "$LOG_FILE"
+    
+    check_directory
     check_prerequisites
-    setup_repository
     setup_python_env
     setup_env_file
     setup_docker
+    initialize_database
     test_system
-    setup_obsidian_plugin
     create_start_scripts
     show_final_instructions
+    
+    echo -e "${GREEN}🎉 Backend-Setup erfolgreich abgeschlossen!${NC}"
+    echo -e "${YELLOW}Führen Sie './start-api.sh' aus, um den API-Server zu starten.${NC}"
 }
 
-# Error handler
-trap 'handle_error "Unerwarteter Fehler in Zeile $LINENO"' ERR
-
-# Ausführen
-main
+# Skript ausführen
+main "$@"

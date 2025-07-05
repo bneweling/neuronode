@@ -1,50 +1,26 @@
-import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { StrictMode } from 'react'
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter'
 
-import AppLayout from '@/components/layout/AppLayout'
-import { ApiErrorContextProvider } from '@/contexts/ApiErrorContext'
-import { CustomThemeProvider } from '@/contexts/ThemeContext'
+import { initializeWebVitalsObserver } from '@/lib/performance'
+import { AppProviders } from '@/components/providers/AppProviders'
 import './globals.css'
+
+initializeWebVitalsObserver()
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'Neuronode - KI-Wissenssystem',
-  description: 'Intelligente Wissensverarbeitung mit KI',
-  manifest: '/manifest.json',
+export const metadata = {
+  title: 'Neuronode',
+  description: 'AI-powered knowledge management',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de">
-      <head>
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-        `}</style>
-      </head>
+    <html lang="en">
       <body className={inter.className}>
-        <StrictMode>
-          <CustomThemeProvider>
-            <ApiErrorContextProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </ApiErrorContextProvider>
-          </CustomThemeProvider>
-        </StrictMode>
+        <AppRouterCacheProvider>
+          <AppProviders>{children}</AppProviders>
+        </AppRouterCacheProvider>
       </body>
     </html>
   )

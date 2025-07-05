@@ -41,9 +41,9 @@ import {
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
 import GraphVisualization from '@/components/graph/GraphVisualization'
-import { useChatApi } from '@/hooks/useChatApi'
+import { useSendMessage } from '@/hooks/useChatQueries'
 import { useChatSearch } from '@/hooks/useChatSearch'
-import { getAPIClient } from '@/lib/serviceFactory'
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor'
 import { 
   useChatStore, 
   useChatActions, 
@@ -52,6 +52,7 @@ import {
   useIsStoreInitialized,
   type Message 
 } from '@/stores/chatStore'
+import { ChatRequest } from '@/types/api.generated'
 
 function ChatInterfaceCore() {
   // === ENTERPRISE CHAT STORE INTEGRATION ===
@@ -85,19 +86,11 @@ function ChatInterfaceCore() {
     searchedChats,
   } = useChatSearch()
   
-  // Enhanced Error Handling
-  const {
-    isLoading,
-    executeWithErrorHandling,
-    clearError
-  } = useChatApi({
-    onError: (backendError) => {
-      console.error('Chat API Error:', backendError)
-    },
-    onSuccess: () => {
-      console.log('Chat message sent successfully')
-    }
-  })
+  // === TANSTACK QUERY INTEGRATION ===
+  const sendMessageMutation = useSendMessage()
+  
+  // === PERFORMANCE MONITORING ===
+  const { trackComponentPerformance, trackApiCall, trackUserInteraction } = usePerformanceMonitor()
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -145,10 +138,16 @@ function ChatInterfaceCore() {
 
   // === STABLE MESSAGE SENDING ===
   const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim() || isLoading || !currentChatId) return
+    if (!inputValue.trim() || sendMessageMutation.isPending || !currentChatId) return
 
     const messageContent = inputValue.trim()
     setInputValue('') // Clear input immediately for better UX
+    
+    // Track user interaction
+    trackUserInteraction('send_message', {
+      messageLength: messageContent.length,
+      chatId: currentChatId
+    })
     
     // Create user message
     const userMessage: Message = {
@@ -161,21 +160,24 @@ function ChatInterfaceCore() {
     // Add user message to store
     actions.addMessage(currentChatId, userMessage)
     
-    // Clear any existing errors
-    clearError()
+    // Prepare chat request
+    const chatRequest: ChatRequest = {
+      message: messageContent,
+      context: {
+        chatId: currentChatId,
+        timestamp: new Date().toISOString()
+      }
+    }
 
+    // Track API call performance
+    const apiCallStart = performance.now()
+    
     try {
-      // Enhanced API call with intelligent error handling
-      const response = await executeWithErrorHandling(
-        async () => {
-          const apiClient = getAPIClient()
-          return await apiClient.sendMessage(messageContent)
-        },
-        {
-          retryable: true,
-          context: 'chat-message'
-        }
-      )
+      // Use TanStack Query mutation
+      const response = await sendMessageMutation.mutateAsync(chatRequest)
+      
+      // Track successful API call
+      trackApiCall('/query', 'POST', performance.now() - apiCallStart, 'success')
 
       // Handle successful response
       if (response) {
@@ -207,10 +209,24 @@ function ChatInterfaceCore() {
           setHasGraphBeenShown(true)
         }
       }
-    } catch (error) {
-      console.warn('Chat message sending completed with potential errors:', error)
+    } catch (error: any) {
+      console.error('Fehler beim Senden der Nachricht:', error)
+      
+      // Track failed API call
+      trackApiCall('/query', 'POST', performance.now() - apiCallStart, 'error')
+      
+      // Add error message to store
+      const errorMessage: Message = {
+        id: `error_${Date.now()}`,
+        content: `Fehler beim Senden der Nachricht: ${error.message || 'Unbekannter Fehler'}`,
+        role: 'assistant',
+        timestamp: new Date(),
+        hasGraphData: false
+      }
+      
+      actions.addMessage(currentChatId, errorMessage)
     }
-  }, [inputValue, isLoading, currentChatId, actions, executeWithErrorHandling, clearError])
+  }, [inputValue, sendMessageMutation, currentChatId, actions, trackUserInteraction, trackApiCall])
 
   // === CHAT MANAGEMENT ACTIONS ===
   const handleNewChat = () => {
@@ -303,7 +319,7 @@ function ChatInterfaceCore() {
   useEffect(() => {
     const handlePendingMessage = (event: CustomEvent) => {
       const pendingMessage = event.detail.message
-      if (pendingMessage && !isLoading && currentChatId) {
+      if (pendingMessage && !sendMessageMutation.isPending && currentChatId) {
         setInputValue(pendingMessage)
         
         const userMessage: Message = {
@@ -314,42 +330,55 @@ function ChatInterfaceCore() {
         }
 
         actions.addMessage(currentChatId, userMessage)
-        clearError()
 
         const sendPendingMessage = async () => {
-          const response = await executeWithErrorHandling(
-            async () => {
-              const apiClient = getAPIClient()
-              return await apiClient.sendMessage(pendingMessage)
-            },
-            {
-              retryable: true,
-              context: 'pending-chat-message'
+          const chatRequest: ChatRequest = {
+            message: pendingMessage,
+            context: {
+              chatId: currentChatId,
+              timestamp: new Date().toISOString()
             }
-          )
+          }
 
-          if (response) {
-            const backendGraphRelevant = response.metadata?.graph_relevant || false
-            const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
-            const hasGraphData: boolean = Boolean(backendGraphRelevant || keywordGraphRelevant)
-            
-            const assistantMessage: Message = {
-              id: `pending_assistant_${Date.now()}`,
-              content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
-              role: 'assistant',
-              timestamp: new Date(),
-              hasGraphData,
-              metadata: {
-                graph_relevant: Boolean(backendGraphRelevant)
+          try {
+            const response = await sendMessageMutation.mutateAsync(chatRequest)
+
+            if (response) {
+              const backendGraphRelevant = response.metadata?.graph_relevant || false
+              const keywordGraphRelevant = hasGraphRelevantContent(response.message || '')
+              const hasGraphData: boolean = Boolean(backendGraphRelevant || keywordGraphRelevant)
+              
+              const assistantMessage: Message = {
+                id: `pending_assistant_${Date.now()}`,
+                content: response.message || 'Entschuldigung, ich konnte keine Antwort generieren.',
+                role: 'assistant',
+                timestamp: new Date(),
+                hasGraphData,
+                metadata: {
+                  graph_relevant: Boolean(backendGraphRelevant)
+                }
+              }
+
+              actions.addMessage(currentChatId, assistantMessage)
+
+              if (hasGraphData) {
+                setGraphViewOpen(true)
+                setHasGraphBeenShown(true)
               }
             }
-
-            actions.addMessage(currentChatId, assistantMessage)
-
-            if (hasGraphData) {
-              setGraphViewOpen(true)
-              setHasGraphBeenShown(true)
+          } catch (error: any) {
+            console.error('Fehler beim Senden der vorausgefüllten Nachricht:', error)
+            
+            // Add error message to store
+            const errorMessage: Message = {
+              id: `pending_error_${Date.now()}`,
+              content: `Fehler beim Senden der Nachricht: ${error.message || 'Unbekannter Fehler'}`,
+              role: 'assistant',
+              timestamp: new Date(),
+              hasGraphData: false
             }
+            
+            actions.addMessage(currentChatId, errorMessage)
           }
           
           setInputValue('')
@@ -365,7 +394,7 @@ function ChatInterfaceCore() {
       window.removeEventListener('sendPendingMessage', handlePendingMessage as EventListener)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, currentChatId, executeWithErrorHandling, clearError])
+  }, [sendMessageMutation.isPending, currentChatId, sendMessageMutation])
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -804,7 +833,7 @@ function ChatInterfaceCore() {
               </ListItem>
             ))}
             
-            {isLoading && (
+            {sendMessageMutation.isPending && (
               <ListItem sx={{ justifyContent: 'center' }}>
                 <CircularProgress size={24} />
                 <Typography variant="body2" sx={{ ml: 2 }}>
@@ -836,7 +865,7 @@ function ChatInterfaceCore() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Nachricht eingeben... (Alle Nachrichten werden automatisch gespeichert)"
-            disabled={isLoading}
+            disabled={sendMessageMutation.isPending}
             variant="outlined"
             size="small"
             data-testid="chat-input"
@@ -844,7 +873,7 @@ function ChatInterfaceCore() {
           <IconButton
             color="primary"
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
+            disabled={!inputValue.trim() || sendMessageMutation.isPending}
             data-testid="chat-send"
             sx={{
               bgcolor: 'primary.main',
@@ -858,7 +887,7 @@ function ChatInterfaceCore() {
               }
             }}
           >
-            {isLoading ? <StopIcon /> : <SendIcon />}
+            {sendMessageMutation.isPending ? <StopIcon /> : <SendIcon />}
           </IconButton>
         </Paper>
       </Box>
